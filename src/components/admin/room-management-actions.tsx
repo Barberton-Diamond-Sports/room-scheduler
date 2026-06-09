@@ -36,12 +36,10 @@ const compactFieldStyle = {
 
 export default function RoomManagementActions(props: Props) {
   const router = useRouter();
-
   const [name, setName] = useState(props.mode === "create" ? "" : props.room.name);
   const [description, setDescription] = useState(
     props.mode === "create" ? "" : props.room.description || ""
   );
-
   const [displayName, setDisplayName] = useState(
     props.mode === "create" ? "" : props.room.name
   );
@@ -51,14 +49,12 @@ export default function RoomManagementActions(props: Props) {
   const [displayIsActive, setDisplayIsActive] = useState(
     props.mode === "create" ? true : props.room.isActive
   );
-
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (props.mode !== "manage") return;
-
     setName(props.room.name);
     setDescription(props.room.description || "");
     setDisplayName(props.room.name);
@@ -88,14 +84,9 @@ export default function RoomManagementActions(props: Props) {
       const response = await fetch("/api/admin/rooms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim(),
-        }),
+        body: JSON.stringify({ name: name.trim(), description: description.trim() }),
       });
-
       const result = await response.json();
-
       if (result.success) {
         setName("");
         setDescription("");
@@ -113,19 +104,15 @@ export default function RoomManagementActions(props: Props) {
 
   async function handleToggleActive() {
     if (props.mode !== "manage") return;
-
     setIsSaving(true);
     setMessage("");
-
     try {
       const response = await fetch(`/api/admin/rooms/${props.room.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !displayIsActive }),
       });
-
       const result = await response.json();
-
       if (result.success) {
         setDisplayIsActive(result.room.isActive);
         router.refresh();
@@ -150,7 +137,6 @@ export default function RoomManagementActions(props: Props) {
 
     setIsSaving(true);
     setMessage("");
-
     try {
       const response = await fetch(`/api/admin/rooms/${props.room.id}`, {
         method: "PATCH",
@@ -160,9 +146,7 @@ export default function RoomManagementActions(props: Props) {
           description: description.trim(),
         }),
       });
-
       const result = await response.json();
-
       if (result.success) {
         setDisplayName(result.room.name);
         setDisplayDescription(result.room.description || "");
@@ -191,22 +175,16 @@ export default function RoomManagementActions(props: Props) {
 
   async function handleDelete() {
     if (props.mode !== "manage") return;
-
-    const confirmed = window.confirm(
-      `Delete ${displayName}? This permanently removes the field.`
-    );
+    const confirmed = window.confirm(`Delete ${displayName}? This permanently removes the field.`);
     if (!confirmed) return;
 
     setIsSaving(true);
     setMessage("");
-
     try {
       const response = await fetch(`/api/admin/rooms/${props.room.id}`, {
         method: "DELETE",
       });
-
       const result = await response.json();
-
       if (result.success) {
         router.refresh();
       } else {
@@ -224,45 +202,20 @@ export default function RoomManagementActions(props: Props) {
     return (
       <form
         onSubmit={handleCreate}
-        style={{
-          display: "grid",
-          gap: "1rem",
-          gridTemplateColumns: "1fr 1.4fr auto",
-          alignItems: "end",
-        }}
+        style={{ display: "grid", gap: "1rem", gridTemplateColumns: "1fr 1.4fr auto", alignItems: "end" }}
       >
         <div>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "0.4rem",
-              fontWeight: 600,
-              color: "#334155",
-            }}
-          >
+          <label style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600, color: "#334155" }}>
             Field Name
           </label>
           <input value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} />
         </div>
-
         <div>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "0.4rem",
-              fontWeight: 600,
-              color: "#334155",
-            }}
-          >
+          <label style={{ display: "block", marginBottom: "0.4rem", fontWeight: 600, color: "#334155" }}>
             Description
           </label>
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            style={fieldStyle}
-          />
+          <input value={description} onChange={(e) => setDescription(e.target.value)} style={fieldStyle} />
         </div>
-
         <button
           type="submit"
           disabled={isSaving}
@@ -278,12 +231,7 @@ export default function RoomManagementActions(props: Props) {
         >
           {isSaving ? "Adding..." : "Add Field"}
         </button>
-
-        {message && (
-          <div style={{ gridColumn: "1 / -1", color: "#991b1b", fontWeight: 600 }}>
-            {message}
-          </div>
-        )}
+        {message && <div style={{ gridColumn: "1 / -1", color: "#991b1b", fontWeight: 600 }}>{message}</div>}
       </form>
     );
   }
@@ -322,9 +270,7 @@ export default function RoomManagementActions(props: Props) {
         }}
       >
         <div>
-          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>
-            Field
-          </div>
+          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>Field</div>
           {!isEditing ? (
             <div style={{ fontWeight: 700, color: "#0f172a" }}>{displayName}</div>
           ) : (
@@ -333,38 +279,26 @@ export default function RoomManagementActions(props: Props) {
         </div>
 
         <div>
-          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>
-            Description
-          </div>
+          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>Description</div>
           {!isEditing ? (
             <div style={{ color: "#475569" }}>{displayDescription.trim() || "—"}</div>
           ) : (
-            <input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              style={compactFieldStyle}
-            />
+            <input value={description} onChange={(e) => setDescription(e.target.value)} style={compactFieldStyle} />
           )}
         </div>
 
         <div>
-          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>
-            Status
-          </div>
+          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>Status</div>
           {statusPill}
         </div>
 
         <div>
-          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>
-            Bookings
-          </div>
+          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>Bookings</div>
           <div style={{ color: "#334155", fontWeight: 600 }}>{props.bookingCount}</div>
         </div>
 
         <div>
-          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>
-            Actions
-          </div>
+          <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>Actions</div>
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             {!isEditing ? (
               <button
@@ -404,7 +338,6 @@ export default function RoomManagementActions(props: Props) {
                 >
                   {isSaving ? "Saving..." : "Save"}
                 </button>
-
                 <button
                   type="button"
                   onClick={handleCancelEdit}
