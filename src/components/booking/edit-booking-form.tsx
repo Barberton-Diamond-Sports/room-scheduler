@@ -22,7 +22,6 @@ type Booking = {
   notes: string | null;
   teamGroup?: string | null;
   opponent?: string | null;
-  umpire?: string | null;
 };
 
 type Props = {
@@ -134,7 +133,6 @@ export default function EditBookingForm({ rooms, booking, returnDate, returnView
   const [duration, setDuration] = useState(String(booking.durationBlocks));
   const [purpose, setPurpose] = useState(booking.title || "Practice");
   const [opponent, setOpponent] = useState(booking.opponent || "");
-  const [umpire, setUmpire] = useState(booking.umpire || "");
   const [notes, setNotes] = useState(booking.notes || "");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "info" | "">("");
@@ -177,7 +175,6 @@ export default function EditBookingForm({ rooms, booking, returnDate, returnView
           durationBlocks: Number(duration),
           title: purpose,
           opponent: showOpponent ? opponent : "",
-          umpire,
           notes,
         }),
       });
