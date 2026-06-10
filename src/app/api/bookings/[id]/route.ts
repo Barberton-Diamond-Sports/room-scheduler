@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -19,7 +18,19 @@ export async function PATCH(
     const { id } = await context.params;
     const body = await request.json();
 
-    const { name, email, teamGroup, roomId, date, startTime, durationBlocks, title, opponent, umpire, notes } = body;
+    const {
+      name,
+      email,
+      teamGroup,
+      roomId,
+      date,
+      startTime,
+      durationBlocks,
+      title,
+      opponent,
+      umpire,
+      notes,
+    } = body;
 
     if (!name || !teamGroup || !roomId || !date || !startTime || !durationBlocks) {
       return NextResponse.json(
@@ -65,27 +76,60 @@ export async function PATCH(
       );
     }
 
+    const updateData: {
+      roomId: string;
+      bookingDate: Date;
+      startTimeMinutes: number;
+      endTimeMinutes: number;
+      durationBlocks: number;
+      bookedByName: string;
+      bookedByEmail: string | null;
+      title: string | null;
+      notes: string | null;
+      teamGroup: string;
+      opponent: string | null;
+      umpire?: string | null;
+    } = {
+      roomId,
+      bookingDate,
+      startTimeMinutes,
+      endTimeMinutes,
+      durationBlocks: Number(durationBlocks),
+      bookedByName: name,
+      bookedByEmail: email || null,
+      title: title || null,
+      notes: notes || null,
+      teamGroup,
+      opponent: opponent || null,
+    };
+
+    // Only update umpire if the caller explicitly sent it.
+    // This preserves the existing umpire when editing from the normal booking edit screen.
+    if (typeof umpire === "string") {
+      updateData.umpire = umpire.trim() || null;
+    }
+
     const booking = await prisma.booking.update({
       where: { id },
-      data: {
-        roomId,
-        bookingDate,
-        startTimeMinutes,
-        endTimeMinutes,
-        durationBlocks: Number(durationBlocks),
-        bookedByName: name,
-        bookedByEmail: email || null,
-        title: title || null,
-        notes: notes || null,
-        teamGroup,
-        opponent: opponent || null,
-        umpire: umpire || null,
-      },
+      data: updateData,
       include: { room: true },
     });
 
-    if (prisma.auditLog) {
-      await prisma.auditLog.create({
+    const prismaWithAudit = prisma as typeof prisma & {
+      auditLog?: {
+        create: (args: {
+          data: {
+            entityType: string;
+            entityId: string;
+            action: string;
+            detailsJson: Record<string, unknown>;
+          };
+        }) => Promise<unknown>;
+      };
+    };
+
+    if (prismaWithAudit.auditLog) {
+      await prismaWithAudit.auditLog.create({
         data: {
           entityType: "Booking",
           entityId: booking.id,
@@ -126,7 +170,11 @@ export async function PATCH(
       });
     }
 
-    return NextResponse.json({ success: true, message: "Booking updated successfully.", booking });
+    return NextResponse.json({
+      success: true,
+      message: "Booking updated successfully.",
+      booking,
+    });
   } catch (error) {
     console.error("Error updating booking:", error);
     return NextResponse.json(
@@ -161,8 +209,21 @@ export async function DELETE(
       include: { room: true },
     });
 
-    if (prisma.auditLog) {
-      await prisma.auditLog.create({
+    const prismaWithAudit = prisma as typeof prisma & {
+      auditLog?: {
+        create: (args: {
+          data: {
+            entityType: string;
+            entityId: string;
+            action: string;
+            detailsJson: Record<string, unknown>;
+          };
+        }) => Promise<unknown>;
+      };
+    };
+
+    if (prismaWithAudit.auditLog) {
+      await prismaWithAudit.auditLog.create({
         data: {
           entityType: "Booking",
           entityId: booking.id,
@@ -189,7 +250,10 @@ export async function DELETE(
       });
     }
 
-    return NextResponse.json({ success: true, message: "Booking deleted successfully." });
+    return NextResponse.json({
+      success: true,
+      message: "Booking deleted successfully.",
+    });
   } catch (error) {
     console.error("Error deleting booking:", error);
     return NextResponse.json(
