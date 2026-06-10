@@ -61,7 +61,7 @@ export default function HomePage() {
               maxWidth: "820px",
             }}
           >
-            Manage field bookings and games.
+            Barberton Diamond Sports Field Reservations.
           </h1>
 
           <p
@@ -74,7 +74,7 @@ export default function HomePage() {
               maxWidth: "760px",
             }}
           >
-            Book a field, review the calendar in day or week view, and keep game assignments organized.
+            Book a field, check field availability, and view the calendar for future reservations.
           </p>
 
           <div style={{ display: "flex", gap: "0.9rem", flexWrap: "wrap", marginBottom: "1.75rem" }}>
@@ -123,15 +123,14 @@ export default function HomePage() {
                 border: "1px solid #ddd6fe",
               }}
             >
-              Admin Tools
+              Administration
             </Link>
           </div>
 
           <div style={{ display: "grid", gap: "0.85rem" }}>
             {[
               "Day and week calendar views with clickable bookings",
-              "Game and scrimmage details with opponent and group tracking",
-              "Admin for umpire scheduling and recent booking changes",
+              "Game and scrimmage details",
             ].map((item) => (
               <div key={item} style={{ display: "flex", gap: "0.7rem", alignItems: "flex-start", color: "#334155" }}>
                 <div
@@ -161,17 +160,17 @@ export default function HomePage() {
         >
           {[
             {
-              title: "Public booking",
-              text: "Coaches and volunteers can submit field requests with group and opponent details.",
+              title: "Field reservations",
+              text: "Coaches and volunteers can submit field requests.",
               href: "/book",
-              linkLabel: "Open booking form",
+              linkLabel: "Open reservation form",
               accent: "#dbeafe",
               border: "#bfdbfe",
               color: "#1d4ed8",
             },
             {
-              title: "Calendar views",
-              text: "Switch between detailed day scheduling and a compact weekly planning view to spot conflicts quickly.",
+              title: "Calendar",
+              text: "View upcoming events and field reservations by week or day.",
               href: `/bookings?date=${todayValue}&view=day`,
               linkLabel: "Open calendar",
               accent: "#fef3c7",
@@ -179,10 +178,10 @@ export default function HomePage() {
               color: "#b45309",
             },
             {
-              title: "Admin oversight",
-              text: "Review changes, manage game assignments, and update umpire coverage from a central dashboard.",
+              title: "Administration",
+              text: "Dashboard for reviewing changes, managing field and umpire reservations.",
               href: "/admin",
-              linkLabel: "Open admin page",
+              linkLabel: "Open admin dashboard",
               accent: "#ede9fe",
               border: "#ddd6fe",
               color: "#6d28d9",
