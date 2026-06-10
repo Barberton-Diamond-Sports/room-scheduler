@@ -83,7 +83,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
       ? ["DELETE"]
       : ["UPDATE", "DELETE"];
 
-  const [rooms, todaysBookings, recentAuditLogs, umpireCount] = await Promise.all([
+  const [rooms, todaysBookings, recentAuditLogs] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
@@ -109,7 +109,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
-    prisma.umpire.count({ where: { isActive: true } }),
   ]);
 
   const totalFields = rooms.length;
@@ -147,7 +146,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <Link href="/book" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#ecfeff", border: "1px solid #a5f3fc", borderRadius: "10px", color: "#155e75", textDecoration: "none", fontWeight: 600 }}>Book a Field</Link>
             <Link href={`/bookings?date=${todayValue}`} style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#dbeafe", border: "1px solid #93c5fd", borderRadius: "10px", color: "#1d4ed8", textDecoration: "none", fontWeight: 600 }}>Today's Calendar</Link>
             <Link href="/admin/umpire-schedule" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#ede9fe", border: "1px solid #c4b5fd", borderRadius: "10px", color: "#6d28d9", textDecoration: "none", fontWeight: 600 }}>Umpire Schedule</Link>
-            <Link href="/admin/umpires" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#fef3c7", border: "1px solid #facc15", borderRadius: "10px", color: "#92400e", textDecoration: "none", fontWeight: 600 }}>Manage Umpires</Link>
             <Link href="/admin/rooms" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#ecfccb", border: "1px solid #bef264", borderRadius: "10px", color: "#3f6212", textDecoration: "none", fontWeight: 600 }}>Manage Fields</Link>
             <Link href="/admin/blackouts" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#fee2e2", border: "1px solid #fca5a5", borderRadius: "10px", color: "#991b1b", textDecoration: "none", fontWeight: 600 }}>Field Blackouts</Link>
           </div>
@@ -157,7 +155,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
           <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.25rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.05)" }}><div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>Today's Date</div><div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a" }}>{formatPageDate(today)}</div></div>
           <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.25rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.05)" }}><div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>Active Fields</div><div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>{totalFields}</div></div>
           <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.25rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.05)" }}><div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>Today's Bookings</div><div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>{bookingCount}</div></div>
-          <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.25rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.05)" }}><div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>Active Umpires</div><div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>{umpireCount}</div></div>
         </div>
 
         <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)", marginBottom: "1.5rem" }}>

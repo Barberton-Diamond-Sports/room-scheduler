@@ -2,6 +2,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+function inferSport(teamGroup: string | null) {
+  return teamGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -9,70 +13,80 @@ export async function PATCH(
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const umpire = typeof body.umpire === "string" ? body.umpire.trim() : "";
 
-    const existingBooking = await prisma.booking.findUnique({
+    const booking = await prisma.booking.findUnique({
       where: { id },
-      include: { room: true },
     });
 
-    if (!existingBooking) {
+    if (!booking) {
       return NextResponse.json(
         { success: false, message: "Booking not found." },
         { status: 404 }
       );
     }
 
-    const booking = await prisma.booking.update({
-      where: { id },
-      data: { umpire: umpire || null },
-      include: { room: true },
-    });
-
-    const prismaWithAudit = prisma as typeof prisma & {
-      auditLog?: {
-        create: (args: {
-          data: {
-            entityType: string;
-            entityId: string;
-            action: string;
-            detailsJson: Record<string, unknown>;
-          };
-        }) => Promise<unknown>;
-      };
-    };
-
-    if (prismaWithAudit.auditLog) {
-      await prismaWithAudit.auditLog.create({
+    if (body.umpireId === null) {
+      const updated = await prisma.booking.update({
+        where: { id },
         data: {
-          entityType: "Booking",
-          entityId: booking.id,
-          action: "UPDATE",
-          detailsJson: {
-            before: {
-              umpire: existingBooking.umpire ?? null,
-              title: existingBooking.title,
-              bookingDate: existingBooking.bookingDate.toISOString(),
-              startTimeMinutes: existingBooking.startTimeMinutes,
-              roomName: existingBooking.room?.name ?? null,
-            },
-            after: {
-              umpire: booking.umpire ?? null,
-              title: booking.title,
-              bookingDate: booking.bookingDate.toISOString(),
-              startTimeMinutes: booking.startTimeMinutes,
-              roomName: booking.room?.name ?? null,
-            },
-          },
+          umpireId: null,
+          umpire: null,
         },
       });
+
+      return NextResponse.json({ success: true, booking: updated });
     }
 
-    return NextResponse.json({ success: true, booking });
+    const umpireId = typeof body.umpireId === "string" ? body.umpireId.trim() : "";
+    if (!umpireId) {
+      return NextResponse.json(
+        { success: false, message: "Choose an umpire." },
+        { status: 400 }
+      );
+    }
+
+    const umpire = await prisma.umpire.findUnique({
+      where: { id: umpireId },
+    });
+
+    if (!umpire || !umpire.isActive) {
+      return NextResponse.json(
+        { success: false, message: "That umpire is not available." },
+        { status: 404 }
+      );
+    }
+
+    const sport = inferSport(booking.teamGroup);
+    if (sport === "softball" && !umpire.doesSoftball) {
+      return NextResponse.json(
+        { success: false, message: "That umpire is not marked for softball." },
+        { status: 409 }
+      );
+    }
+
+    if (sport === "baseball" && !umpire.doesBaseball) {
+      return NextResponse.json(
+        { success: false, message: "That umpire is not marked for baseball." },
+        { status: 409 }
+      );
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        umpireId: umpire.id,
+        umpire: umpire.name,
+      },
+      include: {
+        umpireRecord: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, booking: updated });
   } catch (error) {
-    console.error("Error updating umpire:", error);
+    console.error("Error updating umpire assignment:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to update umpire." },
+      { success: false, message: "Failed to update umpire assignment." },
       { status: 500 }
     );
   }

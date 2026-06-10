@@ -13,6 +13,7 @@ function toDateInputValue(date: Date) {
 
 function formatDate(date: Date) {
   return date.toLocaleDateString("en-US", {
+    weekday: "short",
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -28,103 +29,41 @@ function formatTimeLabel(totalMinutes: number) {
   return `${hours12}:${pad(minutes)} ${suffix}`;
 }
 
-function roomLabel(room: { name: string; description?: string | null }) {
-  return room.description?.trim()
-    ? `${room.name} (${room.description})`
-    : room.name;
+function inferSport(teamGroup: string | null) {
+  return teamGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
 }
 
-function asText(value: string | null | undefined) {
-  return value && value.trim() ? value : "—";
-}
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-type PageProps = {
-  searchParams: Promise<{
-    assignment?: string;
-    range?: string;
-    group?: string;
-  }>;
-};
-
-export default async function UmpireSchedulePage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const assignment = params.assignment || "all";
-  const range = params.range || "recent";
-  const group = params.group || "all";
-
+export default async function UmpireSchedulePage() {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const defaultFromDate = new Date(today);
-  defaultFromDate.setDate(defaultFromDate.getDate() - 3);
+  const startingDate = new Date(today);
+  startingDate.setDate(today.getDate() - 3);
+  startingDate.setHours(0, 0, 0, 0);
 
-  const whereClause: {
-    status: "ACTIVE";
-    title: "Game";
-    bookingDate?: { gte?: Date };
-    teamGroup?: string;
-    umpire?: string | null;
-  } = {
-    status: "ACTIVE",
-    title: "Game",
-  };
-
-  if (range === "future") {
-    whereClause.bookingDate = { gte: today };
-  } else if (range === "recent") {
-    whereClause.bookingDate = { gte: defaultFromDate };
-  }
-
-  if (group !== "all") {
-    whereClause.teamGroup = group;
-  }
-
-  if (assignment === "missing") {
-    whereClause.umpire = null;
-  }
-
-  const [gameBookings, gameGroups] = await Promise.all([
-    prisma.booking.findMany({
-      where: whereClause,
-      include: { room: true },
-      orderBy: [{ bookingDate: "asc" }, { startTimeMinutes: "asc" }, { roomId: "asc" }],
-    }),
+  const [bookings, umpires] = await Promise.all([
     prisma.booking.findMany({
       where: {
         status: "ACTIVE",
-        title: "Game",
-        teamGroup: { not: null },
+        bookingDate: { gte: startingDate },
+        title: { in: ["Game", "Tournament", "Scrimmage"] },
       },
-      select: { teamGroup: true },
-      distinct: ["teamGroup"],
-      orderBy: { teamGroup: "asc" },
+      include: {
+        room: true,
+        umpireRecord: true,
+      },
+      orderBy: [
+        { bookingDate: "asc" },
+        { startTimeMinutes: "asc" },
+        { roomId: "asc" },
+      ],
+    }),
+    prisma.umpire.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
     }),
   ]);
-
-  const groupOptions = gameGroups
-    .map((item) => item.teamGroup)
-    .filter((value): value is string => Boolean(value));
-
-  function filterHref(nextAssignment: string, nextRange: string, nextGroup: string) {
-    const params = new URLSearchParams();
-    params.set("assignment", nextAssignment);
-    params.set("range", nextRange);
-    params.set("group", nextGroup);
-    return `/admin/umpire-schedule?${params.toString()}`;
-  }
-
-  function pillStyle(active: boolean) {
-    return {
-      display: "inline-block",
-      padding: "0.55rem 0.85rem",
-      borderRadius: "999px",
-      textDecoration: "none",
-      fontWeight: 600,
-      fontSize: "0.92rem",
-      border: active ? "1px solid #93c5fd" : "1px solid #dbe3f0",
-      backgroundColor: active ? "#dbeafe" : "#f8fafc",
-      color: active ? "#1d4ed8" : "#475569",
-    } as const;
-  }
 
   return (
     <main
@@ -135,7 +74,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div style={{ maxWidth: "1450px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
         <div
           style={{
             backgroundColor: "#ffffff",
@@ -148,43 +87,55 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
         >
           <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Umpire Schedule</h1>
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem" }}>
-            Active game bookings for umpire assignment. Rows missing an umpire are highlighted. Click any row to open the edit screen, or use Set Umpire / Clear Umpire.
+            Assign active umpires to upcoming games, tournaments, and scrimmages. By default, this page shows events from the last 3 days through the future.
           </p>
 
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
-            <Link href="/admin" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: "10px", color: "#1e3a8a", textDecoration: "none", fontWeight: 600 }}>Back to Admin</Link>
-            <Link href={`/bookings?date=${toDateInputValue(new Date())}&view=week`} style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#dbeafe", border: "1px solid #93c5fd", borderRadius: "10px", color: "#1d4ed8", textDecoration: "none", fontWeight: 600 }}>Open Weekly Calendar</Link>
-          </div>
-
-          <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-            <div>
-              <div style={{ fontSize: "0.9rem", color: "#64748b", marginBottom: "0.45rem" }}>Assignment</div>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <Link href={filterHref("all", range, group)} style={pillStyle(assignment === "all")}>All games</Link>
-                <Link href={filterHref("missing", range, group)} style={pillStyle(assignment === "missing")}>Missing umpire</Link>
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: "0.9rem", color: "#64748b", marginBottom: "0.45rem" }}>Date range</div>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <Link href={filterHref(assignment, "recent", group)} style={pillStyle(range === "recent")}>Last 3 days + future</Link>
-                <Link href={filterHref(assignment, "future", group)} style={pillStyle(range === "future")}>Future only</Link>
-                <Link href={filterHref(assignment, "all", group)} style={pillStyle(range === "all")}>All dates</Link>
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: "0.9rem", color: "#64748b", marginBottom: "0.45rem" }}>Group</div>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <Link href={filterHref(assignment, range, "all")} style={pillStyle(group === "all")}>All groups</Link>
-                {groupOptions.map((option) => (
-                  <Link key={option} href={filterHref(assignment, range, option)} style={pillStyle(group === option)}>
-                    {option}
-                  </Link>
-                ))}
-              </div>
-            </div>
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            <Link
+              href="/admin"
+              style={{
+                display: "inline-block",
+                padding: "0.65rem 1rem",
+                backgroundColor: "#eef2ff",
+                border: "1px solid #c7d2fe",
+                borderRadius: "10px",
+                color: "#1e3a8a",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              Back to Admin
+            </Link>
+            <Link
+              href={`/bookings?date=${toDateInputValue(new Date())}&view=week`}
+              style={{
+                display: "inline-block",
+                padding: "0.65rem 1rem",
+                backgroundColor: "#dbeafe",
+                border: "1px solid #93c5fd",
+                borderRadius: "10px",
+                color: "#1d4ed8",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              Open Weekly Calendar
+            </Link>
+            <Link
+              href="/admin/umpires"
+              style={{
+                display: "inline-block",
+                padding: "0.65rem 1rem",
+                backgroundColor: "#fef3c7",
+                border: "1px solid #facc15",
+                borderRadius: "10px",
+                color: "#92400e",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              Manage Umpires
+            </Link>
           </div>
         </div>
 
@@ -195,63 +146,80 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
             borderRadius: "16px",
             padding: "1rem",
             boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
-            overflowX: "auto",
           }}
         >
-          {gameBookings.length === 0 ? (
-            <div style={{ padding: "1rem", border: "1px dashed #cbd5e1", borderRadius: "12px", color: "#64748b" }}>
-              No game bookings match the current filters.
+          {bookings.length === 0 ? (
+            <div
+              style={{
+                padding: "1rem",
+                border: "1px dashed #cbd5e1",
+                borderRadius: "12px",
+                color: "#64748b",
+              }}
+            >
+              No game-type bookings were found in the current date window.
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1280px" }}>
-              <thead>
-                <tr style={{ backgroundColor: "#f8fafc" }}>
-                  <th style={{ textAlign: "left", padding: "0.85rem 0.75rem", borderBottom: "1px solid #dbe3f0", color: "#334155" }}>Date</th>
-                  <th style={{ textAlign: "left", padding: "0.85rem 0.75rem", borderBottom: "1px solid #dbe3f0", color: "#334155" }}>Start Time</th>
-                  <th style={{ textAlign: "left", padding: "0.85rem 0.75rem", borderBottom: "1px solid #dbe3f0", color: "#334155" }}>Field</th>
-                  <th style={{ textAlign: "left", padding: "0.85rem 0.75rem", borderBottom: "1px solid #dbe3f0", color: "#334155" }}>Group</th>
-                  <th style={{ textAlign: "left", padding: "0.85rem 0.75rem", borderBottom: "1px solid #dbe3f0", color: "#334155" }}>Your Name</th>
-                  <th style={{ textAlign: "left", padding: "0.85rem 0.75rem", borderBottom: "1px solid #dbe3f0", color: "#334155" }}>Opponent</th>
-                  <th style={{ textAlign: "left", padding: "0.85rem 0.75rem", borderBottom: "1px solid #dbe3f0", color: "#334155" }}>Umpire</th>
-                  <th style={{ textAlign: "left", padding: "0.85rem 0.75rem", borderBottom: "1px solid #dbe3f0", color: "#334155" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {gameBookings.map((booking, index) => {
-                  const editHref = `/bookings/${booking.id}/edit?date=${toDateInputValue(booking.bookingDate)}&view=week`;
-                  const isMissingUmpire = !booking.umpire || !booking.umpire.trim();
-                  const rowBackground = isMissingUmpire ? "#fff1f2" : index % 2 === 0 ? "#ffffff" : "#fbfdff";
-                  return (
-                    <tr key={booking.id} style={{ backgroundColor: rowBackground }}>
-                      <td style={{ padding: "0.85rem 0.75rem", borderBottom: "1px solid #eef2f7" }}>
-                        <Link href={editHref} style={{ color: "inherit", textDecoration: "none", display: "block" }}>{formatDate(booking.bookingDate)}</Link>
-                      </td>
-                      <td style={{ padding: "0.85rem 0.75rem", borderBottom: "1px solid #eef2f7" }}>
-                        <Link href={editHref} style={{ color: "inherit", textDecoration: "none", display: "block" }}>{formatTimeLabel(booking.startTimeMinutes)}</Link>
-                      </td>
-                      <td style={{ padding: "0.85rem 0.75rem", borderBottom: "1px solid #eef2f7" }}>
-                        <Link href={editHref} style={{ color: "inherit", textDecoration: "none", display: "block" }}>{roomLabel(booking.room)}</Link>
-                      </td>
-                      <td style={{ padding: "0.85rem 0.75rem", borderBottom: "1px solid #eef2f7" }}>
-                        <Link href={editHref} style={{ color: "inherit", textDecoration: "none", display: "block" }}>{asText(booking.teamGroup)}</Link>
-                      </td>
-                      <td style={{ padding: "0.85rem 0.75rem", borderBottom: "1px solid #eef2f7" }}>
-                        <Link href={editHref} style={{ color: "inherit", textDecoration: "none", display: "block" }}>{booking.bookedByName}</Link>
-                      </td>
-                      <td style={{ padding: "0.85rem 0.75rem", borderBottom: "1px solid #eef2f7" }}>
-                        <Link href={editHref} style={{ color: "inherit", textDecoration: "none", display: "block" }}>{asText(booking.opponent)}</Link>
-                      </td>
-                      <td style={{ padding: "0.85rem 0.75rem", borderBottom: "1px solid #eef2f7", fontWeight: isMissingUmpire ? 700 : 400, color: isMissingUmpire ? "#991b1b" : "#0f172a" }}>
-                        <Link href={editHref} style={{ color: "inherit", textDecoration: "none", display: "block" }}>{asText(booking.umpire)}</Link>
-                      </td>
-                      <td style={{ padding: "0.85rem 0.75rem", borderBottom: "1px solid #eef2f7" }}>
-                        <UmpireAssignmentActions bookingId={booking.id} currentUmpire={booking.umpire} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div style={{ display: "grid", gap: "0.85rem" }}>
+              {bookings.map((booking) => {
+                const sport = inferSport(booking.teamGroup);
+                return (
+                  <div
+                    key={booking.id}
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "14px",
+                      padding: "1rem",
+                      backgroundColor: "#ffffff",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "1rem",
+                        gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(320px, 420px)",
+                        alignItems: "start",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 800, color: "#0f172a" }}>
+                          {booking.title || "Game"}
+                        </div>
+                        <div style={{ color: "#334155", marginTop: "0.2rem" }}>
+                          {booking.teamGroup || "—"}
+                        </div>
+                        <div style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem" }}>
+                          {formatDate(booking.bookingDate)} · {formatTimeLabel(booking.startTimeMinutes)} - {formatTimeLabel(booking.endTimeMinutes)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ color: "#334155", fontWeight: 700 }}>{booking.room.name}</div>
+                        <div style={{ color: "#64748b", marginTop: "0.2rem" }}>
+                          Opponent: {booking.opponent?.trim() || "—"}
+                        </div>
+                        <div style={{ color: "#64748b", marginTop: "0.2rem" }}>
+                          Sport: {sport === "softball" ? "Softball" : "Baseball"}
+                        </div>
+                      </div>
+
+                      <UmpireAssignmentActions
+                        bookingId={booking.id}
+                        currentUmpireId={booking.umpireId}
+                        currentUmpireName={booking.umpireRecord?.name || booking.umpire || null}
+                        sport={sport}
+                        umpires={umpires.map((umpire) => ({
+                          id: umpire.id,
+                          name: umpire.name,
+                          doesBaseball: umpire.doesBaseball,
+                          doesSoftball: umpire.doesSoftball,
+                        }))}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

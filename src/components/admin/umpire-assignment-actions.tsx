@@ -1,79 +1,101 @@
 
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+
+type UmpireOption = {
+  id: string;
+  name: string;
+  doesBaseball: boolean;
+  doesSoftball: boolean;
+};
 
 type Props = {
   bookingId: string;
-  currentUmpire?: string | null;
+  currentUmpireId: string | null;
+  currentUmpireName: string | null;
+  sport: "baseball" | "softball";
+  umpires: UmpireOption[];
 };
 
-export default function UmpireAssignmentActions({ bookingId, currentUmpire }: Props) {
+const selectStyle = {
+  width: "100%",
+  padding: "0.7rem 0.85rem",
+  border: "1px solid #cbd5e1",
+  borderRadius: "10px",
+  backgroundColor: "#f8fafc",
+  fontSize: "0.95rem",
+  boxSizing: "border-box" as const,
+};
+
+export default function UmpireAssignmentActions({
+  bookingId,
+  currentUmpireId,
+  currentUmpireName,
+  sport,
+  umpires,
+}: Props) {
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
+  const [selectedUmpireId, setSelectedUmpireId] = useState(currentUmpireId || "");
   const [message, setMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  async function handleSetUmpire() {
-    const initialValue = currentUmpire || "";
-    const nextValue = window.prompt("Enter umpire name:", initialValue);
+  const filteredUmpires = useMemo(() => {
+    return umpires.filter((umpire) =>
+      sport === "softball" ? umpire.doesSoftball : umpire.doesBaseball
+    );
+  }, [sport, umpires]);
 
-    if (nextValue === null) return;
-
-    const trimmed = nextValue.trim();
-    if (!trimmed) {
-      setMessage("Enter an umpire name, or use Clear Umpire.");
+  async function handleAssign() {
+    if (!selectedUmpireId) {
+      setMessage("Choose an umpire before assigning.");
       return;
     }
 
     setIsSaving(true);
     setMessage("");
-
     try {
       const response = await fetch(`/api/bookings/${bookingId}/umpire`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ umpire: trimmed }),
+        body: JSON.stringify({ umpireId: selectedUmpireId }),
       });
-
       const result = await response.json();
-
       if (result.success) {
         router.refresh();
       } else {
-        setMessage(result.message || "Unable to save umpire.");
+        setMessage(result.message || "Unable to assign umpire.");
       }
     } catch (error) {
-      console.error("Set umpire error:", error);
-      setMessage("Something went wrong while saving the umpire.");
+      console.error(error);
+      setMessage("Something went wrong while assigning the umpire.");
     } finally {
       setIsSaving(false);
     }
   }
 
-  async function handleClearUmpire() {
-    const confirmed = window.confirm("Are you sure you want to clear the umpire for this game?");
+  async function handleClear() {
+    const confirmed = window.confirm("Clear the umpire assignment for this game?");
     if (!confirmed) return;
 
     setIsSaving(true);
     setMessage("");
-
     try {
       const response = await fetch(`/api/bookings/${bookingId}/umpire`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ umpire: "" }),
+        body: JSON.stringify({ umpireId: null }),
       });
-
       const result = await response.json();
-
       if (result.success) {
+        setSelectedUmpireId("");
         router.refresh();
       } else {
         setMessage(result.message || "Unable to clear umpire.");
       }
     } catch (error) {
-      console.error("Clear umpire error:", error);
+      console.error(error);
       setMessage("Something went wrong while clearing the umpire.");
     } finally {
       setIsSaving(false);
@@ -81,45 +103,65 @@ export default function UmpireAssignmentActions({ bookingId, currentUmpire }: Pr
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-start" }}>
+    <div style={{ display: "grid", gap: "0.6rem" }}>
+      <div style={{ fontSize: "0.82rem", color: "#64748b" }}>Umpire Assignment</div>
+      <div style={{ color: "#334155", fontWeight: 700 }}>
+        Current: {currentUmpireName?.trim() || "Unassigned"}
+      </div>
+      <select
+        value={selectedUmpireId}
+        onChange={(e) => setSelectedUmpireId(e.target.value)}
+        style={selectStyle}
+        disabled={isSaving}
+      >
+        <option value="">Select active umpire…</option>
+        {filteredUmpires.map((umpire) => (
+          <option key={umpire.id} value={umpire.id}>
+            {umpire.name}
+          </option>
+        ))}
+      </select>
       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
         <button
           type="button"
-          onClick={handleSetUmpire}
+          onClick={handleAssign}
           disabled={isSaving}
           style={{
-            padding: "0.45rem 0.7rem",
+            padding: "0.55rem 0.8rem",
             backgroundColor: "#dbeafe",
             border: "1px solid #93c5fd",
             borderRadius: "8px",
             color: "#1d4ed8",
-            fontWeight: 600,
+            fontWeight: 700,
             cursor: isSaving ? "default" : "pointer",
           }}
         >
-          Set Umpire
+          {isSaving ? "Saving..." : "Set Umpire"}
         </button>
-
         <button
           type="button"
-          onClick={handleClearUmpire}
-          disabled={isSaving || !currentUmpire?.trim()}
+          onClick={handleClear}
+          disabled={isSaving || !currentUmpireName}
           style={{
-            padding: "0.45rem 0.7rem",
-            backgroundColor: !currentUmpire?.trim() ? "#f8fafc" : "#fee2e2",
-            border: !currentUmpire?.trim() ? "1px solid #dbe3f0" : "1px solid #fca5a5",
+            padding: "0.55rem 0.8rem",
+            backgroundColor: "#fee2e2",
+            border: "1px solid #fca5a5",
             borderRadius: "8px",
-            color: !currentUmpire?.trim() ? "#94a3b8" : "#991b1b",
-            fontWeight: 600,
-            cursor: isSaving || !currentUmpire?.trim() ? "default" : "pointer",
+            color: "#991b1b",
+            fontWeight: 700,
+            cursor: isSaving || !currentUmpireName ? "default" : "pointer",
           }}
         >
           Clear Umpire
         </button>
       </div>
-
+      {filteredUmpires.length === 0 && (
+        <div style={{ color: "#92400e", fontWeight: 600, fontSize: "0.85rem" }}>
+          No active {sport === "softball" ? "softball" : "baseball"} umpires are available in the master list.
+        </div>
+      )}
       {message && (
-        <div style={{ color: "#991b1b", fontSize: "0.85rem", fontWeight: 600 }}>
+        <div style={{ color: "#991b1b", fontWeight: 600, fontSize: "0.85rem" }}>
           {message}
         </div>
       )}
