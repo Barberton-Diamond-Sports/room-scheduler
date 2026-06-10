@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 
 type UmpireItem = {
   id: string;
@@ -60,17 +60,12 @@ export default function UmpireManagementPanel({ items }: Props) {
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const [sportFilter, setSportFilter] = useState<"all" | "baseball" | "softball">("all");
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      if (statusFilter === "active" && !item.isActive) return false;
-      if (statusFilter === "inactive" && item.isActive) return false;
-      if (sportFilter === "baseball" && !item.doesBaseball) return false;
-      if (sportFilter === "softball" && !item.doesSoftball) return false;
-      return true;
-    });
-  }, [items, statusFilter, sportFilter]);
+    if (statusFilter === "active") return items.filter((item) => item.isActive);
+    if (statusFilter === "inactive") return items.filter((item) => !item.isActive);
+    return items;
+  }, [items, statusFilter]);
 
   function setCreateValue<K extends keyof FormState>(key: K, value: FormState[K]) {
     setCreateForm((current) => ({ ...current, [key]: value }));
@@ -237,47 +232,25 @@ export default function UmpireManagementPanel({ items }: Props) {
 
       <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
         <h2 style={{ margin: 0 }}>Umpire List</h2>
-        <div style={{ display: "grid", gap: "0.6rem" }}>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            {(["all", "active", "inactive"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setStatusFilter(option)}
-                style={{
-                  padding: "0.55rem 0.85rem",
-                  borderRadius: "999px",
-                  border: statusFilter === option ? "1px solid #93c5fd" : "1px solid #dbe3f0",
-                  backgroundColor: statusFilter === option ? "#dbeafe" : "#f8fafc",
-                  color: statusFilter === option ? "#1d4ed8" : "#475569",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                {option === "all" ? "All Statuses" : option === "active" ? "Active" : "Inactive"}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            {(["all", "baseball", "softball"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setSportFilter(option)}
-                style={{
-                  padding: "0.55rem 0.85rem",
-                  borderRadius: "999px",
-                  border: sportFilter === option ? "1px solid #93c5fd" : "1px solid #dbe3f0",
-                  backgroundColor: sportFilter === option ? "#dbeafe" : "#f8fafc",
-                  color: sportFilter === option ? "#1d4ed8" : "#475569",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                {option === "all" ? "All Sports" : option === "baseball" ? "Baseball" : "Softball"}
-              </button>
-            ))}
-          </div>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          {(["all", "active", "inactive"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setStatusFilter(option)}
+              style={{
+                padding: "0.55rem 0.85rem",
+                borderRadius: "999px",
+                border: statusFilter === option ? "1px solid #93c5fd" : "1px solid #dbe3f0",
+                backgroundColor: statusFilter === option ? "#dbeafe" : "#f8fafc",
+                color: statusFilter === option ? "#1d4ed8" : "#475569",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {option === "all" ? "All" : option === "active" ? "Active" : "Inactive"}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -285,7 +258,7 @@ export default function UmpireManagementPanel({ items }: Props) {
 
       {filteredItems.length === 0 ? (
         <div style={{ padding: "1rem", border: "1px dashed #cbd5e1", borderRadius: "12px", color: "#64748b", backgroundColor: "#ffffff" }}>
-          No umpires match the current filters.
+          No umpires match the current filter.
         </div>
       ) : (
         <div style={{ display: "grid", gap: "0.9rem" }}>
@@ -347,7 +320,6 @@ export default function UmpireManagementPanel({ items }: Props) {
                     <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>Status / Assignments</div>
                     <div style={{ display: "inline-block", padding: "0.35rem 0.65rem", borderRadius: "999px", backgroundColor: item.isActive ? "#dcfce7" : "#fee2e2", color: item.isActive ? "#166534" : "#991b1b", fontWeight: 700, fontSize: "0.82rem" }}>{item.isActive ? "Active" : "Inactive"}</div>
                     <div style={{ marginTop: "0.45rem", color: "#475569" }}>Bookings linked: {item.bookingCount}</div>
-                    <div style={{ marginTop: "0.2rem", color: "#94a3b8", fontSize: "0.8rem" }}>today and future only</div>
                   </div>
 
                   <div style={{ display: "grid", gap: "0.5rem", minWidth: "180px" }}>

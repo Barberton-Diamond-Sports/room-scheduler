@@ -44,15 +44,14 @@ model Booking {
   notes            String?
   teamGroup        String?
   opponent         String?
-  umpire           String?
   status           BookingStatus @default(ACTIVE)
   overrideConflict Boolean       @default(false)
   createdByUserId  String?
   updatedByUserId  String?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
-  umpireId       String?
-  umpireRecord   Umpire?   @relation(fields: [umpireId], references: [id], onDelete: SetNull)
+  umpireId         String?
+  umpireRecord     Umpire?       @relation(fields: [umpireId], references: [id], onDelete: SetNull)
   createdBy        AdminUser?    @relation("CreatedBookings", fields: [createdByUserId], references: [id])
   room             Room          @relation(fields: [roomId], references: [id])
   updatedBy        AdminUser?    @relation("UpdatedBookings", fields: [updatedByUserId], references: [id])

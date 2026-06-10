@@ -33,60 +33,36 @@ export async function PATCH(
     });
 
     if (!booking) {
-      return NextResponse.json(
-        { success: false, message: "Booking not found." },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "Booking not found." }, { status: 404 });
     }
 
-    // Allow clear umpire
     if (body.umpireId === null) {
       const updated = await prisma.booking.update({
         where: { id },
-        data: {
-          umpireId: null,
-          umpire: null,
-        },
+        data: { umpireId: null },
+        include: { umpireRecord: true },
       });
-
       return NextResponse.json({ success: true, booking: updated });
     }
 
     const umpireId = typeof body.umpireId === "string" ? body.umpireId.trim() : "";
     if (!umpireId) {
-      return NextResponse.json(
-        { success: false, message: "Choose an umpire." },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "Choose an umpire." }, { status: 400 });
     }
 
-    const umpire = await prisma.umpire.findUnique({
-      where: { id: umpireId },
-    });
-
+    const umpire = await prisma.umpire.findUnique({ where: { id: umpireId } });
     if (!umpire || !umpire.isActive) {
-      return NextResponse.json(
-        { success: false, message: "That umpire is not available." },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "That umpire is not available." }, { status: 404 });
     }
 
     const sport = inferSport(booking.teamGroup);
     if (sport === "softball" && !umpire.doesSoftball) {
-      return NextResponse.json(
-        { success: false, message: "That umpire is not marked for softball." },
-        { status: 409 }
-      );
+      return NextResponse.json({ success: false, message: "That umpire is not marked for softball." }, { status: 409 });
     }
-
     if (sport === "baseball" && !umpire.doesBaseball) {
-      return NextResponse.json(
-        { success: false, message: "That umpire is not marked for baseball." },
-        { status: 409 }
-      );
+      return NextResponse.json({ success: false, message: "That umpire is not marked for baseball." }, { status: 409 });
     }
 
-    // Step 4: prevent assigning an umpire to overlapping active bookings.
     const bookingDate = new Date(booking.bookingDate);
     bookingDate.setHours(0, 0, 0, 0);
     const nextDay = new Date(bookingDate);
@@ -97,52 +73,28 @@ export async function PATCH(
         id: { not: booking.id },
         status: "ACTIVE",
         umpireId,
-        bookingDate: {
-          gte: bookingDate,
-          lt: nextDay,
-        },
+        bookingDate: { gte: bookingDate, lt: nextDay },
         startTimeMinutes: { lt: booking.endTimeMinutes },
         endTimeMinutes: { gt: booking.startTimeMinutes },
       },
-      include: {
-        room: true,
-      },
-      orderBy: [
-        { bookingDate: "asc" },
-        { startTimeMinutes: "asc" },
-      ],
+      include: { room: true },
+      orderBy: [{ bookingDate: "asc" }, { startTimeMinutes: "asc" }],
     });
 
     if (conflictingAssignment) {
-      const conflictMessage = `${umpire.name} is already assigned to ${conflictingAssignment.title || "another game"} on ${bookingDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })} from ${formatTimeLabel(conflictingAssignment.startTimeMinutes)} to ${formatTimeLabel(conflictingAssignment.endTimeMinutes)} at ${conflictingAssignment.room?.name || "another field"}.`;
-
-      return NextResponse.json(
-        { success: false, message: conflictMessage },
-        { status: 409 }
-      );
+      const conflictMessage = `${umpire.name} is already assigned to ${conflictingAssignment.title || "another game"} on ${bookingDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} from ${formatTimeLabel(conflictingAssignment.startTimeMinutes)} to ${formatTimeLabel(conflictingAssignment.endTimeMinutes)} at ${conflictingAssignment.room?.name || "another field"}.`;
+      return NextResponse.json({ success: false, message: conflictMessage }, { status: 409 });
     }
 
     const updated = await prisma.booking.update({
       where: { id },
-      data: {
-        umpireId: umpire.id,
-        umpire: umpire.name,
-      },
-      include: {
-        umpireRecord: true,
-      },
+      data: { umpireId: umpire.id },
+      include: { umpireRecord: true },
     });
 
     return NextResponse.json({ success: true, booking: updated });
   } catch (error) {
     console.error("Error updating umpire assignment:", error);
-    return NextResponse.json(
-      { success: false, message: "Failed to update umpire assignment." },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "Failed to update umpire assignment." }, { status: 500 });
   }
 }
