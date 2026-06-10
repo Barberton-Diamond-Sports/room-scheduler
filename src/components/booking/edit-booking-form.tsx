@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -65,6 +64,7 @@ const durationOptions = [
 ];
 
 const purposeOptions = ["Practice", "Scrimmage", "Game", "Tournament", "Other"];
+
 const groupOptions = [
   "Tee Ball",
   "8U Baseball",
@@ -122,8 +122,14 @@ function roomLabel(room: Room) {
 
 const timeOptions = buildTimeOptions();
 
-export default function EditBookingForm({ rooms, booking, returnDate, returnView = "day" }: Props) {
+export default function EditBookingForm({
+  rooms,
+  booking,
+  returnDate,
+  returnView = "day",
+}: Props) {
   const router = useRouter();
+
   const [name, setName] = useState(booking.bookedByName);
   const [email, setEmail] = useState(booking.bookedByEmail || "");
   const [teamGroup, setTeamGroup] = useState(booking.teamGroup || groupOptions[0]);
@@ -141,7 +147,9 @@ export default function EditBookingForm({ rooms, booking, returnDate, returnView
 
   const availableDurations = useMemo(() => {
     const startMinutes = timeToMinutes(startTime);
-    return durationOptions.filter((option) => startMinutes + Number(option.value) * 30 <= END_HOUR * 60);
+    return durationOptions.filter(
+      (option) => startMinutes + Number(option.value) * 30 <= END_HOUR * 60
+    );
   }, [startTime]);
 
   useEffect(() => {
@@ -184,9 +192,11 @@ export default function EditBookingForm({ rooms, booking, returnDate, returnView
       if (result.success) {
         setMessage("Booking updated successfully.");
         setMessageType("success");
+
         const destination = returnDate
           ? `/bookings/${booking.id}?date=${returnDate}&view=${returnView}`
           : `/bookings/${booking.id}?view=${returnView}`;
+
         router.push(destination);
         router.refresh();
       } else {
@@ -209,90 +219,198 @@ export default function EditBookingForm({ rooms, booking, returnDate, returnView
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: "1.25rem" }}>
-      <div style={{ display: "grid", gap: "1.25rem", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+      <div
+        style={{
+          display: "grid",
+          gap: "1.25rem",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        }}
+      >
         <div>
-          <label htmlFor="name" style={fieldLabelStyle}>Team Name</label>
-          <input id="name" value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} required />
+          <label htmlFor="name" style={fieldLabelStyle}>
+            Your Name
+          </label>
+          <input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={fieldStyle}
+            required
+          />
         </div>
 
         <div>
-          <label htmlFor="email" style={fieldLabelStyle}>E-mail</label>
-          <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={fieldStyle} />
+          <label htmlFor="email" style={fieldLabelStyle}>
+            E-mail
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={fieldStyle}
+          />
         </div>
 
         <div>
-          <label htmlFor="teamGroup" style={fieldLabelStyle}>Group</label>
-          <select id="teamGroup" value={teamGroup} onChange={(e) => setTeamGroup(e.target.value)} style={fieldStyle}>
+          <label htmlFor="teamGroup" style={fieldLabelStyle}>
+            Group
+          </label>
+          <select
+            id="teamGroup"
+            value={teamGroup}
+            onChange={(e) => setTeamGroup(e.target.value)}
+            style={fieldStyle}
+          >
             {groupOptions.map((option) => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="room" style={fieldLabelStyle}>Field</label>
-          <select id="room" value={roomId} onChange={(e) => setRoomId(e.target.value)} style={fieldStyle}>
+          <label htmlFor="room" style={fieldLabelStyle}>
+            Field
+          </label>
+          <select
+            id="room"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+            style={fieldStyle}
+          >
             {rooms.map((room) => (
-              <option key={room.id} value={room.id}>{roomLabel(room)}</option>
+              <option key={room.id} value={room.id}>
+                {roomLabel(room)}
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="date" style={fieldLabelStyle}>Date</label>
-          <input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} style={fieldStyle} required />
+          <label htmlFor="date" style={fieldLabelStyle}>
+            Date
+          </label>
+          <input
+            id="date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            style={fieldStyle}
+            required
+          />
         </div>
 
         <div>
-          <label htmlFor="startTime" style={fieldLabelStyle}>Start Time</label>
-          <select id="startTime" value={startTime} onChange={(e) => setStartTime(e.target.value)} style={fieldStyle}>
+          <label htmlFor="startTime" style={fieldLabelStyle}>
+            Start Time
+          </label>
+          <select
+            id="startTime"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            style={fieldStyle}
+          >
             {timeOptions.map((time) => (
-              <option key={time} value={time}>{formatTimeLabel(time)}</option>
+              <option key={time} value={time}>
+                {formatTimeLabel(time)}
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="duration" style={fieldLabelStyle}>Duration</label>
-          <select id="duration" value={duration} onChange={(e) => setDuration(e.target.value)} style={fieldStyle}>
+          <label htmlFor="duration" style={fieldLabelStyle}>
+            Duration
+          </label>
+          <select
+            id="duration"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            style={fieldStyle}
+          >
             {availableDurations.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="purpose" style={fieldLabelStyle}>Purpose</label>
-          <select id="purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)} style={fieldStyle}>
+          <label htmlFor="purpose" style={fieldLabelStyle}>
+            Purpose
+          </label>
+          <select
+            id="purpose"
+            value={purpose}
+            onChange={(e) => setPurpose(e.target.value)}
+            style={fieldStyle}
+          >
             {purposeOptions.map((option) => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </div>
 
         {showOpponent && (
           <div>
-            <label htmlFor="opponent" style={fieldLabelStyle}>Opponent</label>
-            <input id="opponent" value={opponent} onChange={(e) => setOpponent(e.target.value)} style={fieldStyle} />
+            <label htmlFor="opponent" style={fieldLabelStyle}>
+              Opponent
+            </label>
+            <input
+              id="opponent"
+              value={opponent}
+              onChange={(e) => setOpponent(e.target.value)}
+              style={fieldStyle}
+            />
           </div>
         )}
-
-
       </div>
 
       <div>
-        <label htmlFor="notes" style={fieldLabelStyle}>Notes</label>
-        <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} style={textareaStyle} placeholder="Optional details" />
+        <label htmlFor="notes" style={fieldLabelStyle}>
+          Notes
+        </label>
+        <textarea
+          id="notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          style={textareaStyle}
+          placeholder="Optional details"
+        />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-        <button type="submit" style={{ padding: "0.85rem 1.25rem", backgroundColor: "#2563eb", color: "#ffffff", border: "none", borderRadius: "12px", fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 12px rgba(37, 99, 235, 0.22)" }}>
+        <button
+          type="submit"
+          style={{
+            padding: "0.85rem 1.25rem",
+            backgroundColor: "#2563eb",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: 600,
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(37, 99, 235, 0.22)",
+          }}
+        >
           Save Changes
         </button>
       </div>
 
       {message && (
-        <div style={{ ...messageStyles, borderRadius: "12px", padding: "0.9rem 1rem", fontWeight: 600 }}>
+        <div
+          style={{
+            ...messageStyles,
+            borderRadius: "12px",
+            padding: "0.9rem 1rem",
+            fontWeight: 600,
+          }}
+        >
           {message}
         </div>
       )}

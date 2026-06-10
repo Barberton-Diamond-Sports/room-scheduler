@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -34,19 +33,58 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
     : `/bookings/${id}?view=${returnView}`;
 
   return (
-    <main style={{ minHeight: "100vh", backgroundColor: "#f5f7fb", padding: "2rem", fontFamily: "Arial, sans-serif" }}>
+    <main
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f5f7fb",
+        padding: "2rem",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
       <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.5rem", marginBottom: "1.5rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)" }}>
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            border: "1px solid #dbe3f0",
+            borderRadius: "16px",
+            padding: "1.5rem",
+            marginBottom: "1.5rem",
+            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
+          }}
+        >
           <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Edit Booking</h1>
-          <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem" }}>Update the details for this field reservation.</p>
+          <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem" }}>
+            Update the details for this field reservation.
+          </p>
+
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <Link href={detailsHref} style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: "10px", color: "#1e3a8a", textDecoration: "none", fontWeight: 600 }}>
+            <Link
+              href={detailsHref}
+              style={{
+                display: "inline-block",
+                padding: "0.65rem 1rem",
+                backgroundColor: "#eef2ff",
+                border: "1px solid #c7d2fe",
+                borderRadius: "10px",
+                color: "#1e3a8a",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
               Back to Details
             </Link>
           </div>
         </div>
 
-        <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)" }}>
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            border: "1px solid #dbe3f0",
+            borderRadius: "16px",
+            padding: "1.5rem",
+            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
+          }}
+        >
           <EditBookingForm
             rooms={rooms}
             booking={{
