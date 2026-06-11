@@ -203,7 +203,17 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
                         <div style={{ color: "#334155", fontWeight: 700 }}>{booking.room.name}</div>
                         <div style={{ color: "#64748b", marginTop: "0.2rem" }}>Opponent: {booking.opponent?.trim() || "—"}</div>
                         <div style={{ color: "#64748b", marginTop: "0.2rem" }}>Sport: {sport === "softball" ? "Softball" : "Baseball"}</div>
-                        <div style={{ color: "#64748b", marginTop: "0.2rem" }}>Assigned: {booking.umpireRecord?.name || "Unassigned"}</div>
+                        
+						<div
+						  style={{
+							marginTop: "0.2rem",
+							fontWeight: 600,
+							color: booking.umpireRecord?.name ? "#475569" : "#b91c1c",
+						  }}
+						>
+						  Assigned: {booking.umpireRecord?.name || "Unassigned"}
+						</div>
+
                       </div>
 
                       <UmpireAssignmentActions
