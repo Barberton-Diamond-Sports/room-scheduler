@@ -148,6 +148,21 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <Link href={`/bookings?date=${todayValue}`} style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#dbeafe", border: "1px solid #93c5fd", borderRadius: "10px", color: "#1d4ed8", textDecoration: "none", fontWeight: 600 }}>Today's Calendar</Link>
             <Link href="/admin/umpire-schedule" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#ede9fe", border: "1px solid #c4b5fd", borderRadius: "10px", color: "#6d28d9", textDecoration: "none", fontWeight: 600 }}>Umpire Schedule</Link>
             <Link href="/admin/umpires" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#fef3c7", border: "1px solid #facc15", borderRadius: "10px", color: "#92400e", textDecoration: "none", fontWeight: 600 }}>Manage Umpires</Link>
+			<Link href="/umpire-assignments"
+			  style={{
+				display: "inline-block",
+				padding: "0.65rem 1rem",
+				backgroundColor: "#e0f2fe",
+				border: "1px solid #7dd3fc",
+				borderRadius: "10px",
+				color: "#0369a1",
+				textDecoration: "none",
+				fontWeight: 600,
+			  }}
+			>
+			  Assign Umpires (Public Link)
+			</Link>
+
             <Link href="/admin/rooms" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#ecfccb", border: "1px solid #bef264", borderRadius: "10px", color: "#3f6212", textDecoration: "none", fontWeight: 600 }}>Manage Fields</Link>
             <Link href="/admin/blackouts" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#fee2e2", border: "1px solid #fca5a5", borderRadius: "10px", color: "#991b1b", textDecoration: "none", fontWeight: 600 }}>Field Blackouts</Link>
           </div>
