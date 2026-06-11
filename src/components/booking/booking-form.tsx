@@ -1,4 +1,3 @@
-//test
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -7,6 +6,21 @@ type Room = {
   id: string;
   name: string;
   description?: string | null;
+};
+
+type DailyBooking = {
+  id: string;
+  title: string | null;
+  bookedByName: string;
+  bookingDate: string;
+  startTimeMinutes: number;
+  endTimeMinutes: number;
+  teamGroup?: string | null;
+  room: {
+    id: string;
+    name: string;
+    description?: string | null;
+  };
 };
 
 type Props = {
@@ -91,6 +105,15 @@ function formatTimeLabel(time: string) {
   return `${hours12}:${pad(minutes)} ${suffix}`;
 }
 
+function formatMinutesLabel(totalMinutes: number) {
+  const hours24 = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const suffix = hours24 >= 12 ? "PM" : "AM";
+  let hours12 = hours24 % 12;
+  if (hours12 === 0) hours12 = 12;
+  return `${hours12}:${pad(minutes)} ${suffix}`;
+}
+
 function buildTimeOptions() {
   const options: string[] = [];
   for (let hour = START_HOUR; hour < END_HOUR; hour++) {
@@ -121,6 +144,8 @@ export default function BookingForm({ rooms }: Props) {
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "info" | "">("");
+  const [dailyBookings, setDailyBookings] = useState<DailyBooking[]>([]);
+  const [isLoadingDailyBookings, setIsLoadingDailyBookings] = useState(false);
 
   const showOpponent = purpose === "Game" || purpose === "Scrimmage";
 
@@ -131,6 +156,13 @@ export default function BookingForm({ rooms }: Props) {
       return endMinutes <= END_HOUR * 60;
     });
   }, [startTime]);
+
+  const bookingsByRoom = useMemo(() => {
+    return rooms.map((room) => ({
+      room,
+      bookings: dailyBookings.filter((booking) => booking.room.id === room.id),
+    }));
+  }, [rooms, dailyBookings]);
 
   useEffect(() => {
     if (!availableDurations.some((option) => option.value === duration)) {
@@ -143,6 +175,47 @@ export default function BookingForm({ rooms }: Props) {
       setOpponent("");
     }
   }, [showOpponent, opponent]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDailyBookings() {
+      if (!date) {
+        setDailyBookings([]);
+        return;
+      }
+
+      setIsLoadingDailyBookings(true);
+
+      try {
+        const response = await fetch(`/api/bookings?date=${date}`);
+        const result = await response.json();
+
+        if (!cancelled) {
+          if (result.success) {
+            setDailyBookings(result.bookings || []);
+          } else {
+            setDailyBookings([]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load daily bookings:", error);
+        if (!cancelled) {
+          setDailyBookings([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingDailyBookings(false);
+        }
+      }
+    }
+
+    loadDailyBookings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -227,23 +300,42 @@ export default function BookingForm({ rooms }: Props) {
           <label htmlFor="name" style={fieldLabelStyle}>
             Team Name
           </label>
-          <input id="name" value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} required />
+          <input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={fieldStyle}
+            required
+          />
         </div>
 
         <div>
           <label htmlFor="email" style={fieldLabelStyle}>
             E-mail
           </label>
-          <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={fieldStyle} />
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={fieldStyle}
+          />
         </div>
 
         <div>
           <label htmlFor="teamGroup" style={fieldLabelStyle}>
             Group
           </label>
-          <select id="teamGroup" value={teamGroup} onChange={(e) => setTeamGroup(e.target.value)} style={fieldStyle}>
+          <select
+            id="teamGroup"
+            value={teamGroup}
+            onChange={(e) => setTeamGroup(e.target.value)}
+            style={fieldStyle}
+          >
             {groupOptions.map((option) => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </div>
@@ -252,9 +344,16 @@ export default function BookingForm({ rooms }: Props) {
           <label htmlFor="room" style={fieldLabelStyle}>
             Field
           </label>
-          <select id="room" value={roomId} onChange={(e) => setRoomId(e.target.value)} style={fieldStyle}>
+          <select
+            id="room"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+            style={fieldStyle}
+          >
             {rooms.map((room) => (
-              <option key={room.id} value={room.id}>{roomLabel(room)}</option>
+              <option key={room.id} value={room.id}>
+                {roomLabel(room)}
+              </option>
             ))}
           </select>
         </div>
@@ -263,16 +362,30 @@ export default function BookingForm({ rooms }: Props) {
           <label htmlFor="date" style={fieldLabelStyle}>
             Date
           </label>
-          <input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} style={fieldStyle} required />
+          <input
+            id="date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            style={fieldStyle}
+            required
+          />
         </div>
 
         <div>
           <label htmlFor="startTime" style={fieldLabelStyle}>
             Start Time
           </label>
-          <select id="startTime" value={startTime} onChange={(e) => setStartTime(e.target.value)} style={fieldStyle}>
+          <select
+            id="startTime"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            style={fieldStyle}
+          >
             {timeOptions.map((time) => (
-              <option key={time} value={time}>{formatTimeLabel(time)}</option>
+              <option key={time} value={time}>
+                {formatTimeLabel(time)}
+              </option>
             ))}
           </select>
         </div>
@@ -281,9 +394,16 @@ export default function BookingForm({ rooms }: Props) {
           <label htmlFor="duration" style={fieldLabelStyle}>
             Duration
           </label>
-          <select id="duration" value={duration} onChange={(e) => setDuration(e.target.value)} style={fieldStyle}>
+          <select
+            id="duration"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            style={fieldStyle}
+          >
             {availableDurations.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
         </div>
@@ -292,9 +412,16 @@ export default function BookingForm({ rooms }: Props) {
           <label htmlFor="purpose" style={fieldLabelStyle}>
             Purpose
           </label>
-          <select id="purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)} style={fieldStyle}>
+          <select
+            id="purpose"
+            value={purpose}
+            onChange={(e) => setPurpose(e.target.value)}
+            style={fieldStyle}
+          >
             {purposeOptions.map((option) => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </div>
@@ -304,7 +431,12 @@ export default function BookingForm({ rooms }: Props) {
             <label htmlFor="opponent" style={fieldLabelStyle}>
               Opponent
             </label>
-            <input id="opponent" value={opponent} onChange={(e) => setOpponent(e.target.value)} style={fieldStyle} />
+            <input
+              id="opponent"
+              value={opponent}
+              onChange={(e) => setOpponent(e.target.value)}
+              style={fieldStyle}
+            />
           </div>
         )}
       </div>
@@ -313,11 +445,29 @@ export default function BookingForm({ rooms }: Props) {
         <label htmlFor="notes" style={fieldLabelStyle}>
           Notes
         </label>
-        <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} style={textareaStyle} placeholder="Optional details" />
+        <textarea
+          id="notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          style={textareaStyle}
+          placeholder="Optional details"
+        />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-        <button type="submit" style={{ padding: "0.85rem 1.25rem", backgroundColor: "#2563eb", color: "#ffffff", border: "none", borderRadius: "12px", fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 12px rgba(37, 99, 235, 0.22)" }}>
+        <button
+          type="submit"
+          style={{
+            padding: "0.85rem 1.25rem",
+            backgroundColor: "#2563eb",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: 600,
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(37, 99, 235, 0.22)",
+          }}
+        >
           Submit Booking
         </button>
 
@@ -327,10 +477,112 @@ export default function BookingForm({ rooms }: Props) {
       </div>
 
       {message && (
-        <div style={{ ...messageStyles, borderRadius: "12px", padding: "0.9rem 1rem", fontWeight: 600 }}>
+        <div
+          style={{
+            ...messageStyles,
+            borderRadius: "12px",
+            padding: "0.9rem 1rem",
+            fontWeight: 600,
+          }}
+        >
           {message}
         </div>
       )}
+
+      <div
+        style={{
+          border: "1px solid #dbe3f0",
+          borderRadius: "16px",
+          padding: "1.25rem",
+          backgroundColor: "#ffffff",
+          boxShadow: "0 6px 18px rgba(0, 0, 0, 0.04)",
+        }}
+      >
+        <h2 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
+          Field Schedule for {date}
+        </h2>
+        <p style={{ marginTop: 0, color: "#64748b", marginBottom: "1rem" }}>
+          This updates automatically when you choose a different date above.
+        </p>
+
+        {isLoadingDailyBookings ? (
+          <div
+            style={{
+              padding: "1rem",
+              border: "1px dashed #cbd5e1",
+              borderRadius: "12px",
+              color: "#64748b",
+            }}
+          >
+            Loading schedule...
+          </div>
+        ) : (
+          <div
+			  style={{
+				display: "grid",
+				gap: "0.85rem",
+				gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+				alignItems: "start",
+			  }}
+			>
+			{bookingsByRoom.map(({ room, bookings }) => (
+
+              <div
+                key={room.id}
+                style={{
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "14px",
+                  backgroundColor: "#f8fafc",
+                  padding: "1rem",
+                }}
+              >
+                <div style={{ marginBottom: "0.65rem" }}>
+                  <div style={{ fontWeight: 800, color: "#0f172a" }}>{room.name}</div>
+                  {room.description?.trim() && (
+                    <div style={{ color: "#64748b", fontSize: "0.9rem", marginTop: "0.15rem" }}>
+                      {room.description}
+                    </div>
+                  )}
+                </div>
+
+                {bookings.length === 0 ? (
+                  <div style={{ color: "#94a3b8" }}>— No bookings for this field</div>
+                ) : (
+                  <div style={{ display: "grid", gap: "0.5rem" }}>
+                    {bookings.map((dailyBooking) => (
+                      <div
+                        key={dailyBooking.id}
+                        style={{
+                          backgroundColor: "#ffffff",
+                          border: "1px solid #dbe3f0",
+                          borderRadius: "10px",
+                          padding: "0.75rem 0.85rem",
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                          {dailyBooking.title || "Booking"}
+                        </div>
+                        <div style={{ color: "#334155", marginTop: "0.15rem" }}>
+                          {dailyBooking.bookedByName}
+                        </div>
+                        <div style={{ color: "#64748b", marginTop: "0.15rem", fontSize: "0.92rem" }}>
+                          {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
+                          {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+                        </div>
+                        {dailyBooking.teamGroup?.trim() && (
+                          <div style={{ color: "#64748b", marginTop: "0.15rem", fontSize: "0.92rem" }}>
+                            {dailyBooking.teamGroup}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </form>
   );
 }

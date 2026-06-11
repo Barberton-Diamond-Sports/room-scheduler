@@ -7,6 +7,46 @@ function timeToMinutes(time: string) {
   return hours * 60 + minutes;
 }
 
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get("date");
+
+    if (!date) {
+      return NextResponse.json(
+        { success: false, message: "A date is required." },
+        { status: 400 }
+      );
+    }
+
+    const bookingDate = new Date(`${date}T00:00:00`);
+    const nextDay = new Date(bookingDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        status: "ACTIVE",
+        bookingDate: {
+          gte: bookingDate,
+          lt: nextDay,
+        },
+      },
+      include: {
+        room: true,
+      },
+      orderBy: [{ roomId: "asc" }, { startTimeMinutes: "asc" }],
+    });
+
+    return NextResponse.json({ success: true, bookings });
+  } catch (error) {
+    console.error("Error loading bookings for date:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to load bookings." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
