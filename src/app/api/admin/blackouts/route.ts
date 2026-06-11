@@ -11,8 +11,17 @@ function dayBounds(dateText: string) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const roomIds = Array.isArray(body.roomIds) ? body.roomIds.filter((item: unknown): item is string => typeof item === "string" && item.trim().length > 0) : [];
+const body = await request.json();
+
+const roomIds: string[] = Array.isArray(body.roomIds)
+  ? body.roomIds.filter(
+      (item: unknown): item is string =>
+        typeof item === "string" && item.trim().length > 0
+    )
+  : [];
+
+const date = typeof body.date === "string" ? body.date : "";
+const reason = typeof body.reason === "string" ? body.reason.trim() : "";
     const date = typeof body.date === "string" ? body.date : "";
     const reason = typeof body.reason === "string" ? body.reason.trim() : "";
 
