@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -6,55 +5,62 @@ import { useState } from "react";
 
 type Props = {
   bookingId: string;
-  returnDate?: string;
-  returnView?: "day" | "week";
+  backHref?: string;
 };
 
-export default function DeleteBookingButton({ bookingId, returnDate, returnView = "day" }: Props) {
+export default function DeleteBookingButton({ bookingId, backHref }: Props) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [message, setMessage] = useState("");
 
   async function handleDelete() {
-    const confirmed = window.confirm("Delete this booking? This will remove it from the active calendar.");
+    const confirmed = window.confirm("Are you sure you want to delete this booking?");
     if (!confirmed) return;
 
     setIsDeleting(true);
-    setMessage("");
 
     try {
-      const response = await fetch(`/api/bookings/${bookingId}`, { method: "DELETE" });
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: "DELETE",
+      });
+
       const result = await response.json();
 
-      if (result.success) {
-        const destination = returnDate
-          ? `/bookings?date=${returnDate}&view=${returnView}`
-          : `/bookings?view=${returnView}`;
-        router.push(destination);
-        router.refresh();
-      } else {
-        setMessage(result.message || "Delete failed.");
+      if (!result.success) {
+        alert(result.message || "Failed to delete booking.");
+        setIsDeleting(false);
+        return;
       }
+
+      if (backHref) {
+        router.push(backHref);
+      } else {
+        router.push("/bookings");
+      }
+
+      router.refresh();
     } catch (error) {
-      console.error("Delete error:", error);
-      setMessage("Something went wrong while deleting the booking.");
-    } finally {
+      console.error(error);
+      alert("Something went wrong while deleting the booking.");
       setIsDeleting(false);
     }
   }
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={handleDelete}
-        disabled={isDeleting}
-        style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#fee2e2", border: "1px solid #fca5a5", borderRadius: "10px", color: "#991b1b", fontWeight: 600, cursor: isDeleting ? "default" : "pointer" }}
-      >
-        {isDeleting ? "Deleting..." : "Delete Booking"}
-      </button>
-
-      {message && <div style={{ marginTop: "0.75rem", color: "#991b1b", fontWeight: 600 }}>{message}</div>}
-    </div>
+    <button
+      type="button"
+      onClick={handleDelete}
+      disabled={isDeleting}
+      style={{
+        padding: "0.65rem 1rem",
+        backgroundColor: "#fee2e2",
+        border: "1px solid #fca5a5",
+        borderRadius: "10px",
+        color: "#991b1b",
+        fontWeight: 600,
+        cursor: isDeleting ? "default" : "pointer",
+      }}
+    >
+      {isDeleting ? "Deleting..." : "Delete"}
+    </button>
   );
 }
