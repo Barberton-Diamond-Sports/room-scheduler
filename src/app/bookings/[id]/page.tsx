@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -69,7 +68,10 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
     detailRow("Email", booking.bookedByEmail),
     detailRow("Field", booking.room?.name),
     detailRow("Date", formatDate(new Date(booking.bookingDate))),
-    detailRow("Time", `${formatTimeLabel(booking.startTimeMinutes)} - ${formatTimeLabel(booking.endTimeMinutes)}`),
+    detailRow(
+      "Time",
+      `${formatTimeLabel(booking.startTimeMinutes)} - ${formatTimeLabel(booking.endTimeMinutes)}`
+    ),
     detailRow("Group", booking.teamGroup),
     detailRow("Opponent", booking.opponent),
     detailRow("Assigned Umpire", booking.umpireRecord?.name || null),
@@ -106,10 +108,19 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
           >
             <div>
               <h1 style={{ marginTop: 0, marginBottom: "0.35rem" }}>Booking Details</h1>
-              <div style={{ color: "#64748b" }}>Review booking information and admin actions.</div>
+              <div style={{ color: "#64748b" }}>
+                Review booking information and admin actions.
+              </div>
             </div>
 
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "start" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.75rem",
+                flexWrap: "wrap",
+                alignItems: "start",
+              }}
+            >
               <Link
                 href={calendarHref}
                 style={{
@@ -170,7 +181,13 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
                   padding: "0.9rem 1rem",
                 }}
               >
-                <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.2rem" }}>
+                <div
+                  style={{
+                    fontSize: "0.82rem",
+                    color: "#64748b",
+                    marginBottom: "0.2rem",
+                  }}
+                >
                   {row.label}
                 </div>
                 <div style={{ color: "#0f172a", fontWeight: 700 }}>{row.value}</div>

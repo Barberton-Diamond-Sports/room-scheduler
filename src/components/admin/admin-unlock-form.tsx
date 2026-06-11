@@ -1,15 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 type Props = {
   nextUrl: string;
 };
 
 export default function AdminUnlockForm({ nextUrl }: Props) {
-  const router = useRouter();
-
   const [passcode, setPasscode] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,8 +28,8 @@ export default function AdminUnlockForm({ nextUrl }: Props) {
       const result = await response.json();
 
       if (result.success) {
-        router.push(nextUrl);
-        router.refresh();
+        window.location.assign(nextUrl);
+        return;
       } else {
         setMessage("Incorrect passcode.");
       }
