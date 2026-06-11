@@ -517,15 +517,16 @@ export default function BookingForm({ rooms }: Props) {
             Loading schedule...
           </div>
         ) : (
-          <div
-			  style={{
-				display: "grid",
-				gap: "0.85rem",
-				gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-				alignItems: "start",
-			  }}
-			>
-			{bookingsByRoom.map(({ room, bookings }) => (
+          
+<div
+  style={{
+    display: "grid",
+    gap: "0.85rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    alignItems: "start",
+  }}
+>
+  {bookingsByRoom.map(({ room, bookings }) => (
 
               <div
                 key={room.id}
