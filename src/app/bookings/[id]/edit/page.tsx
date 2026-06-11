@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import EditBookingForm from "@/components/booking/edit-booking-form";
 
@@ -11,6 +12,16 @@ type PageProps = {
 export default async function EditBookingPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const query = await searchParams;
+
+  // ✅ ADMIN PROTECTION
+
+  const cookieStore = await cookies();
+  const adminAccess = cookieStore.get("admin_access")?.value;
+
+  if (adminAccess !== "granted") {
+    redirect(`/admin/unlock?next=/bookings/${id}/edit`);
+  }
+
   const returnDate = query.date;
   const returnView = query.view === "week" ? "week" : "day";
 
@@ -52,7 +63,9 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
             boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
           }}
         >
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Edit Booking</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
+            Edit Booking
+          </h1>
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem" }}>
             Update the details for this field reservation.
           </p>

@@ -1,5 +1,5 @@
-
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 function timeToMinutes(time: string) {
@@ -11,11 +11,25 @@ function isoDay(dateText: string) {
   return new Date(`${dateText}T00:00:00`);
 }
 
+async function ensureAdminAccess() {
+  const cookieStore = await cookies();
+  const adminAccess = cookieStore.get("admin_access")?.value;
+  return adminAccess === "granted";
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isAdmin = await ensureAdminAccess();
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await context.params;
     const body = await request.json();
 
@@ -108,11 +122,17 @@ export async function PATCH(
         endTimeMinutes,
         durationBlocks: Number(durationBlocks),
         bookedByName: name,
-		bookedByEmail: typeof email === "string" && email.trim() ? email.trim() : null,
-		title: typeof title === "string" && title.trim() ? title.trim() : null,
-		notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+        bookedByEmail:
+          typeof email === "string" && email.trim() ? email.trim() : null,
+        title:
+          typeof title === "string" && title.trim() ? title.trim() : null,
+        notes:
+          typeof notes === "string" && notes.trim() ? notes.trim() : null,
         teamGroup,
-        opponent: typeof opponent === "string" && opponent.trim() ? opponent.trim() : null,
+        opponent:
+          typeof opponent === "string" && opponent.trim()
+            ? opponent.trim()
+            : null,
       },
       include: {
         room: true,
@@ -177,7 +197,11 @@ export async function PATCH(
       });
     }
 
-    return NextResponse.json({ success: true, message: "Booking updated successfully.", booking });
+    return NextResponse.json({
+      success: true,
+      message: "Booking updated successfully.",
+      booking,
+    });
   } catch (error) {
     console.error("Error updating booking:", error);
     return NextResponse.json(
@@ -188,10 +212,18 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isAdmin = await ensureAdminAccess();
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await context.params;
 
     const existingRecord = await prisma.booking.findUnique({
@@ -260,7 +292,10 @@ export async function DELETE(
       });
     }
 
-    return NextResponse.json({ success: true, message: "Booking deleted successfully." });
+    return NextResponse.json({
+      success: true,
+      message: "Booking deleted successfully.",
+    });
   } catch (error) {
     console.error("Error deleting booking:", error);
     return NextResponse.json(

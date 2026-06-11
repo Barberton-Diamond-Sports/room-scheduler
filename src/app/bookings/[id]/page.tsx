@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import DeleteBookingButton from "@/components/booking/delete-booking-button";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -41,9 +45,25 @@ function detailRow(label: string, value: string | null | undefined) {
   };
 }
 
+function buttonStyle(bg: string, border: string, color: string) {
+  return {
+    display: "inline-block",
+    padding: "0.65rem 1rem",
+    backgroundColor: bg,
+    border: `1px solid ${border}`,
+    borderRadius: "10px",
+    color,
+    textDecoration: "none",
+    fontWeight: 600,
+  } as const;
+}
+
 export default async function BookingDetailsPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const search = await searchParams;
+
+  const cookieStore = await cookies();
+  const isAdmin = cookieStore.get("admin_access")?.value === "granted";
 
   const booking = await prisma.booking.findUnique({
     where: { id },
@@ -107,9 +127,11 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
             }}
           >
             <div>
-              <h1 style={{ marginTop: 0, marginBottom: "0.35rem" }}>Booking Details</h1>
+              <h1 style={{ marginTop: 0, marginBottom: "0.35rem" }}>
+                Booking Details
+              </h1>
               <div style={{ color: "#64748b" }}>
-                Review booking information and admin actions.
+                View booking information.
               </div>
             </div>
 
@@ -123,50 +145,33 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
             >
               <Link
                 href={calendarHref}
-                style={{
-                  display: "inline-block",
-                  padding: "0.65rem 1rem",
-                  backgroundColor: "#eef2ff",
-                  border: "1px solid #c7d2fe",
-                  borderRadius: "10px",
-                  color: "#1e3a8a",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
+                style={buttonStyle("#eef2ff", "#c7d2fe", "#1e3a8a")}
               >
                 Back to Calendar
               </Link>
-              <Link
-                href={editHref}
-                style={{
-                  display: "inline-block",
-                  padding: "0.65rem 1rem",
-                  backgroundColor: "#dbeafe",
-                  border: "1px solid #93c5fd",
-                  borderRadius: "10px",
-                  color: "#1d4ed8",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Edit Booking
-              </Link>
+
+              {isAdmin && (
+                <>
+                  <Link
+                    href={editHref}
+                    style={buttonStyle("#dbeafe", "#93c5fd", "#1d4ed8")}
+                  >
+                    Edit Booking
+                  </Link>
+
+                  <DeleteBookingButton
+                    bookingId={booking.id}
+                    backHref={calendarHref}
+                  />
+                </>
+              )}
+
               <Link
                 href="/admin"
-                style={{
-                  display: "inline-block",
-                  padding: "0.65rem 1rem",
-                  backgroundColor: "#f8fafc",
-                  border: "1px solid #dbe3f0",
-                  borderRadius: "10px",
-                  color: "#475569",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
+                style={buttonStyle("#f8fafc", "#dbe3f0", "#475569")}
               >
                 Admin
               </Link>
-              <DeleteBookingButton bookingId={booking.id} backHref={calendarHref} />
             </div>
           </div>
 
@@ -190,7 +195,9 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
                 >
                   {row.label}
                 </div>
-                <div style={{ color: "#0f172a", fontWeight: 700 }}>{row.value}</div>
+                <div style={{ color: "#0f172a", fontWeight: 700 }}>
+                  {row.value}
+                </div>
               </div>
             ))}
           </div>
