@@ -105,7 +105,7 @@ type PageProps = {
 export default async function BookingsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const selectedDate = params.date || toDateInputValue(new Date());
-  const view = params.view === "week" ? "week" : "day";
+  const view = params.view === "day" ? "day" : "week";
 
   const dayStart = fromDateInputValue(selectedDate);
   const nextDay = new Date(dayStart);

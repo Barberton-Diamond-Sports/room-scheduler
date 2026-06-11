@@ -344,11 +344,37 @@ export default function UmpireManagementPanel({ items }: Props) {
                   </div>
 
                   <div>
-                    <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>Status / Assignments</div>
-                    <div style={{ display: "inline-block", padding: "0.35rem 0.65rem", borderRadius: "999px", backgroundColor: item.isActive ? "#dcfce7" : "#fee2e2", color: item.isActive ? "#166534" : "#991b1b", fontWeight: 700, fontSize: "0.82rem" }}>{item.isActive ? "Active" : "Inactive"}</div>
-                    <div style={{ marginTop: "0.45rem", color: "#475569" }}>Bookings linked: {item.bookingCount}</div>
-                    <div style={{ marginTop: "0.2rem", color: "#94a3b8", fontSize: "0.8rem" }}>today and future only</div>
-                  </div>
+					  <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>
+						Status / Assignments
+					  </div>
+
+					  <div
+						style={{
+						  display: "inline-block",
+						  padding: "0.35rem 0.65rem",
+						  borderRadius: "999px",
+						  backgroundColor: item.isActive ? "#dcfce7" : "#fee2e2",
+						  color: item.isActive ? "#166534" : "#991b1b",
+						  fontWeight: 700,
+						  fontSize: "0.82rem",
+						}}
+					  >
+						{item.isActive ? "Active" : "Inactive"}
+					  </div>
+
+					  <div style={{ marginTop: "0.45rem" }}>
+						<a
+						  href={`/admin/umpire-schedule?umpireId=${item.id}&assignment=assigned`}
+						  style={{
+							color: "#1d4ed8",
+							fontWeight: 600,
+							textDecoration: "none",
+						  }}
+						>
+						  Upcoming Games: {item.bookingCount}
+						</a>
+					  </div>
+					</div>
 
                   <div style={{ display: "grid", gap: "0.5rem", minWidth: "180px" }}>
                     {!editing ? (
