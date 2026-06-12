@@ -35,7 +35,7 @@ export default async function BookPage() {
         >
           <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Book a Field</h1>
           <p style={{ marginTop: 0, color: "#4b5563" }}>
-            Use the form below to reserve a field in 30-minute blocks.  If this is a game, please enter the game - for example "Barberton Purple vs. Manchester"
+            Use the form below to reserve a field in 30-minute blocks. If this is a game, please enter the game - for example "Barberton Purple vs. Manchester"
           </p>
 
           <div
@@ -63,6 +63,22 @@ export default async function BookPage() {
             </Link>
 
             <Link
+              href="/admin"
+              style={{
+                display: "inline-block",
+                padding: "0.65rem 1rem",
+                backgroundColor: "#f3e8ff",
+                border: "1px solid #d8b4fe",
+                borderRadius: "10px",
+                color: "#6b21a8",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              Admin
+            </Link>
+
+            <Link
               href="/bookings"
               style={{
                 display: "inline-block",
@@ -75,7 +91,7 @@ export default async function BookPage() {
                 fontWeight: 600,
               }}
             >
-              View Booking Calendar
+              Calendar
             </Link>
           </div>
         </div>

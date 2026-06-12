@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Room = {
   id: string;
@@ -132,6 +133,8 @@ function roomLabel(room: Room) {
 const timeOptions = buildTimeOptions();
 
 export default function BookingForm({ rooms }: Props) {
+  const router = useRouter();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [teamGroup, setTeamGroup] = useState(groupOptions[0]);
@@ -219,6 +222,13 @@ export default function BookingForm({ rooms }: Props) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (!email.trim()) {
+      setMessage("E-mail is required.");
+      setMessageType("error");
+      return;
+    }
+
     setMessage("Submitting booking...");
     setMessageType("info");
 
@@ -230,7 +240,7 @@ export default function BookingForm({ rooms }: Props) {
         },
         body: JSON.stringify({
           name,
-          email,
+          email: email.trim(),
           teamGroup,
           roomId,
           date,
@@ -244,19 +254,9 @@ export default function BookingForm({ rooms }: Props) {
 
       const result = await response.json();
 
-      if (result.success) {
-        setMessage("Booking request submitted successfully.");
-        setMessageType("success");
-        setName("");
-        setEmail("");
-        setTeamGroup(groupOptions[0]);
-        setDate(getTodayString());
-        setStartTime(DEFAULT_TIME);
-        setDuration("2");
-        setPurpose("Practice");
-        setOpponent("");
-        setNotes("");
-        setRoomId(rooms[0]?.id ?? "");
+      if (result.success && result.booking?.id) {
+        router.push(`/bookings/${result.booking.id}?date=${date}`);
+        return;
       } else {
         setMessage(result.message || "Booking request failed.");
         setMessageType("error");
@@ -319,6 +319,7 @@ export default function BookingForm({ rooms }: Props) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={fieldStyle}
+            required
           />
         </div>
 
@@ -517,17 +518,15 @@ export default function BookingForm({ rooms }: Props) {
             Loading schedule...
           </div>
         ) : (
-          
-<div
-  style={{
-    display: "grid",
-    gap: "0.85rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    alignItems: "start",
-  }}
->
-  {bookingsByRoom.map(({ room, bookings }) => (
-
+          <div
+            style={{
+              display: "grid",
+              gap: "0.85rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              alignItems: "start",
+            }}
+          >
+            {bookingsByRoom.map(({ room, bookings }) => (
               <div
                 key={room.id}
                 style={{
@@ -587,3 +586,4 @@ export default function BookingForm({ rooms }: Props) {
     </form>
   );
 }
+``

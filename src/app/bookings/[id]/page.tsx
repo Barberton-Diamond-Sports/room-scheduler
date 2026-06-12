@@ -77,6 +77,18 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
     notFound();
   }
 
+  const bookingPurpose = booking.title?.trim().toLowerCase() ?? "";
+
+  const showAssignedUmpire =
+    bookingPurpose !== "practice" &&
+    bookingPurpose !== "scrimmage" &&
+    bookingPurpose !== "other";
+
+  const showOpponent =
+    bookingPurpose === "game" ||
+    bookingPurpose === "scrimmage" ||
+    bookingPurpose === "tournament";
+
   const view = search.view === "week" ? "week" : "day";
   const calendarDate = search.date || toDateInputValue(new Date(booking.bookingDate));
   const calendarHref = `/bookings?date=${calendarDate}&view=${view}`;
@@ -93,11 +105,15 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
       `${formatTimeLabel(booking.startTimeMinutes)} - ${formatTimeLabel(booking.endTimeMinutes)}`
     ),
     detailRow("Group", booking.teamGroup),
-    detailRow("Opponent", booking.opponent),
-	{
-	  label: "Assigned Umpire",
-	  value: null, // handled separately in render
-	},
+    ...(showOpponent ? [detailRow("Opponent", booking.opponent)] : []),
+    ...(showAssignedUmpire
+      ? [
+          {
+            label: "Assigned Umpire",
+            value: null,
+          },
+        ]
+      : []),
     detailRow("Notes", booking.notes),
   ];
 
@@ -179,71 +195,71 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
           </div>
 
           <div style={{ display: "grid", gap: "0.85rem" }}>
-  {rows.map((row) => {
-    if (row.label === "Assigned Umpire") {
-      const umpire = booking.umpireRecord;
+            {rows.map((row) => {
+              if (row.label === "Assigned Umpire") {
+                const umpire = booking.umpireRecord;
 
-      return (
-        <div
-          key={row.label}
-          style={{
-            border: "1px solid #e2e8f0",
-            borderRadius: "12px",
-            backgroundColor: "#f8fafc",
-            padding: "0.9rem 1rem",
-          }}
-        >
-          <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-            Assigned Umpire
+                return (
+                  <div
+                    key={row.label}
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      backgroundColor: "#f8fafc",
+                      padding: "0.9rem 1rem",
+                    }}
+                  >
+                    <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                      Assigned Umpire
+                    </div>
+
+                    {!umpire ? (
+                      <div style={{ color: "#b91c1c", fontWeight: 700 }}>
+                        Unassigned
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: "0.2rem" }}>
+                        <div style={{ color: "#0f172a", fontWeight: 700 }}>
+                          {umpire.name}
+                        </div>
+
+                        {umpire.phone && (
+                          <div style={{ color: "#475569", marginTop: "0.15rem" }}>
+                            {umpire.phone}
+                          </div>
+                        )}
+
+                        {umpire.email && (
+                          <div style={{ color: "#475569", marginTop: "0.15rem" }}>
+                            {umpire.email}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={row.label}
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    backgroundColor: "#f8fafc",
+                    padding: "0.9rem 1rem",
+                  }}
+                >
+                  <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                    {row.label}
+                  </div>
+                  <div style={{ color: "#0f172a", fontWeight: 700 }}>
+                    {row.value}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          {!umpire ? (
-            <div style={{ color: "#b91c1c", fontWeight: 700 }}>
-              Unassigned
-            </div>
-          ) : (
-            <div style={{ marginTop: "0.2rem" }}>
-              <div style={{ color: "#0f172a", fontWeight: 700 }}>
-                {umpire.name}
-              </div>
-
-              {umpire.phone && (
-                <div style={{ color: "#475569", marginTop: "0.15rem" }}>
-                  {umpire.phone}
-                </div>
-              )}
-
-              {umpire.email && (
-                <div style={{ color: "#475569", marginTop: "0.15rem" }}>
-                  {umpire.email}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <div
-        key={row.label}
-        style={{
-          border: "1px solid #e2e8f0",
-          borderRadius: "12px",
-          backgroundColor: "#f8fafc",
-          padding: "0.9rem 1rem",
-        }}
-      >
-        <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-          {row.label}
-        </div>
-        <div style={{ color: "#0f172a", fontWeight: 700 }}>
-          {row.value}
-        </div>
-      </div>
-    );
-  })}
-</div>
         </div>
       </div>
     </main>
