@@ -135,11 +135,8 @@ export async function POST(request: Request) {
         startTimeMinutes,
         endTimeMinutes,
         durationBlocks: Number(durationBlocks),
-        bookedByName: team.teamName,
-        bookedByEmail: team.coachEmail || null,
         title: title || null,
         notes: notes || null,
-        teamGroup: team.ageGroup,
         opponent: opponent || null,
       },
       include: {

@@ -39,11 +39,8 @@ model Booking {
   startTimeMinutes Int
   endTimeMinutes   Int
   durationBlocks   Int
-  bookedByName     String
-  bookedByEmail    String?
   title            String?
   notes            String?
-  teamGroup        String?
   opponent         String?
   status           BookingStatus @default(ACTIVE)
   overrideConflict Boolean       @default(false)

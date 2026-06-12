@@ -1,9 +1,8 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-function inferSport(teamGroup: string | null) {
-  return teamGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
+function inferSport(ageGroup: string | null | undefined) {
+  return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
 }
 
 function pad(value: number) {
@@ -29,11 +28,17 @@ export async function PATCH(
 
     const booking = await prisma.booking.findUnique({
       where: { id },
-      include: { room: true },
+      include: {
+        room: true,
+        team: true,
+      },
     });
 
     if (!booking) {
-      return NextResponse.json({ success: false, message: "Booking not found." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, message: "Booking not found." },
+        { status: 404 }
+      );
     }
 
     if (body.umpireId === null) {
@@ -47,20 +52,32 @@ export async function PATCH(
 
     const umpireId = typeof body.umpireId === "string" ? body.umpireId.trim() : "";
     if (!umpireId) {
-      return NextResponse.json({ success: false, message: "Choose an umpire." }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "Choose an umpire." },
+        { status: 400 }
+      );
     }
 
     const umpire = await prisma.umpire.findUnique({ where: { id: umpireId } });
     if (!umpire || !umpire.isActive) {
-      return NextResponse.json({ success: false, message: "That umpire is not available." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, message: "That umpire is not available." },
+        { status: 404 }
+      );
     }
 
-    const sport = inferSport(booking.teamGroup);
+    const sport = inferSport(booking.team?.ageGroup);
     if (sport === "softball" && !umpire.doesSoftball) {
-      return NextResponse.json({ success: false, message: "That umpire is not marked for softball." }, { status: 409 });
+      return NextResponse.json(
+        { success: false, message: "That umpire is not marked for softball." },
+        { status: 409 }
+      );
     }
     if (sport === "baseball" && !umpire.doesBaseball) {
-      return NextResponse.json({ success: false, message: "That umpire is not marked for baseball." }, { status: 409 });
+      return NextResponse.json(
+        { success: false, message: "That umpire is not marked for baseball." },
+        { status: 409 }
+      );
     }
 
     const bookingDate = new Date(booking.bookingDate);
@@ -82,8 +99,20 @@ export async function PATCH(
     });
 
     if (conflictingAssignment) {
-      const conflictMessage = `${umpire.name} is already assigned to ${conflictingAssignment.title || "another game"} on ${bookingDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} from ${formatTimeLabel(conflictingAssignment.startTimeMinutes)} to ${formatTimeLabel(conflictingAssignment.endTimeMinutes)} at ${conflictingAssignment.room?.name || "another field"}.`;
-      return NextResponse.json({ success: false, message: conflictMessage }, { status: 409 });
+      const conflictMessage = `${umpire.name} is already assigned to ${
+        conflictingAssignment.title || "another game"
+      } on ${bookingDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })} from ${formatTimeLabel(conflictingAssignment.startTimeMinutes)} to ${formatTimeLabel(
+        conflictingAssignment.endTimeMinutes
+      )} at ${conflictingAssignment.room?.name || "another field"}.`;
+
+      return NextResponse.json(
+        { success: false, message: conflictMessage },
+        { status: 409 }
+      );
     }
 
     const updated = await prisma.booking.update({
@@ -95,6 +124,9 @@ export async function PATCH(
     return NextResponse.json({ success: true, booking: updated });
   } catch (error) {
     console.error("Error updating umpire assignment:", error);
-    return NextResponse.json({ success: false, message: "Failed to update umpire assignment." }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Failed to update umpire assignment." },
+      { status: 500 }
+    );
   }
 }

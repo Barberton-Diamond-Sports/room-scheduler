@@ -24,7 +24,6 @@ type Team = {
 type DailyBooking = {
   id: string;
   title: string | null;
-  bookedByName: string;
   bookingDate: string;
   startTimeMinutes: number;
   endTimeMinutes: number;
@@ -33,6 +32,11 @@ type DailyBooking = {
     name: string;
     description?: string | null;
   };
+  team: {
+    id: string;
+    teamName: string;
+    ageGroup: string;
+  } | null;
 };
 
 type Props = {
@@ -263,9 +267,6 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
         },
         body: JSON.stringify({
           teamId,
-          name: selectedTeam.teamName,
-          email: selectedTeam.coachEmail,
-          teamGroup: selectedTeam.ageGroup,
           roomId,
           date,
           startTime,
@@ -591,7 +592,7 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
                           {dailyBooking.title || "Booking"}
                         </div>
                         <div style={{ color: "#334155", marginTop: "0.15rem" }}>
-                          {dailyBooking.bookedByName}
+                          {dailyBooking.team?.teamName}
                         </div>
                         <div style={{ color: "#64748b", marginTop: "0.15rem", fontSize: "0.92rem" }}>
                           {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
@@ -609,4 +610,3 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
     </form>
   );
 }
-``

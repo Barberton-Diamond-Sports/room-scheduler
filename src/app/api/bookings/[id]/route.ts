@@ -135,11 +135,8 @@ export async function PATCH(
         startTimeMinutes,
         endTimeMinutes,
         durationBlocks: Number(durationBlocks),
-        bookedByName: team.teamName,
-        bookedByEmail: team.coachEmail || null,
         title: typeof title === "string" && title.trim() ? title.trim() : null,
         notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
-        teamGroup: team.ageGroup,
         opponent:
           typeof opponent === "string" && opponent.trim()
             ? opponent.trim()
