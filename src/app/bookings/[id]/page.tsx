@@ -69,6 +69,7 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
     where: { id },
     include: {
       room: true,
+      team: true,
       umpireRecord: true,
     },
   });
@@ -96,15 +97,15 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
 
   const rows = [
     detailRow("Purpose", booking.title),
-    detailRow("Booked By", booking.bookedByName),
-    detailRow("Email", booking.bookedByEmail),
+    detailRow("Team", booking.team?.teamName),
+    detailRow("Coach E-mail", booking.team?.coachEmail),
     detailRow("Field", booking.room?.name),
     detailRow("Date", formatDate(new Date(booking.bookingDate))),
     detailRow(
       "Time",
       `${formatTimeLabel(booking.startTimeMinutes)} - ${formatTimeLabel(booking.endTimeMinutes)}`
     ),
-    detailRow("Group", booking.teamGroup),
+    detailRow("Age Group", booking.team?.ageGroup),
     ...(showOpponent ? [detailRow("Opponent", booking.opponent)] : []),
     ...(showAssignedUmpire
       ? [

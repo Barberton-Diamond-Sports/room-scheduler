@@ -34,9 +34,7 @@ export async function PATCH(
     const body = await request.json();
 
     const {
-      name,
-      email,
-      teamGroup,
+      teamId,
       roomId,
       date,
       startTime,
@@ -46,7 +44,7 @@ export async function PATCH(
       notes,
     } = body;
 
-    if (!name || !teamGroup || !roomId || !date || !startTime || !durationBlocks) {
+    if (!teamId || !roomId || !date || !startTime || !durationBlocks) {
       return NextResponse.json(
         { success: false, message: "Missing required booking fields." },
         { status: 400 }
@@ -57,6 +55,7 @@ export async function PATCH(
       where: { id },
       include: {
         room: true,
+        team: true,
         umpireRecord: true,
       },
     });
@@ -65,6 +64,20 @@ export async function PATCH(
       return NextResponse.json(
         { success: false, message: "Booking not found." },
         { status: 404 }
+      );
+    }
+
+    const team = await prisma.team.findFirst({
+      where: {
+        id: teamId,
+        isActive: true,
+      },
+    });
+
+    if (!team) {
+      return NextResponse.json(
+        { success: false, message: "Please select a valid active team." },
+        { status: 400 }
       );
     }
 
@@ -117,18 +130,16 @@ export async function PATCH(
       where: { id },
       data: {
         roomId,
+        teamId: team.id,
         bookingDate,
         startTimeMinutes,
         endTimeMinutes,
         durationBlocks: Number(durationBlocks),
-        bookedByName: name,
-        bookedByEmail:
-          typeof email === "string" && email.trim() ? email.trim() : null,
-        title:
-          typeof title === "string" && title.trim() ? title.trim() : null,
-        notes:
-          typeof notes === "string" && notes.trim() ? notes.trim() : null,
-        teamGroup,
+        bookedByName: team.teamName,
+        bookedByEmail: team.coachEmail || null,
+        title: typeof title === "string" && title.trim() ? title.trim() : null,
+        notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+        teamGroup: team.ageGroup,
         opponent:
           typeof opponent === "string" && opponent.trim()
             ? opponent.trim()
@@ -136,6 +147,7 @@ export async function PATCH(
       },
       include: {
         room: true,
+        team: true,
         umpireRecord: true,
       },
     });
@@ -161,8 +173,10 @@ export async function PATCH(
           action: "UPDATE",
           detailsJson: {
             before: {
-              bookedByName: existingRecord.bookedByName,
-              bookedByEmail: existingRecord.bookedByEmail,
+              teamId: existingRecord.teamId ?? null,
+              teamName: existingRecord.team?.teamName ?? null,
+              coachEmail: existingRecord.team?.coachEmail ?? null,
+              ageGroup: existingRecord.team?.ageGroup ?? null,
               roomId: existingRecord.roomId,
               roomName: existingRecord.room?.name || null,
               bookingDate: existingRecord.bookingDate.toISOString(),
@@ -171,14 +185,15 @@ export async function PATCH(
               durationBlocks: existingRecord.durationBlocks,
               title: existingRecord.title,
               notes: existingRecord.notes,
-              teamGroup: existingRecord.teamGroup ?? null,
               opponent: existingRecord.opponent ?? null,
               umpireId: existingRecord.umpireId ?? null,
               umpireName: existingRecord.umpireRecord?.name ?? null,
             },
             after: {
-              bookedByName: booking.bookedByName,
-              bookedByEmail: booking.bookedByEmail,
+              teamId: booking.teamId ?? null,
+              teamName: booking.team?.teamName ?? null,
+              coachEmail: booking.team?.coachEmail ?? null,
+              ageGroup: booking.team?.ageGroup ?? null,
               roomId: booking.roomId,
               roomName: booking.room?.name || null,
               bookingDate: booking.bookingDate.toISOString(),
@@ -187,7 +202,6 @@ export async function PATCH(
               durationBlocks: booking.durationBlocks,
               title: booking.title,
               notes: booking.notes,
-              teamGroup: booking.teamGroup ?? null,
               opponent: booking.opponent ?? null,
               umpireId: booking.umpireId ?? null,
               umpireName: booking.umpireRecord?.name ?? null,
@@ -230,6 +244,7 @@ export async function DELETE(
       where: { id },
       include: {
         room: true,
+        team: true,
         umpireRecord: true,
       },
     });
@@ -246,6 +261,7 @@ export async function DELETE(
       data: { status: "CANCELED" },
       include: {
         room: true,
+        team: true,
         umpireRecord: true,
       },
     });
@@ -271,8 +287,10 @@ export async function DELETE(
           action: "DELETE",
           detailsJson: {
             deleted: {
-              bookedByName: booking.bookedByName,
-              bookedByEmail: booking.bookedByEmail,
+              teamId: booking.teamId ?? null,
+              teamName: booking.team?.teamName ?? null,
+              coachEmail: booking.team?.coachEmail ?? null,
+              ageGroup: booking.team?.ageGroup ?? null,
               roomId: booking.roomId,
               roomName: booking.room?.name || null,
               bookingDate: booking.bookingDate.toISOString(),
@@ -282,7 +300,6 @@ export async function DELETE(
               title: booking.title,
               notes: booking.notes,
               status: booking.status,
-              teamGroup: booking.teamGroup ?? null,
               opponent: booking.opponent ?? null,
               umpireId: booking.umpireId ?? null,
               umpireName: booking.umpireRecord?.name ?? null,

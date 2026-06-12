@@ -9,6 +9,18 @@ type Room = {
   description?: string | null;
 };
 
+type Team = {
+  id: string;
+  teamName: string;
+  coachName: string;
+  coachEmail: string;
+  coachPhone?: string | null;
+  ageGroup: string;
+  season: "SPRING" | "SUMMER" | "FALL";
+  year: number;
+  isActive: boolean;
+};
+
 type DailyBooking = {
   id: string;
   title: string | null;
@@ -16,7 +28,6 @@ type DailyBooking = {
   bookingDate: string;
   startTimeMinutes: number;
   endTimeMinutes: number;
-  teamGroup?: string | null;
   room: {
     id: string;
     name: string;
@@ -26,6 +37,7 @@ type DailyBooking = {
 
 type Props = {
   rooms: Room[];
+  teams?: Team[];
 };
 
 const START_HOUR = 9;
@@ -68,18 +80,6 @@ const purposeOptions = [
   "Game",
   "Tournament",
   "Other",
-];
-
-const groupOptions = [
-  "Tee Ball",
-  "8U Baseball",
-  "10U Baseball",
-  "12U Baseball",
-  "14U Baseball",
-  "8U Softball",
-  "10U Softball",
-  "12U Softball",
-  "14U Softball",
 ];
 
 function pad(value: number) {
@@ -125,19 +125,31 @@ function buildTimeOptions() {
 }
 
 function roomLabel(room: Room) {
-  return room.description?.trim()
-    ? `${room.name} (${room.description})`
-    : room.name;
+  return room.description?.trim() ? `${room.name} (${room.description})` : room.name;
+}
+
+function formatSeasonLabel(season: Team["season"]) {
+  return season.charAt(0) + season.slice(1).toLowerCase();
+}
+
+function teamLabel(team: Team) {
+  return `${team.teamName} (${team.ageGroup} • ${formatSeasonLabel(team.season)} ${team.year})`;
 }
 
 const timeOptions = buildTimeOptions();
 
-export default function BookingForm({ rooms }: Props) {
+export default function BookingForm({ rooms, teams = [] }: Props) {
   const router = useRouter();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [teamGroup, setTeamGroup] = useState(groupOptions[0]);
+  const activeTeams = useMemo(
+    () =>
+      teams
+        .filter((team) => team.isActive)
+        .sort((a, b) => a.teamName.localeCompare(b.teamName)),
+    [teams]
+  );
+
+  const [teamId, setTeamId] = useState(activeTeams[0]?.id ?? "");
   const [roomId, setRoomId] = useState(rooms[0]?.id ?? "");
   const [date, setDate] = useState(getTodayString());
   const [startTime, setStartTime] = useState(DEFAULT_TIME);
@@ -149,6 +161,11 @@ export default function BookingForm({ rooms }: Props) {
   const [messageType, setMessageType] = useState<"success" | "error" | "info" | "">("");
   const [dailyBookings, setDailyBookings] = useState<DailyBooking[]>([]);
   const [isLoadingDailyBookings, setIsLoadingDailyBookings] = useState(false);
+
+  const selectedTeam = useMemo(
+    () => activeTeams.find((team) => team.id === teamId) ?? null,
+    [activeTeams, teamId]
+  );
 
   const showOpponent = purpose === "Game" || purpose === "Scrimmage";
 
@@ -166,6 +183,12 @@ export default function BookingForm({ rooms }: Props) {
       bookings: dailyBookings.filter((booking) => booking.room.id === room.id),
     }));
   }, [rooms, dailyBookings]);
+
+  useEffect(() => {
+    if (activeTeams.length > 0 && !activeTeams.some((team) => team.id === teamId)) {
+      setTeamId(activeTeams[0].id);
+    }
+  }, [activeTeams, teamId]);
 
   useEffect(() => {
     if (!availableDurations.some((option) => option.value === duration)) {
@@ -223,8 +246,8 @@ export default function BookingForm({ rooms }: Props) {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!email.trim()) {
-      setMessage("E-mail is required.");
+    if (!teamId || !selectedTeam) {
+      setMessage("Please select a team.");
       setMessageType("error");
       return;
     }
@@ -239,9 +262,10 @@ export default function BookingForm({ rooms }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
-          email: email.trim(),
-          teamGroup,
+          teamId,
+          name: selectedTeam.teamName,
+          email: selectedTeam.coachEmail,
+          teamGroup: selectedTeam.ageGroup,
           roomId,
           date,
           startTime,
@@ -297,47 +321,26 @@ export default function BookingForm({ rooms }: Props) {
         }}
       >
         <div>
-          <label htmlFor="name" style={fieldLabelStyle}>
-            Team Name
-          </label>
-          <input
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={fieldStyle}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="email" style={fieldLabelStyle}>
-            E-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={fieldStyle}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="teamGroup" style={fieldLabelStyle}>
-            Group
+          <label htmlFor="teamId" style={fieldLabelStyle}>
+            Team
           </label>
           <select
-            id="teamGroup"
-            value={teamGroup}
-            onChange={(e) => setTeamGroup(e.target.value)}
+            id="teamId"
+            value={teamId}
+            onChange={(e) => setTeamId(e.target.value)}
             style={fieldStyle}
+            required
+            disabled={activeTeams.length === 0}
           >
-            {groupOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
+            {activeTeams.length === 0 ? (
+              <option value="">No active teams available</option>
+            ) : (
+              activeTeams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {teamLabel(team)}
+                </option>
+              ))
+            )}
           </select>
         </div>
 
@@ -442,6 +445,30 @@ export default function BookingForm({ rooms }: Props) {
         )}
       </div>
 
+      {selectedTeam && (
+        <div
+          style={{
+            border: "1px solid #dbe3f0",
+            borderRadius: "14px",
+            padding: "1rem",
+            backgroundColor: "#f8fafc",
+          }}
+        >
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "0.4rem" }}>
+            Selected Team
+          </div>
+          <div style={{ color: "#334155" }}>{selectedTeam.teamName}</div>
+          <div style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem" }}>
+            {selectedTeam.ageGroup} • {formatSeasonLabel(selectedTeam.season)} {selectedTeam.year}
+          </div>
+          <div style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem" }}>
+            {selectedTeam.coachName}
+            {selectedTeam.coachEmail ? ` • ${selectedTeam.coachEmail}` : ""}
+            {selectedTeam.coachPhone?.trim() ? ` • ${selectedTeam.coachPhone}` : ""}
+          </div>
+        </div>
+      )}
+
       <div>
         <label htmlFor="notes" style={fieldLabelStyle}>
           Notes
@@ -458,15 +485,16 @@ export default function BookingForm({ rooms }: Props) {
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
         <button
           type="submit"
+          disabled={activeTeams.length === 0}
           style={{
             padding: "0.85rem 1.25rem",
-            backgroundColor: "#2563eb",
+            backgroundColor: activeTeams.length === 0 ? "#94a3b8" : "#2563eb",
             color: "#ffffff",
             border: "none",
             borderRadius: "12px",
             fontWeight: 600,
-            cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(37, 99, 235, 0.22)",
+            cursor: activeTeams.length === 0 ? "not-allowed" : "pointer",
+            boxShadow: activeTeams.length === 0 ? "none" : "0 4px 12px rgba(37, 99, 235, 0.22)",
           }}
         >
           Submit Booking
@@ -569,11 +597,6 @@ export default function BookingForm({ rooms }: Props) {
                           {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
                           {formatMinutesLabel(dailyBooking.endTimeMinutes)}
                         </div>
-                        {dailyBooking.teamGroup?.trim() && (
-                          <div style={{ color: "#64748b", marginTop: "0.15rem", fontSize: "0.92rem" }}>
-                            {dailyBooking.teamGroup}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>

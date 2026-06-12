@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -33,6 +32,7 @@ export async function GET(request: Request) {
       },
       include: {
         room: true,
+        team: true,
       },
       orderBy: [{ roomId: "asc" }, { startTimeMinutes: "asc" }],
     });
@@ -51,11 +51,34 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const { name, email, teamGroup, roomId, date, startTime, durationBlocks, title, opponent, notes } = body;
+    const {
+      teamId,
+      roomId,
+      date,
+      startTime,
+      durationBlocks,
+      title,
+      opponent,
+      notes,
+    } = body;
 
-    if (!name || !teamGroup || !roomId || !date || !startTime || !durationBlocks) {
+    if (!teamId || !roomId || !date || !startTime || !durationBlocks) {
       return NextResponse.json(
         { success: false, message: "Missing required booking fields." },
+        { status: 400 }
+      );
+    }
+
+    const team = await prisma.team.findFirst({
+      where: {
+        id: teamId,
+        isActive: true,
+      },
+    });
+
+    if (!team) {
+      return NextResponse.json(
+        { success: false, message: "Please select a valid active team." },
         { status: 400 }
       );
     }
@@ -107,20 +130,29 @@ export async function POST(request: Request) {
     const booking = await prisma.booking.create({
       data: {
         roomId,
+        teamId: team.id,
         bookingDate,
         startTimeMinutes,
         endTimeMinutes,
         durationBlocks: Number(durationBlocks),
-        bookedByName: name,
-        bookedByEmail: email || null,
+        bookedByName: team.teamName,
+        bookedByEmail: team.coachEmail || null,
         title: title || null,
         notes: notes || null,
-        teamGroup,
+        teamGroup: team.ageGroup,
         opponent: opponent || null,
+      },
+      include: {
+        room: true,
+        team: true,
       },
     });
 
-    return NextResponse.json({ success: true, message: "Booking saved successfully.", booking });
+    return NextResponse.json({
+      success: true,
+      message: "Booking saved successfully.",
+      booking,
+    });
   } catch (error) {
     console.error("Error creating booking:", error);
     return NextResponse.json(

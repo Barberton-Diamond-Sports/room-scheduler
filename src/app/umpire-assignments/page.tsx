@@ -33,8 +33,8 @@ function formatTimeRange(startMinutes: number, endMinutes: number) {
   return `${formatMinutes(startMinutes)} - ${formatMinutes(endMinutes)}`;
 }
 
-function inferSport(teamGroup: string | null) {
-  return teamGroup?.toLowerCase().includes("softball")
+function inferSport(ageGroup: string | null | undefined) {
+  return ageGroup?.toLowerCase().includes("softball")
     ? "softball"
     : "baseball";
 }
@@ -59,6 +59,7 @@ export default async function UmpireAssignmentsPage() {
       },
       include: {
         room: true,
+        team: true,
       },
       orderBy: [
         { bookingDate: "asc" },
@@ -156,11 +157,11 @@ export default async function UmpireAssignmentsPage() {
 
                 <div style={{ display: "grid", gap: "0.85rem" }}>
                   {group.items.map((booking) => {
-                    const sport = inferSport(booking.teamGroup);
+                    const sport = inferSport(booking.team?.ageGroup);
 
                     const matchup = booking.opponent?.trim()
-                      ? `${booking.bookedByName} vs. ${booking.opponent}`
-                      : booking.bookedByName;
+                      ? `${booking.team?.teamName} vs. ${booking.opponent}`
+                      : booking.team?.teamName;
 
                     return (
                       <div
@@ -181,17 +182,14 @@ export default async function UmpireAssignmentsPage() {
                           }}
                         >
                           <div>
-                            {/* Line 1 */}
                             <div style={{ fontWeight: 700 }}>
                               {matchup}
                             </div>
 
-                            {/* Line 2 */}
                             <div style={{ color: "#334155", marginTop: "0.2rem" }}>
-                              {booking.room.name} - {booking.teamGroup || "—"}
+                              {booking.room.name} - {booking.team?.ageGroup}
                             </div>
 
-                            {/* Line 3 — TIME ONLY */}
                             <div
                               style={{
                                 color: "#64748b",

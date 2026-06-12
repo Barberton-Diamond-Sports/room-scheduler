@@ -3,10 +3,20 @@ import { prisma } from "@/lib/prisma";
 import BookingForm from "@/components/booking/booking-form";
 
 export default async function BookPage() {
-  const rooms = await prisma.room.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-  });
+  const [rooms, teams] = await Promise.all([
+    prisma.room.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.team.findMany({
+      where: { isActive: true },
+      orderBy: [
+        { teamName: "asc" },
+        { year: "desc" },
+        { season: "asc" },
+      ],
+    }),
+  ]);
 
   return (
     <main
@@ -105,7 +115,7 @@ export default async function BookPage() {
             boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
           }}
         >
-          <BookingForm rooms={rooms} />
+          <BookingForm rooms={rooms} teams={teams} />
         </div>
       </div>
     </main>

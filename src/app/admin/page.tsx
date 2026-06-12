@@ -95,7 +95,10 @@ export default async function AdminPage({ searchParams }: PageProps) {
           lt: nextDay,
         },
       },
-      include: { room: true },
+      include: {
+        room: true,
+        team: true,
+      },
       orderBy: [{ startTimeMinutes: "asc" }, { roomId: "asc" }],
       take: 12,
     }),
@@ -175,130 +178,159 @@ export default async function AdminPage({ searchParams }: PageProps) {
         >
           <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Admin Dashboard</h1>
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem" }}>
-            Quick access to field bookings, blackout controls, umpire scheduling, and recent booking changes.
+            Quick access to field bookings, blackout controls, umpire scheduling, team management, and recent booking changes.
           </p>
 
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <Link
-              href="/"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#eef2ff",
-                border: "1px solid #c7d2fe",
-                borderRadius: "10px",
-                color: "#1e3a8a",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Home
-            </Link>
-            <Link
-              href="/book"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#ecfeff",
-                border: "1px solid #a5f3fc",
-                borderRadius: "10px",
-                color: "#155e75",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Book a Field
-            </Link>
-            <Link
-              href={`/bookings?date=${todayValue}`}
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#dbeafe",
-                border: "1px solid #93c5fd",
-                borderRadius: "10px",
-                color: "#1d4ed8",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Today's Calendar
-            </Link>
-            <Link
-              href="/admin/umpire-schedule"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#ede9fe",
-                border: "1px solid #c4b5fd",
-                borderRadius: "10px",
-                color: "#6d28d9",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Umpire Schedule
-            </Link>
-            <Link
-              href="/admin/umpires"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#fef3c7",
-                border: "1px solid #facc15",
-                borderRadius: "10px",
-                color: "#92400e",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Manage Umpires
-            </Link>
-            <Link
-              href="/umpire-assignments"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#e0f2fe",
-                border: "1px solid #7dd3fc",
-                borderRadius: "10px",
-                color: "#0369a1",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Assign Umpires (Public Link)
-            </Link>
-            <Link
-              href="/admin/rooms"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#ecfccb",
-                border: "1px solid #bef264",
-                borderRadius: "10px",
-                color: "#3f6212",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Manage Fields
-            </Link>
-            <Link
-              href="/admin/blackouts"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#fee2e2",
-                border: "1px solid #fca5a5",
-                borderRadius: "10px",
-                color: "#991b1b",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Field Blackouts
-            </Link>
+          <div style={{ display: "grid", gap: "0.85rem" }}>
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+              <Link
+                href="/"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#eef2ff",
+                  border: "1px solid #c7d2fe",
+                  borderRadius: "10px",
+                  color: "#1e3a8a",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Home
+              </Link>
+
+              <Link
+                href="/book"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#ecfeff",
+                  border: "1px solid #a5f3fc",
+                  borderRadius: "10px",
+                  color: "#155e75",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Book a Field
+              </Link>
+
+              <Link
+                href={`/bookings?date=${todayValue}`}
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#dbeafe",
+                  border: "1px solid #93c5fd",
+                  borderRadius: "10px",
+                  color: "#1d4ed8",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Today&apos;s Calendar
+              </Link>
+            </div>
+
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+              <Link
+                href="/admin/umpires"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#fef3c7",
+                  border: "1px solid #facc15",
+                  borderRadius: "10px",
+                  color: "#92400e",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Manage Umpires
+              </Link>
+
+              <Link
+                href="/admin/umpire-schedule"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#ede9fe",
+                  border: "1px solid #c4b5fd",
+                  borderRadius: "10px",
+                  color: "#6d28d9",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Umpire Schedule
+              </Link>
+
+              <Link
+                href="/umpire-assignments"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#e0f2fe",
+                  border: "1px solid #7dd3fc",
+                  borderRadius: "10px",
+                  color: "#0369a1",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Assign Umpires (Public Link)
+              </Link>
+            </div>
+
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+              <Link
+                href="/admin/teams"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#f3e8ff",
+                  border: "1px solid #d8b4fe",
+                  borderRadius: "10px",
+                  color: "#7c3aed",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Manage Teams
+              </Link>
+
+              <Link
+                href="/admin/rooms"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#ecfccb",
+                  border: "1px solid #bef264",
+                  borderRadius: "10px",
+                  color: "#3f6212",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Manage Fields
+              </Link>
+
+              <Link
+                href="/admin/blackouts"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#fee2e2",
+                  border: "1px solid #fca5a5",
+                  borderRadius: "10px",
+                  color: "#991b1b",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Field Blackouts
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -319,8 +351,12 @@ export default async function AdminPage({ searchParams }: PageProps) {
               boxShadow: "0 6px 18px rgba(0, 0, 0, 0.05)",
             }}
           >
-            <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>Today's Date</div>
-            <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a" }}>{formatPageDate(today)}</div>
+            <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>
+              Today&apos;s Date
+            </div>
+            <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a" }}>
+              {formatPageDate(today)}
+            </div>
           </div>
 
           <div
@@ -332,8 +368,12 @@ export default async function AdminPage({ searchParams }: PageProps) {
               boxShadow: "0 6px 18px rgba(0, 0, 0, 0.05)",
             }}
           >
-            <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>Active Fields</div>
-            <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>{totalFields}</div>
+            <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>
+              Active Fields
+            </div>
+            <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>
+              {totalFields}
+            </div>
           </div>
 
           <div
@@ -345,8 +385,12 @@ export default async function AdminPage({ searchParams }: PageProps) {
               boxShadow: "0 6px 18px rgba(0, 0, 0, 0.05)",
             }}
           >
-            <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>Today's Bookings</div>
-            <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>{bookingCount}</div>
+            <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>
+              Today&apos;s Bookings
+            </div>
+            <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>
+              {bookingCount}
+            </div>
           </div>
 
           <div
@@ -358,8 +402,12 @@ export default async function AdminPage({ searchParams }: PageProps) {
               boxShadow: "0 6px 18px rgba(0, 0, 0, 0.05)",
             }}
           >
-            <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>Active Umpires</div>
-            <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>{umpireCount}</div>
+            <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>
+              Active Umpires
+            </div>
+            <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>
+              {umpireCount}
+            </div>
           </div>
         </div>
 
@@ -382,7 +430,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
               marginBottom: "1rem",
             }}
           >
-            <h2 style={{ margin: 0 }}>Today's Schedule</h2>
+            <h2 style={{ margin: 0 }}>Today&apos;s Schedule</h2>
             <Link
               href={`/bookings?date=${todayValue}`}
               style={{ color: "#1d4ed8", textDecoration: "none", fontWeight: 600 }}
@@ -428,8 +476,12 @@ export default async function AdminPage({ searchParams }: PageProps) {
                       }}
                     >
                       <div>
-                        <div style={{ color: "#0f172a", fontWeight: 700 }}>{booking.title || "Booking"}</div>
-                        <div style={{ color: "#334155", marginTop: "0.15rem" }}>{booking.bookedByName}</div>
+                        <div style={{ color: "#0f172a", fontWeight: 700 }}>
+                          {booking.title || "Booking"}
+                        </div>
+                        <div style={{ color: "#334155", marginTop: "0.15rem" }}>
+                          {booking.team?.teamName}
+                        </div>
                         <div style={{ color: "#64748b", marginTop: "0.15rem", fontSize: "0.9rem" }}>
                           {booking.room.name}
                         </div>
@@ -473,7 +525,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
             <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
               <div>
-                <div style={{ fontSize: "0.9rem", color: "#64748b", marginBottom: "0.45rem" }}>Time window</div>
+                <div style={{ fontSize: "0.9rem", color: "#64748b", marginBottom: "0.45rem" }}>
+                  Time window
+                </div>
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                   <Link href={filterHref("today", changeType)} style={filterButtonStyle(changeWindow === "today")}>
                     Today
@@ -491,7 +545,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
               </div>
 
               <div>
-                <div style={{ fontSize: "0.9rem", color: "#64748b", marginBottom: "0.45rem" }}>Change type</div>
+                <div style={{ fontSize: "0.9rem", color: "#64748b", marginBottom: "0.45rem" }}>
+                  Change type
+                </div>
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                   <Link href={filterHref(changeWindow, "all")} style={filterButtonStyle(changeType === "all")}>
                     All changes
@@ -533,7 +589,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   const source = isDelete ? details.deleted ?? {} : details.after ?? {};
                   const before = details.before ?? {};
                   const itemTitle = asText(source.title);
-                  const itemName = asText(source.bookedByName);
+                  const itemName = asText(source.teamName);
                   const itemRoom = asText(source.roomName);
                   const itemDate = asText(source.bookingDate);
                   const start = fromMinutes(source.startTimeMinutes);
@@ -542,7 +598,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   const changedSummary = !isDelete
                     ? [
                         before.title !== source.title ? "Purpose" : "",
-                        before.bookedByName !== source.bookedByName ? "Name" : "",
+                        before.teamId !== source.teamId ? "Team" : "",
                         before.roomId !== source.roomId ? "Field" : "",
                         before.bookingDate !== source.bookingDate ? "Date" : "",
                         before.startTimeMinutes !== source.startTimeMinutes ||
@@ -582,10 +638,14 @@ export default async function AdminPage({ searchParams }: PageProps) {
                             {itemRoom} · {start} - {end}
                           </div>
                         </div>
-                        <div style={{ color: "#64748b", fontSize: "0.92rem" }}>{formatDateTime(log.createdAt)}</div>
+                        <div style={{ color: "#64748b", fontSize: "0.92rem" }}>
+                          {formatDateTime(log.createdAt)}
+                        </div>
                       </div>
 
-                      <div style={{ color: "#64748b", fontSize: "0.92rem", marginTop: "0.45rem" }}>{itemDate}</div>
+                      <div style={{ color: "#64748b", fontSize: "0.92rem", marginTop: "0.45rem" }}>
+                        {itemDate}
+                      </div>
 
                       {!isDelete && changedSummary.length > 0 && (
                         <div

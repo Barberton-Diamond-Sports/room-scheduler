@@ -1,5 +1,5 @@
-
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 const START_HOUR = 9;
@@ -107,6 +107,9 @@ export default async function BookingsPage({ searchParams }: PageProps) {
   const selectedDate = params.date || toDateInputValue(new Date());
   const view = params.view === "day" ? "day" : "week";
 
+  const cookieStore = await cookies();
+  const isAdmin = cookieStore.get("admin_access")?.value === "granted";
+
   const dayStart = fromDateInputValue(selectedDate);
   const nextDay = new Date(dayStart);
   nextDay.setDate(nextDay.getDate() + 1);
@@ -133,7 +136,10 @@ export default async function BookingsPage({ searchParams }: PageProps) {
             ? { gte: weekStart, lt: weekEnd }
             : { gte: dayStart, lt: nextDay },
       },
-      include: { room: true },
+      include: {
+        room: true,
+        team: true,
+      },
       orderBy: [{ bookingDate: "asc" }, { roomId: "asc" }, { startTimeMinutes: "asc" }],
     }),
     prisma.roomBlackout.findMany({
@@ -205,43 +211,178 @@ export default async function BookingsPage({ searchParams }: PageProps) {
 
           {view === "week" && (
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1rem" }}>
-              <Link href={`/bookings?date=${previousWeekDate}&view=week`} style={{ display: "inline-block", padding: "0.6rem 0.95rem", backgroundColor: "#f8fafc", border: "1px solid #dbe3f0", borderRadius: "10px", color: "#334155", textDecoration: "none", fontWeight: 600 }}>
+              <Link
+                href={`/bookings?date=${previousWeekDate}&view=week`}
+                style={{
+                  display: "inline-block",
+                  padding: "0.6rem 0.95rem",
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #dbe3f0",
+                  borderRadius: "10px",
+                  color: "#334155",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
                 ← Previous Week
               </Link>
-              <Link href={`/bookings?date=${todayDate}&view=week`} style={{ display: "inline-block", padding: "0.6rem 0.95rem", backgroundColor: "#dbeafe", border: "1px solid #93c5fd", borderRadius: "10px", color: "#1d4ed8", textDecoration: "none", fontWeight: 600 }}>
+              <Link
+                href={`/bookings?date=${todayDate}&view=week`}
+                style={{
+                  display: "inline-block",
+                  padding: "0.6rem 0.95rem",
+                  backgroundColor: "#dbeafe",
+                  border: "1px solid #93c5fd",
+                  borderRadius: "10px",
+                  color: "#1d4ed8",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
                 This Week
               </Link>
-              <Link href={`/bookings?date=${nextWeekDate}&view=week`} style={{ display: "inline-block", padding: "0.6rem 0.95rem", backgroundColor: "#f8fafc", border: "1px solid #dbe3f0", borderRadius: "10px", color: "#334155", textDecoration: "none", fontWeight: 600 }}>
+              <Link
+                href={`/bookings?date=${nextWeekDate}&view=week`}
+                style={{
+                  display: "inline-block",
+                  padding: "0.6rem 0.95rem",
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #dbe3f0",
+                  borderRadius: "10px",
+                  color: "#334155",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
                 Next Week →
               </Link>
             </div>
           )}
 
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "1rem",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-              <Link href="/" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: "10px", color: "#1e3a8a", textDecoration: "none", fontWeight: 600 }}>
+              <Link
+                href="/"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#eef2ff",
+                  border: "1px solid #c7d2fe",
+                  borderRadius: "10px",
+                  color: "#1e3a8a",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
                 Home
               </Link>
-              <Link href="/book" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#ecfeff", border: "1px solid #a5f3fc", borderRadius: "10px", color: "#155e75", textDecoration: "none", fontWeight: 600 }}>
+
+              <Link
+                href="/book"
+                style={{
+                  display: "inline-block",
+                  padding: "0.65rem 1rem",
+                  backgroundColor: "#ecfeff",
+                  border: "1px solid #a5f3fc",
+                  borderRadius: "10px",
+                  color: "#155e75",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
                 Book a Field
               </Link>
+
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  style={{
+                    display: "inline-block",
+                    padding: "0.65rem 1rem",
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #dbe3f0",
+                    borderRadius: "10px",
+                    color: "#475569",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  Admin
+                </Link>
+              )}
             </div>
 
             <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <Link href={`/bookings?date=${selectedDate}&view=day`} style={{ display: "inline-block", padding: "0.55rem 0.9rem", borderRadius: "999px", textDecoration: "none", fontWeight: 600, border: view === "day" ? "1px solid #93c5fd" : "1px solid #dbe3f0", backgroundColor: view === "day" ? "#dbeafe" : "#f8fafc", color: view === "day" ? "#1d4ed8" : "#475569" }}>
+                <Link
+                  href={`/bookings?date=${selectedDate}&view=day`}
+                  style={{
+                    display: "inline-block",
+                    padding: "0.55rem 0.9rem",
+                    borderRadius: "999px",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                    border: view === "day" ? "1px solid #93c5fd" : "1px solid #dbe3f0",
+                    backgroundColor: view === "day" ? "#dbeafe" : "#f8fafc",
+                    color: view === "day" ? "#1d4ed8" : "#475569",
+                  }}
+                >
                   Day View
                 </Link>
-                <Link href={`/bookings?date=${selectedDate}&view=week`} style={{ display: "inline-block", padding: "0.55rem 0.9rem", borderRadius: "999px", textDecoration: "none", fontWeight: 600, border: view === "week" ? "1px solid #93c5fd" : "1px solid #dbe3f0", backgroundColor: view === "week" ? "#dbeafe" : "#f8fafc", color: view === "week" ? "#1d4ed8" : "#475569" }}>
+                <Link
+                  href={`/bookings?date=${selectedDate}&view=week`}
+                  style={{
+                    display: "inline-block",
+                    padding: "0.55rem 0.9rem",
+                    borderRadius: "999px",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                    border: view === "week" ? "1px solid #93c5fd" : "1px solid #dbe3f0",
+                    backgroundColor: view === "week" ? "#dbeafe" : "#f8fafc",
+                    color: view === "week" ? "#1d4ed8" : "#475569",
+                  }}
+                >
                   Week View
                 </Link>
               </div>
 
               <form method="GET" style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
                 <input type="hidden" name="view" value={view} />
-                <label htmlFor="date" style={{ fontWeight: 600, color: "#334155" }}>View date:</label>
-                <input id="date" name="date" type="date" defaultValue={selectedDate} style={{ padding: "0.65rem 0.8rem", border: "1px solid #cbd5e1", borderRadius: "10px", backgroundColor: "#f8fafc" }} />
-                <button type="submit" style={{ padding: "0.65rem 1rem", backgroundColor: "#2563eb", color: "#ffffff", border: "none", borderRadius: "10px", fontWeight: 600, cursor: "pointer" }}>
+                <label htmlFor="date" style={{ fontWeight: 600, color: "#334155" }}>
+                  View date:
+                </label>
+                <input
+                  id="date"
+                  name="date"
+                  type="date"
+                  defaultValue={selectedDate}
+                  style={{
+                    padding: "0.65rem 0.8rem",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "10px",
+                    backgroundColor: "#f8fafc",
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    padding: "0.65rem 1rem",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "10px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
                   Load
                 </button>
               </form>
@@ -250,18 +391,45 @@ export default async function BookingsPage({ searchParams }: PageProps) {
         </div>
 
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "1rem" }}>
-          <div style={{ width: "18px", height: "18px", borderRadius: "4px", backgroundColor: "#374151", border: "1px solid #1f2937" }} />
+          <div
+            style={{
+              width: "18px",
+              height: "18px",
+              borderRadius: "4px",
+              backgroundColor: "#374151",
+              border: "1px solid #1f2937",
+            }}
+          />
           <div style={{ color: "#475569", fontWeight: 600 }}>Blackout date</div>
         </div>
 
         {view === "day" ? (
-          <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)", overflowX: "auto" }}>
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              border: "1px solid #dbe3f0",
+              borderRadius: "16px",
+              padding: "1rem",
+              boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
+              overflowX: "auto",
+            }}
+          >
             <div style={{ display: "flex", gap: "1rem", minWidth: "1200px" }}>
               <div style={{ width: "100px", flexShrink: 0 }}>
                 <div style={{ height: "48px" }} />
                 <div style={{ position: "relative", height: `${totalHeight}px` }}>
                   {slots.map((slot, index) => (
-                    <div key={slot} style={{ position: "absolute", top: `${index * SLOT_HEIGHT - 10}px`, left: 0, right: 0, fontSize: "0.85rem", color: "#64748b" }}>
+                    <div
+                      key={slot}
+                      style={{
+                        position: "absolute",
+                        top: `${index * SLOT_HEIGHT - 10}px`,
+                        left: 0,
+                        right: 0,
+                        fontSize: "0.85rem",
+                        color: "#64748b",
+                      }}
+                    >
                       {formatTimeLabel(slot)}
                     </div>
                   ))}
@@ -271,39 +439,157 @@ export default async function BookingsPage({ searchParams }: PageProps) {
               {rooms.map((room) => {
                 const roomBookings = bookings.filter((booking) => booking.roomId === room.id);
                 const roomBlackout = blackoutMap.get(`${room.id}|${selectedDate}`);
+
                 return (
                   <div key={room.id} style={{ minWidth: "220px", flex: 1 }}>
-                    <div style={{ height: "60px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: "1px solid #dbe3f0", backgroundColor: "#f8fafc", borderRadius: "12px 12px 0 0", padding: "0.35rem 0.5rem", textAlign: "center" }}>
+                    <div
+                      style={{
+                        height: "60px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "1px solid #dbe3f0",
+                        backgroundColor: "#f8fafc",
+                        borderRadius: "12px 12px 0 0",
+                        padding: "0.35rem 0.5rem",
+                        textAlign: "center",
+                      }}
+                    >
                       <div style={{ fontWeight: 700, color: "#334155" }}>{room.name}</div>
-                      {room.description && <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.15rem" }}>{room.description}</div>}
+                      {room.description && (
+                        <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.15rem" }}>
+                          {room.description}
+                        </div>
+                      )}
                     </div>
 
-                    <div style={{ position: "relative", height: `${totalHeight}px`, border: "1px solid #dbe3f0", borderTop: "none", backgroundColor: roomBlackout ? "#374151" : "#ffffff", borderRadius: "0 0 12px 12px" }}>
+                    <div
+                      style={{
+                        position: "relative",
+                        height: `${totalHeight}px`,
+                        border: "1px solid #dbe3f0",
+                        borderTop: "none",
+                        backgroundColor: roomBlackout ? "#374151" : "#ffffff",
+                        borderRadius: "0 0 12px 12px",
+                      }}
+                    >
                       {roomBlackout ? (
-                        <div style={{ position: "absolute", inset: "0", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", textAlign: "center", color: "#ffffff", fontWeight: 800, lineHeight: 1.4 }}>
+                        <div
+                          style={{
+                            position: "absolute",
+                            inset: "0",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "1rem",
+                            textAlign: "center",
+                            color: "#ffffff",
+                            fontWeight: 800,
+                            lineHeight: 1.4,
+                          }}
+                        >
                           {roomBlackout.label}
                         </div>
                       ) : (
                         <>
                           {slots.map((slot, index) => (
-                            <div key={slot} style={{ position: "absolute", top: `${index * SLOT_HEIGHT}px`, left: 0, right: 0, borderTop: "1px solid #eef2f7", height: `${SLOT_HEIGHT}px` }} />
+                            <div
+                              key={slot}
+                              style={{
+                                position: "absolute",
+                                top: `${index * SLOT_HEIGHT}px`,
+                                left: 0,
+                                right: 0,
+                                borderTop: "1px solid #eef2f7",
+                                height: `${SLOT_HEIGHT}px`,
+                              }}
+                            />
                           ))}
 
                           {roomBookings.map((booking) => {
-                        const top = ((booking.startTimeMinutes - START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
-                        const height = booking.durationBlocks * SLOT_HEIGHT - 4;
-                        const showNotes = booking.durationBlocks >= 4 && Boolean(booking.notes);
-                        const hoverText = [booking.title || "Booking", booking.bookedByName, booking.bookedByEmail || "", `${formatTimeLabel(booking.startTimeMinutes)} - ${formatTimeLabel(booking.endTimeMinutes)}`, booking.notes || ""].filter(Boolean).join("");
-                        const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
+                            const top =
+                              ((booking.startTimeMinutes - START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
+                            const height = booking.durationBlocks * SLOT_HEIGHT - 4;
+                            const showNotes = booking.durationBlocks >= 4 && Boolean(booking.notes);
+                            const hoverText = [
+                              booking.title || "Booking",
+                              booking.team?.teamName,
+                              booking.team?.coachEmail || "",
+                              `${formatTimeLabel(booking.startTimeMinutes)} - ${formatTimeLabel(booking.endTimeMinutes)}`,
+                              booking.notes || "",
+                            ]
+                              .filter(Boolean)
+                              .join(" • ");
+                            const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
 
-                        return (
-                          <Link key={booking.id} href={`/bookings/${booking.id}?date=${selectedDate}&view=day`} title={hoverText} style={{ position: "absolute", top: `${top + 2}px`, left: "6px", right: "6px", height: `${height}px`, backgroundColor, border: `1px solid ${borderColor}`, borderRadius: "10px", padding: "0.45rem", overflow: "hidden", fontSize: "0.85rem", boxSizing: "border-box", boxShadow: "0 3px 10px rgba(15, 23, 42, 0.10)", textDecoration: "none", display: "block", cursor: "pointer" }}>
-                            <div style={{ fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{booking.title || "Booking"}</div>
-                            <div style={{ color: "#334155", marginTop: "0.15rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{booking.bookedByName}</div>
-                            <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.8rem" }}>{formatTimeLabel(booking.startTimeMinutes)} - {formatTimeLabel(booking.endTimeMinutes)}</div>
-                            {showNotes && <div style={{ color: "#475569", marginTop: "0.3rem", fontSize: "0.78rem", lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{booking.notes}</div>}
-                          </Link>
-                        );
+                            return (
+                              <Link
+                                key={booking.id}
+                                href={`/bookings/${booking.id}?date=${selectedDate}&view=day`}
+                                title={hoverText}
+                                style={{
+                                  position: "absolute",
+                                  top: `${top + 2}px`,
+                                  left: "6px",
+                                  right: "6px",
+                                  height: `${height}px`,
+                                  backgroundColor,
+                                  border: `1px solid ${borderColor}`,
+                                  borderRadius: "10px",
+                                  padding: "0.45rem",
+                                  overflow: "hidden",
+                                  fontSize: "0.85rem",
+                                  boxSizing: "border-box",
+                                  boxShadow: "0 3px 10px rgba(15, 23, 42, 0.10)",
+                                  textDecoration: "none",
+                                  display: "block",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontWeight: 700,
+                                    color: "#0f172a",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                >
+                                  {booking.title || "Booking"}
+                                </div>
+                                <div
+                                  style={{
+                                    color: "#334155",
+                                    marginTop: "0.15rem",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                >
+                                  {booking.team?.teamName}
+                                </div>
+                                <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.8rem" }}>
+                                  {formatTimeLabel(booking.startTimeMinutes)} - {formatTimeLabel(booking.endTimeMinutes)}
+                                </div>
+                                {showNotes && (
+                                  <div
+                                    style={{
+                                      color: "#475569",
+                                      marginTop: "0.3rem",
+                                      fontSize: "0.78rem",
+                                      lineHeight: 1.25,
+                                      display: "-webkit-box",
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: "vertical",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {booking.notes}
+                                  </div>
+                                )}
+                              </Link>
+                            );
                           })}
                         </>
                       )}
@@ -314,46 +600,165 @@ export default async function BookingsPage({ searchParams }: PageProps) {
             </div>
           </div>
         ) : (
-          <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)", overflowX: "auto" }}>
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              border: "1px solid #dbe3f0",
+              borderRadius: "16px",
+              padding: "1rem",
+              boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
+              overflowX: "auto",
+            }}
+          >
             <div style={{ minWidth: "1200px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: `220px repeat(${weekDays.length}, minmax(150px, 1fr))`, gap: "0.75rem", marginBottom: "0.75rem" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: `220px repeat(${weekDays.length}, minmax(150px, 1fr))`,
+                  gap: "0.75rem",
+                  marginBottom: "0.75rem",
+                }}
+              >
                 <div />
                 {weekDays.map((day) => (
-                  <div key={day.value} style={{ backgroundColor: day.value === selectedDate ? "#dbeafe" : "#f8fafc", border: "1px solid #dbe3f0", borderRadius: "12px", padding: "0.85rem 0.75rem", textAlign: "center", fontWeight: 700, color: "#334155" }}>{day.label}</div>
+                  <div
+                    key={day.value}
+                    style={{
+                      backgroundColor: day.value === selectedDate ? "#dbeafe" : "#f8fafc",
+                      border: "1px solid #dbe3f0",
+                      borderRadius: "12px",
+                      padding: "0.85rem 0.75rem",
+                      textAlign: "center",
+                      fontWeight: 700,
+                      color: "#334155",
+                    }}
+                  >
+                    {day.label}
+                  </div>
                 ))}
               </div>
 
               <div style={{ display: "grid", gap: "0.75rem" }}>
                 {rooms.map((room) => (
-                  <div key={room.id} style={{ display: "grid", gridTemplateColumns: `220px repeat(${weekDays.length}, minmax(150px, 1fr))`, gap: "0.75rem", alignItems: "stretch" }}>
-                    <div style={{ backgroundColor: "#f8fafc", border: "1px solid #dbe3f0", borderRadius: "12px", padding: "0.9rem 1rem", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <div
+                    key={room.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: `220px repeat(${weekDays.length}, minmax(150px, 1fr))`,
+                      gap: "0.75rem",
+                      alignItems: "stretch",
+                    }}
+                  >
+                    <div
+                      style={{
+                        backgroundColor: "#f8fafc",
+                        border: "1px solid #dbe3f0",
+                        borderRadius: "12px",
+                        padding: "0.9rem 1rem",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                      }}
+                    >
                       <div style={{ fontWeight: 700, color: "#334155" }}>{room.name}</div>
-                      {room.description && <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.18rem" }}>{room.description}</div>}
+                      {room.description && (
+                        <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.18rem" }}>
+                          {room.description}
+                        </div>
+                      )}
                     </div>
 
                     {weekDays.map((day) => {
-                      const cellBookings = bookings.filter((booking) => booking.roomId === room.id && toDateInputValue(new Date(booking.bookingDate)) === day.value);
+                      const cellBookings = bookings.filter(
+                        (booking) =>
+                          booking.roomId === room.id &&
+                          toDateInputValue(new Date(booking.bookingDate)) === day.value
+                      );
                       const cellBlackout = blackoutMap.get(`${room.id}|${day.value}`);
 
                       return (
-                        <div key={day.value} style={{ backgroundColor: cellBlackout ? "#374151" : "#ffffff", border: cellBlackout ? "1px solid #1f2937" : "1px solid #dbe3f0", borderRadius: "12px", padding: "0.55rem", minHeight: "88px" }}>
+                        <div
+                          key={day.value}
+                          style={{
+                            backgroundColor: cellBlackout ? "#374151" : "#ffffff",
+                            border: cellBlackout ? "1px solid #1f2937" : "1px solid #dbe3f0",
+                            borderRadius: "12px",
+                            padding: "0.55rem",
+                            minHeight: "88px",
+                          }}
+                        >
                           {cellBlackout ? (
-                            <div style={{ ...blackoutCellStyle, minHeight: "76px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <div
+                              style={{
+                                ...blackoutCellStyle,
+                                minHeight: "76px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
                               {cellBlackout.label}
                             </div>
                           ) : cellBookings.length === 0 ? (
-                            <div style={{ color: "#cbd5e1", fontSize: "0.88rem", textAlign: "center", paddingTop: "0.65rem" }}>—</div>
+                            <div style={{ color: "#cbd5e1", fontSize: "0.88rem", textAlign: "center", paddingTop: "0.65rem" }}>
+                              —
+                            </div>
                           ) : (
                             <div style={{ display: "grid", gap: "0.45rem" }}>
                               {cellBookings.map((booking) => {
                                 const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
-                                const hoverText = [booking.title || "Booking", booking.bookedByName, booking.bookedByEmail || "", `${formatTimeLabel(booking.startTimeMinutes)} - ${formatTimeLabel(booking.endTimeMinutes)}`, booking.notes || ""].filter(Boolean).join("");
+                                const hoverText = [
+                                  booking.title || "Booking",
+                                  booking.team?.teamName,
+                                  booking.team?.coachEmail || "",
+                                  `${formatTimeLabel(booking.startTimeMinutes)} - ${formatTimeLabel(booking.endTimeMinutes)}`,
+                                  booking.notes || "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" • ");
 
                                 return (
-                                  <Link key={booking.id} href={`/bookings/${booking.id}?date=${selectedDate}&view=week`} title={hoverText} style={{ display: "block", backgroundColor, border: `1px solid ${borderColor}`, borderRadius: "10px", padding: "0.5rem 0.55rem", textDecoration: "none", boxShadow: "0 2px 8px rgba(15, 23, 42, 0.08)" }}>
-                                    <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.83rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{booking.title || "Booking"}</div>
-                                    <div style={{ color: "#334155", marginTop: "0.15rem", fontSize: "0.8rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{booking.bookedByName}</div>
-                                    <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.77rem" }}>{formatTimeLabel(booking.startTimeMinutes)} - {formatTimeLabel(booking.endTimeMinutes)}</div>
+                                  <Link
+                                    key={booking.id}
+                                    href={`/bookings/${booking.id}?date=${selectedDate}&view=week`}
+                                    title={hoverText}
+                                    style={{
+                                      display: "block",
+                                      backgroundColor,
+                                      border: `1px solid ${borderColor}`,
+                                      borderRadius: "10px",
+                                      padding: "0.5rem 0.55rem",
+                                      textDecoration: "none",
+                                      boxShadow: "0 2px 8px rgba(15, 23, 42, 0.08)",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontWeight: 700,
+                                        color: "#0f172a",
+                                        fontSize: "0.83rem",
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                      }}
+                                    >
+                                      {booking.title || "Booking"}
+                                    </div>
+                                    <div
+                                      style={{
+                                        color: "#334155",
+                                        marginTop: "0.15rem",
+                                        fontSize: "0.8rem",
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                      }}
+                                    >
+                                      {booking.team?.teamName}
+                                    </div>
+                                    <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.77rem" }}>
+                                      {formatTimeLabel(booking.startTimeMinutes)} - {formatTimeLabel(booking.endTimeMinutes)}
+                                    </div>
                                   </Link>
                                 );
                               })}

@@ -13,8 +13,6 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
   const { id } = await params;
   const query = await searchParams;
 
-  // ✅ ADMIN PROTECTION
-
   const cookieStore = await cookies();
   const adminAccess = cookieStore.get("admin_access")?.value;
 
@@ -27,17 +25,30 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
 
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { room: true },
+    include: {
+      room: true,
+      team: true,
+    },
   });
 
   if (!booking) {
     notFound();
   }
 
-  const rooms = await prisma.room.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-  });
+  const [rooms, teams] = await Promise.all([
+    prisma.room.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.team.findMany({
+      where: { isActive: true },
+      orderBy: [
+        { teamName: "asc" },
+        { year: "desc" },
+        { season: "asc" },
+      ],
+    }),
+  ]);
 
   const detailsHref = returnDate
     ? `/bookings/${id}?date=${returnDate}&view=${returnView}`
@@ -100,17 +111,16 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
         >
           <EditBookingForm
             rooms={rooms}
+            teams={teams}
             booking={{
               id: booking.id,
               roomId: booking.roomId,
+              teamId: booking.teamId ?? "",
               bookingDate: booking.bookingDate.toISOString(),
               startTimeMinutes: booking.startTimeMinutes,
               durationBlocks: booking.durationBlocks,
-              bookedByName: booking.bookedByName,
-              bookedByEmail: booking.bookedByEmail,
               title: booking.title,
               notes: booking.notes,
-              teamGroup: booking.teamGroup,
               opponent: booking.opponent,
             }}
             returnDate={returnDate}

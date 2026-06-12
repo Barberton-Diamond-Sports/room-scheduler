@@ -9,22 +9,33 @@ type Room = {
   description?: string | null;
 };
 
+type Team = {
+  id: string;
+  teamName: string;
+  coachName: string;
+  coachEmail: string;
+  coachPhone?: string | null;
+  ageGroup: string;
+  season: "SPRING" | "SUMMER" | "FALL";
+  year: number;
+  isActive: boolean;
+};
+
 type Booking = {
   id: string;
   roomId: string;
+  teamId: string;
   bookingDate: string;
   startTimeMinutes: number;
   durationBlocks: number;
-  bookedByName: string;
-  bookedByEmail: string | null;
   title: string | null;
   notes: string | null;
-  teamGroup?: string | null;
   opponent?: string | null;
 };
 
 type Props = {
   rooms: Room[];
+  teams: Team[];
   booking: Booking;
   returnDate?: string;
   returnView?: "day" | "week";
@@ -64,18 +75,6 @@ const durationOptions = [
 ];
 
 const purposeOptions = ["Practice", "Scrimmage", "Game", "Tournament", "Other"];
-
-const groupOptions = [
-  "Tee Ball",
-  "8U Baseball",
-  "10U Baseball",
-  "12U Baseball",
-  "14U Baseball",
-  "8U Softball",
-  "10U Softball",
-  "12U Softball",
-  "14U Softball",
-];
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -120,19 +119,34 @@ function roomLabel(room: Room) {
     : room.name;
 }
 
+function formatSeasonLabel(season: Team["season"]) {
+  return season.charAt(0) + season.slice(1).toLowerCase();
+}
+
+function teamLabel(team: Team) {
+  return `${team.teamName} (${team.ageGroup} • ${formatSeasonLabel(team.season)} ${team.year})`;
+}
+
 const timeOptions = buildTimeOptions();
 
 export default function EditBookingForm({
   rooms,
+  teams,
   booking,
   returnDate,
   returnView = "day",
 }: Props) {
   const router = useRouter();
 
-  const [name, setName] = useState(booking.bookedByName);
-  const [email, setEmail] = useState(booking.bookedByEmail || "");
-  const [teamGroup, setTeamGroup] = useState(booking.teamGroup || groupOptions[0]);
+  const activeTeams = useMemo(
+    () =>
+      teams
+        .filter((team) => team.isActive)
+        .sort((a, b) => a.teamName.localeCompare(b.teamName)),
+    [teams]
+  );
+
+  const [teamId, setTeamId] = useState(booking.teamId || activeTeams[0]?.id || "");
   const [roomId, setRoomId] = useState(booking.roomId);
   const [date, setDate] = useState(dateToInputValue(booking.bookingDate));
   const [startTime, setStartTime] = useState(minutesToTime(booking.startTimeMinutes));
@@ -143,6 +157,11 @@ export default function EditBookingForm({
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "info" | "">("");
 
+  const selectedTeam = useMemo(
+    () => activeTeams.find((team) => team.id === teamId) ?? null,
+    [activeTeams, teamId]
+  );
+
   const showOpponent = purpose === "Game" || purpose === "Scrimmage";
 
   const availableDurations = useMemo(() => {
@@ -151,6 +170,12 @@ export default function EditBookingForm({
       (option) => startMinutes + Number(option.value) * 30 <= END_HOUR * 60
     );
   }, [startTime]);
+
+  useEffect(() => {
+    if (activeTeams.length > 0 && !activeTeams.some((team) => team.id === teamId)) {
+      setTeamId(activeTeams[0].id);
+    }
+  }, [activeTeams, teamId]);
 
   useEffect(() => {
     if (!availableDurations.some((option) => option.value === duration)) {
@@ -166,6 +191,13 @@ export default function EditBookingForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (!teamId || !selectedTeam) {
+      setMessage("Please select a team.");
+      setMessageType("error");
+      return;
+    }
+
     setMessage("Saving changes...");
     setMessageType("info");
 
@@ -174,9 +206,7 @@ export default function EditBookingForm({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          email,
-          teamGroup,
+          teamId,
           roomId,
           date,
           startTime,
@@ -227,46 +257,26 @@ export default function EditBookingForm({
         }}
       >
         <div>
-          <label htmlFor="name" style={fieldLabelStyle}>
-            Your Name
-          </label>
-          <input
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={fieldStyle}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="email" style={fieldLabelStyle}>
-            E-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={fieldStyle}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="teamGroup" style={fieldLabelStyle}>
-            Group
+          <label htmlFor="teamId" style={fieldLabelStyle}>
+            Team
           </label>
           <select
-            id="teamGroup"
-            value={teamGroup}
-            onChange={(e) => setTeamGroup(e.target.value)}
+            id="teamId"
+            value={teamId}
+            onChange={(e) => setTeamId(e.target.value)}
             style={fieldStyle}
+            required
+            disabled={activeTeams.length === 0}
           >
-            {groupOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
+            {activeTeams.length === 0 ? (
+              <option value="">No active teams available</option>
+            ) : (
+              activeTeams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {teamLabel(team)}
+                </option>
+              ))
+            )}
           </select>
         </div>
 
@@ -371,6 +381,30 @@ export default function EditBookingForm({
         )}
       </div>
 
+      {selectedTeam && (
+        <div
+          style={{
+            border: "1px solid #dbe3f0",
+            borderRadius: "14px",
+            padding: "1rem",
+            backgroundColor: "#f8fafc",
+          }}
+        >
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "0.4rem" }}>
+            Selected Team
+          </div>
+          <div style={{ color: "#334155" }}>{selectedTeam.teamName}</div>
+          <div style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem" }}>
+            {selectedTeam.ageGroup} • {formatSeasonLabel(selectedTeam.season)} {selectedTeam.year}
+          </div>
+          <div style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem" }}>
+            {selectedTeam.coachName}
+            {selectedTeam.coachEmail ? ` • ${selectedTeam.coachEmail}` : ""}
+            {selectedTeam.coachPhone?.trim() ? ` • ${selectedTeam.coachPhone}` : ""}
+          </div>
+        </div>
+      )}
+
       <div>
         <label htmlFor="notes" style={fieldLabelStyle}>
           Notes
@@ -387,15 +421,16 @@ export default function EditBookingForm({
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
         <button
           type="submit"
+          disabled={activeTeams.length === 0}
           style={{
             padding: "0.85rem 1.25rem",
-            backgroundColor: "#2563eb",
+            backgroundColor: activeTeams.length === 0 ? "#94a3b8" : "#2563eb",
             color: "#ffffff",
             border: "none",
             borderRadius: "12px",
             fontWeight: 600,
-            cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(37, 99, 235, 0.22)",
+            cursor: activeTeams.length === 0 ? "not-allowed" : "pointer",
+            boxShadow: activeTeams.length === 0 ? "none" : "0 4px 12px rgba(37, 99, 235, 0.22)",
           }}
         >
           Save Changes
