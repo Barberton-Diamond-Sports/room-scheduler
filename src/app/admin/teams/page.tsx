@@ -352,6 +352,53 @@ export default async function ManageTeamsPage({
         fontFamily: "Arial, sans-serif",
       }}
     >
+	<style>{`
+	  .teams-header-actions {
+		display: flex;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	  }
+
+	  .team-card-grid {
+		display: grid;
+		gap: 1rem;
+		grid-template-columns: minmax(260px, 1.3fr) minmax(240px, 1fr) 180px;
+		align-items: start;
+	  }
+
+	  .team-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	  }
+
+	  @media (max-width: 768px) {
+		.teams-header-actions {
+		  flex-direction: column;
+		  align-items: stretch;
+		}
+
+		.teams-header-actions a {
+		  width: 100%;
+		  box-sizing: border-box;
+		  text-align: center;
+		}
+
+		.team-card-grid {
+		  grid-template-columns: 1fr; /* ✅ stacks everything */
+		  gap: 0.75rem;
+		}
+
+		.team-actions {
+		  flex-direction: column;
+		}
+
+		.team-actions a,
+		.team-actions button {
+		  width: 100%;
+		}
+	  }
+	`}</style>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         <div
           style={{
@@ -379,7 +426,7 @@ export default async function ManageTeamsPage({
               </p>
             </div>
 
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div className="teams-header-actions">
               <Link
                 href="/admin"
                 style={{
@@ -827,14 +874,7 @@ export default async function ManageTeamsPage({
                       </form>
                     ) : (
                       <>
-                        <div
-                          style={{
-                            display: "grid",
-                            gap: "1rem",
-                            gridTemplateColumns: "minmax(260px, 1.3fr) minmax(240px, 1fr) 180px",
-                            alignItems: "start",
-                          }}
-                        >
+                        <div className="team-card-grid">
                           <div>
                             <div
                               style={{
@@ -871,14 +911,7 @@ export default async function ManageTeamsPage({
                             <div>{textOrDash(team.coachPhone)}</div>
                           </div>
 
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "0.6rem",
-                              alignItems: "stretch",
-                            }}
-                          >
+                          <div className="team-actions">
                             <Link
                               href={buildTeamsHref(selectedStatus, selectedSeason, { edit: team.id })}
                               style={{
