@@ -54,7 +54,7 @@ export default async function AdminUmpiresPage() {
 	`}</style>	
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
         <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.5rem", marginBottom: "1.5rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Manage Umpires</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Umpire Administration</h1>
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem" }}>
             Add, edit, and inactivate umpires. The list is shown alphabetically, and linked booking counts only include today and future bookings.
           </p>

@@ -83,9 +83,7 @@ export default async function AdminBlackoutsPage() {
       <div className="blackouts-shell">
         {/* HEADER */}
         <div className="blackouts-card" style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-            Field Blackouts
-          </h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Blackout Field Dates</h1>
 
           <p
             style={{

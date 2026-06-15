@@ -46,10 +46,6 @@ function inferSport(ageGroup: string | null | undefined) {
   return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
 }
 
-function isTeeBall(ageGroup: string | null | undefined) {
-  return ageGroup?.toLowerCase().includes("tee ball") ?? false;
-}
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -120,21 +116,19 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
       doesSoftball: umpire.doesSoftball,
     }));
 
-  const filteredBookings = bookings.filter((booking) => {
-    if (selectedUmpireId && booking.umpireId !== selectedUmpireId) return false;
-    if (assignmentFilter === "assigned" && !booking.umpireId) return false;
-    if (assignmentFilter === "unassigned" && booking.umpireId) return false;
+const filteredBookings = bookings.filter((booking) => {
+  if (selectedUmpireId && booking.umpireId !== selectedUmpireId) return false;
+  if (assignmentFilter === "assigned" && !booking.umpireId) return false;
+  if (assignmentFilter === "unassigned" && booking.umpireId) return false;
+  if (!booking.team?.requiresUmpire) return false;
 
-    const ageGroup = booking.team?.ageGroup;
+  const ageGroup = booking.team?.ageGroup;
+  const sport = inferSport(ageGroup);
 
-    // Exclude Tee Ball games from umpire scheduling
-    if (isTeeBall(ageGroup)) return false;
+  if (sportFilter !== "all" && sport !== sportFilter) return false;
 
-    const sport = inferSport(ageGroup);
-    if (sportFilter !== "all" && sport !== sportFilter) return false;
-
-    return true;
-  });
+  return true;
+});
 
   const groupedBookings = filteredBookings.reduce<
     Array<{ key: string; date: Date; items: typeof filteredBookings }>
@@ -281,7 +275,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
           className="umpire-schedule-card"
           style={{ marginBottom: "1.5rem" }}
         >
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Umpire Schedule</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Umpire Schedule</h1>
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
             Assign active umpires and filter the game list by umpire, assignment status, sport, and date range.
           </p>

@@ -1,3 +1,5 @@
+
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
@@ -82,6 +84,7 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
   const bookingPurpose = booking.title?.trim().toLowerCase() ?? "";
 
   const showAssignedUmpire =
+    booking.team?.requiresUmpire &&
     bookingPurpose !== "practice" &&
     bookingPurpose !== "scrimmage" &&
     bookingPurpose !== "other";

@@ -111,7 +111,7 @@ export default async function ManageTeamsPage({
     const season = String(formData.get("season") || "").trim() as TeamSeasonValue;
     const yearRaw = String(formData.get("year") || "").trim();
     const year = Number(yearRaw);
-
+	const requiresUmpire = formData.get("requiresUmpire") === "on";
     const returnStatus = String(formData.get("returnStatus") || "all").trim() as StatusFilterValue;
     const returnSeason = String(formData.get("returnSeason") || "all").trim();
 
@@ -137,6 +137,7 @@ export default async function ManageTeamsPage({
         season,
         year,
         isActive: true,
+		requiresUmpire,
       },
     });
 
@@ -157,6 +158,7 @@ export default async function ManageTeamsPage({
     const season = String(formData.get("season") || "").trim() as TeamSeasonValue;
     const yearRaw = String(formData.get("year") || "").trim();
     const year = Number(yearRaw);
+	const requiresUmpire = formData.get("requiresUmpire") === "on";
 
     const returnStatus = String(formData.get("returnStatus") || "all").trim() as StatusFilterValue;
     const returnSeason = String(formData.get("returnSeason") || "all").trim();
@@ -183,6 +185,7 @@ export default async function ManageTeamsPage({
         ageGroup,
         season,
         year,
+		requiresUmpire,
       },
     });
 
@@ -420,7 +423,7 @@ export default async function ManageTeamsPage({
             }}
           >
             <div>
-              <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Manage Teams</h1>
+              <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Manage Teams</h1>
               <p style={{ marginTop: 0, color: "#4b5563", marginBottom: 0 }}>
                 Add, edit, inactivate, reactivate, and delete teams stored in the system.
               </p>
@@ -575,6 +578,26 @@ export default async function ManageTeamsPage({
                   style={fieldStyle}
                 />
               </div>
+			  <div style={{ marginTop: "0.5rem" }}>
+			    <label
+				  style={{
+				    display: "flex",
+				    alignItems: "center",
+				    gap: "0.5rem",
+				    fontWeight: 600,
+				    color: "#334155",
+				    cursor: "pointer",
+				  }}
+			    >
+				  <input
+				    type="checkbox"
+				    name="requiresUmpire"
+				    defaultChecked={true}
+				    style={{ width: "16px", height: "16px" }}
+				  />
+				  Requires Umpire
+			    </label>
+			  </div>
             </div>
 
             <div>
@@ -710,6 +733,7 @@ export default async function ManageTeamsPage({
 
                 return (
                   <div
+				    id={`team-${team.id}`}
                     key={team.id}
                     style={{
                       border: "1px solid #e2e8f0",
@@ -837,6 +861,28 @@ export default async function ManageTeamsPage({
                               style={fieldStyle}
                             />
                           </div>
+						  
+<div style={{ marginTop: "0.5rem" }}>
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      fontWeight: 600,
+      color: "#334155",
+      cursor: "pointer",
+    }}
+  >
+    <input
+      type="checkbox"
+      name="requiresUmpire"
+      defaultChecked={team.requiresUmpire}
+      style={{ width: "16px", height: "16px" }}
+    />
+    Requires Umpire
+  </label>
+</div>
+
                         </div>
 
                         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -912,8 +958,10 @@ export default async function ManageTeamsPage({
                           </div>
 
                           <div className="team-actions">
-                            <Link
-                              href={buildTeamsHref(selectedStatus, selectedSeason, { edit: team.id })}
+                            
+<Link
+  href={`${buildTeamsHref(selectedStatus, selectedSeason, { edit: team.id })}#team-${team.id}`}
+
                               style={{
                                 display: "block",
                                 width: "100%",

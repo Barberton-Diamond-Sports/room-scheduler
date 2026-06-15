@@ -294,10 +294,13 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
       <div className="admin-shell">
         <div className="admin-card" style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Admin Dashboard</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>BDS Administration</h1>
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
             Quick access to field bookings, blackout controls, umpire scheduling, team management, and recent booking changes.
+			<Link href="/admin/users">Manage Admin Users</Link>
           </p>
+		  
+		  
 
           <div className="admin-nav-stack">
             <div className="admin-link-row">
@@ -368,6 +371,21 @@ export default async function AdminPage({ searchParams }: PageProps) {
                 Field Blackouts
               </Link>
             </div>
+			<div className="admin-link-row">
+  <Link
+    href="/admin/users"
+    style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
+  >
+    Manage Admin Users
+  </Link>
+
+  <Link
+    href="/api/admin/logout"
+    style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
+  >
+    Logout
+  </Link>
+</div>
           </div>
         </div>
 

@@ -472,7 +472,7 @@ const weekBlackoutMap = buildBlackoutMap(
 
       <div className="page-shell">
         <div className="hero-card">
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Bookings Calendar</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>BDS Field Calendar</h1>
 <p
   className="desktop-only"
   style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}

@@ -87,8 +87,7 @@ export default async function BookPage() {
           </p>
 
           <p style={{ marginTop: "0.5rem", color: "#4b5563", lineHeight: 1.5 }}>
-            If this is a game, please enter the matchup (for example:
-            <strong> Barberton Purple vs. Manchester</strong>).
+            <strong> If this is a game, please enter the opponent.</strong>
           </p>
 
           {/* NAV BUTTONS */}

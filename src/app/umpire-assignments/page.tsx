@@ -43,10 +43,6 @@ function inferSport(ageGroup: string | null | undefined) {
   return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
 }
 
-function isTeeBall(ageGroup: string | null | undefined) {
-  return ageGroup?.toLowerCase().includes("tee ball") ?? false;
-}
-
 function filterButtonStyle(active: boolean) {
   return {
     display: "inline-block",
@@ -97,16 +93,18 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
     }),
   ]);
 
-  const filteredBookings = bookings.filter((booking) => {
-    const ageGroup = booking.team?.ageGroup;
 
-    if (isTeeBall(ageGroup)) return false;
+const filteredBookings = bookings.filter((booking) => {
+  if (!booking.team?.requiresUmpire) return false;
 
-    const sport = inferSport(ageGroup);
-    if (sportFilter !== "all" && sport !== sportFilter) return false;
+  const ageGroup = booking.team?.ageGroup;
+  const sport = inferSport(ageGroup);
 
-    return true;
-  });
+  if (sportFilter !== "all" && sport !== sportFilter) return false;
+
+  return true;
+});
+
 
   const groups = filteredBookings.reduce<
     Array<{ key: string; date: Date; items: typeof filteredBookings }>
@@ -300,7 +298,7 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
         <div className="umpire-card umpire-header-card">
           <div className="umpire-header-top">
             <div>
-              <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Unassigned Games</h1>
+              <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Umpire Information</h1>
               <p style={{ margin: 0, color: "#4b5563", lineHeight: 1.5 }}>
                 Upcoming games that still need an umpire.
               </p>

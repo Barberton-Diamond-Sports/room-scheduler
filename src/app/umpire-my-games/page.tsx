@@ -42,10 +42,6 @@ function inferSport(ageGroup: string | null | undefined) {
   return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
 }
 
-function isTeeBall(ageGroup: string | null | undefined) {
-  return ageGroup?.toLowerCase().includes("tee ball") ?? false;
-}
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -77,9 +73,9 @@ export default async function UmpireMyGamesPage({ searchParams }: PageProps) {
     }),
   ]);
 
-  const eligibleBookings = allUpcomingAssignedBookings.filter((booking) => {
-    return !isTeeBall(booking.team?.ageGroup);
-  });
+const eligibleBookings = allUpcomingAssignedBookings.filter((booking) => {
+  return booking.team?.requiresUmpire;
+});
 
   const umpireIdsWithGames = new Set(
     eligibleBookings
@@ -308,11 +304,9 @@ export default async function UmpireMyGamesPage({ searchParams }: PageProps) {
         <div className="my-games-card my-games-header">
           <div className="my-games-header-top">
             <div>
-              <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-                My Assigned Games
-              </h1>
+              <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Games by Umpire</h1>
               <p style={{ margin: 0, color: "#4b5563", lineHeight: 1.5 }}>
-                Choose an umpire to view upcoming assigned games.
+                Choose an umpire to view upcoming games.
               </p>
             </div>
 

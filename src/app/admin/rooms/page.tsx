@@ -102,9 +102,7 @@ export default async function AdminRoomsPage() {
       <div className="rooms-shell">
         {/* HEADER */}
         <div className="rooms-card" style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-            Manage Fields
-          </h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Manage Fields</h1>
 
           <p
             style={{

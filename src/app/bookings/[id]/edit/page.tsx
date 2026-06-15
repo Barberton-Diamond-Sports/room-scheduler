@@ -13,16 +13,19 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
   const { id } = await params;
   const query = await searchParams;
 
+  // ✅ SECURE ACCESS CHECK
   const cookieStore = await cookies();
-  const adminAccess = cookieStore.get("admin_access")?.value;
+  const isAdmin = cookieStore.get("admin_access")?.value === "granted";
 
-  if (adminAccess !== "granted") {
-    redirect(`/admin/unlock?next=/bookings/${id}/edit`);
+  if (!isAdmin) {
+    redirect(`/admin-login?next=/bookings/${id}/edit`);
   }
 
+  // ✅ RETURN STATE
   const returnDate = query.date;
   const returnView = query.view === "week" ? "week" : "day";
 
+  // ✅ LOAD BOOKING
   const booking = await prisma.booking.findUnique({
     where: { id },
     include: {
@@ -35,6 +38,7 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
     notFound();
   }
 
+  // ✅ LOAD LOOKUPS
   const [rooms, teams] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
@@ -50,6 +54,7 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
     }),
   ]);
 
+  // ✅ BACK LINK
   const detailsHref = returnDate
     ? `/bookings/${id}?date=${returnDate}&view=${returnView}`
     : `/bookings/${id}?view=${returnView}`;
@@ -64,6 +69,7 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
       }}
     >
       <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+        {/* HEADER */}
         <div
           style={{
             backgroundColor: "#ffffff",
@@ -77,7 +83,14 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
           <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
             Edit Booking
           </h1>
-          <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem" }}>
+
+          <p
+            style={{
+              marginTop: 0,
+              color: "#4b5563",
+              marginBottom: "1rem",
+            }}
+          >
             Update the details for this field reservation.
           </p>
 
@@ -97,9 +110,26 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
             >
               Back to Details
             </Link>
+
+            <Link
+              href="/admin"
+              style={{
+                display: "inline-block",
+                padding: "0.65rem 1rem",
+                backgroundColor: "#f8fafc",
+                border: "1px solid #dbe3f0",
+                borderRadius: "10px",
+                color: "#475569",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              Admin
+            </Link>
           </div>
         </div>
 
+        {/* FORM */}
         <div
           style={{
             backgroundColor: "#ffffff",

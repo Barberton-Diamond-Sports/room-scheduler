@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-	"dev": "next dev",
-	"build": "next build",
-	"postinstall": "prisma generate"
+    "dev": "next dev",
+    "build": "next build",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
     "next": "16.2.7",
     "prisma": "^6.19.3",
     "react": "19.2.4",
