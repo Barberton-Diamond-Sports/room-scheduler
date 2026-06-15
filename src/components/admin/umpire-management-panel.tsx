@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -52,6 +51,42 @@ function emptyForm(): FormState {
   };
 }
 
+function filterButtonStyle(active: boolean) {
+  return {
+    padding: "0.55rem 0.85rem",
+    borderRadius: "999px",
+    border: active ? "1px solid #93c5fd" : "1px solid #dbe3f0",
+    backgroundColor: active ? "#dbeafe" : "#f8fafc",
+    color: active ? "#1d4ed8" : "#475569",
+    fontWeight: 700,
+    cursor: "pointer",
+  } as const;
+}
+
+function sportBadgeStyle(kind: "baseball" | "softball") {
+  if (kind === "baseball") {
+    return {
+      display: "inline-block",
+      padding: "0.3rem 0.55rem",
+      borderRadius: "999px",
+      backgroundColor: "#dbeafe",
+      color: "#1d4ed8",
+      fontWeight: 700,
+      fontSize: "0.8rem",
+    } as const;
+  }
+
+  return {
+    display: "inline-block",
+    padding: "0.3rem 0.55rem",
+    borderRadius: "999px",
+    backgroundColor: "#fce7f3",
+    color: "#be185d",
+    fontWeight: 700,
+    fontSize: "0.8rem",
+  } as const;
+}
+
 export default function UmpireManagementPanel({ items }: Props) {
   const router = useRouter();
   const [createForm, setCreateForm] = useState<FormState>(emptyForm());
@@ -102,6 +137,7 @@ export default function UmpireManagementPanel({ items }: Props) {
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     if (!createForm.name.trim()) {
       setMessage("Umpire name is required.");
       return;
@@ -109,13 +145,16 @@ export default function UmpireManagementPanel({ items }: Props) {
 
     setIsSaving(true);
     setMessage("");
+
     try {
       const response = await fetch("/api/admin/umpires", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(createForm),
       });
+
       const result = await response.json();
+
       if (result.success) {
         setCreateForm(emptyForm());
         router.refresh();
@@ -138,13 +177,16 @@ export default function UmpireManagementPanel({ items }: Props) {
 
     setIsSaving(true);
     setMessage("");
+
     try {
       const response = await fetch(`/api/admin/umpires/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
       });
+
       const result = await response.json();
+
       if (result.success) {
         setEditingId(null);
         setEditForm(emptyForm());
@@ -163,13 +205,16 @@ export default function UmpireManagementPanel({ items }: Props) {
   async function handleToggleActive(item: UmpireItem) {
     setIsSaving(true);
     setMessage("");
+
     try {
       const response = await fetch(`/api/admin/umpires/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !item.isActive }),
       });
+
       const result = await response.json();
+
       if (result.success) {
         if (editingId === item.id) {
           setEditingId(null);
@@ -188,219 +233,633 @@ export default function UmpireManagementPanel({ items }: Props) {
   }
 
   return (
-    <div style={{ display: "grid", gap: "1.5rem" }}>
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: "14px", padding: "1rem", backgroundColor: "#f8fafc" }}>
-        <h2 style={{ marginTop: 0 }}>Add Umpire</h2>
-        <form onSubmit={handleCreate} style={{ display: "grid", gap: "1rem" }}>
-          <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-            <div>
-              <label style={{ display: "block", marginBottom: "0.35rem", fontWeight: 600, color: "#334155" }}>Name</label>
-              <input value={createForm.name} onChange={(e) => setCreateValue("name", e.target.value)} style={fieldStyle} />
+    <>
+      <style>{`
+        .umpire-panel-root {
+          display: grid;
+          gap: 1.5rem;
+        }
+
+        .umpire-section-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 1rem;
+          background-color: #f8fafc;
+        }
+
+        .umpire-create-grid {
+          display: grid;
+          gap: 1rem;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .umpire-checkbox-row {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .umpire-list-header {
+          display: flex;
+          justify-content: space-between;
+          gap: 1rem;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .umpire-filter-stack {
+          display: grid;
+          gap: 0.6rem;
+        }
+
+        .umpire-filter-row {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .umpire-item-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          background-color: #ffffff;
+          padding: 1rem;
+        }
+
+        .umpire-item-grid {
+          display: grid;
+          gap: 1rem;
+          grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1fr) auto;
+          align-items: start;
+        }
+
+        .umpire-edit-stack {
+          display: grid;
+          gap: 0.6rem;
+        }
+
+        .umpire-actions {
+          display: grid;
+          gap: 0.5rem;
+          min-width: 180px;
+        }
+
+        .umpire-checkbox-edit-row {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .umpire-wrap {
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 980px) {
+          .umpire-create-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .umpire-item-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .umpire-create-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .umpire-checkbox-row,
+          .umpire-checkbox-edit-row,
+          .umpire-filter-row,
+          .umpire-list-header {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .umpire-filter-row button,
+          .umpire-actions button {
+            width: 100%;
+          }
+
+          .umpire-item-grid {
+            grid-template-columns: 1fr;
+            gap: 0.85rem;
+          }
+
+          .umpire-actions {
+            min-width: 0;
+          }
+        }
+      `}</style>
+
+      <div className="umpire-panel-root">
+        <div className="umpire-section-card">
+          <h2 style={{ marginTop: 0 }}>Add Umpire</h2>
+
+          <form onSubmit={handleCreate} style={{ display: "grid", gap: "1rem" }}>
+            <div className="umpire-create-grid">
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "0.35rem",
+                    fontWeight: 600,
+                    color: "#334155",
+                  }}
+                >
+                  Name
+                </label>
+                <input
+                  value={createForm.name}
+                  onChange={(e) => setCreateValue("name", e.target.value)}
+                  style={fieldStyle}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "0.35rem",
+                    fontWeight: 600,
+                    color: "#334155",
+                  }}
+                >
+                  Phone
+                </label>
+                <input
+                  value={createForm.phone}
+                  onChange={(e) => setCreateValue("phone", e.target.value)}
+                  style={fieldStyle}
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "0.35rem",
+                    fontWeight: 600,
+                    color: "#334155",
+                  }}
+                >
+                  Email
+                </label>
+                <input
+                  value={createForm.email}
+                  onChange={(e) => setCreateValue("email", e.target.value)}
+                  style={fieldStyle}
+                />
+              </div>
             </div>
+
             <div>
-              <label style={{ display: "block", marginBottom: "0.35rem", fontWeight: 600, color: "#334155" }}>Phone</label>
-              <input value={createForm.phone} onChange={(e) => setCreateValue("phone", e.target.value)} style={fieldStyle} />
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "0.35rem", fontWeight: 600, color: "#334155" }}>Email</label>
-              <input value={createForm.email} onChange={(e) => setCreateValue("email", e.target.value)} style={fieldStyle} />
-            </div>
-          </div>
-
-          <div>
-            <label style={{ display: "block", marginBottom: "0.35rem", fontWeight: 600, color: "#334155" }}>Notes</label>
-            <textarea value={createForm.notes} onChange={(e) => setCreateValue("notes", e.target.value)} style={{ ...fieldStyle, minHeight: "96px", resize: "vertical" as const }} />
-          </div>
-
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <label style={{ display: "flex", gap: "0.5rem", alignItems: "center", fontWeight: 600, color: "#334155" }}>
-              <input type="checkbox" checked={createForm.doesBaseball} onChange={(e) => setCreateValue("doesBaseball", e.target.checked)} />
-              Baseball
-            </label>
-            <label style={{ display: "flex", gap: "0.5rem", alignItems: "center", fontWeight: 600, color: "#334155" }}>
-              <input type="checkbox" checked={createForm.doesSoftball} onChange={(e) => setCreateValue("doesSoftball", e.target.checked)} />
-              Softball
-            </label>
-            <label style={{ display: "flex", gap: "0.5rem", alignItems: "center", fontWeight: 600, color: "#334155" }}>
-              <input type="checkbox" checked={createForm.isActive} onChange={(e) => setCreateValue("isActive", e.target.checked)} />
-              Active
-            </label>
-          </div>
-
-          <div>
-            <button type="submit" disabled={isSaving} style={{ padding: "0.85rem 1.25rem", backgroundColor: "#2563eb", color: "#ffffff", border: "none", borderRadius: "12px", fontWeight: 700, cursor: isSaving ? "default" : "pointer" }}>
-              {isSaving ? "Saving..." : "Add Umpire"}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
-        <h2 style={{ margin: 0 }}>Umpire List</h2>
-        <div style={{ display: "grid", gap: "0.6rem" }}>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            {(["all", "active", "inactive"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setStatusFilter(option)}
+              <label
                 style={{
-                  padding: "0.55rem 0.85rem",
-                  borderRadius: "999px",
-                  border: statusFilter === option ? "1px solid #93c5fd" : "1px solid #dbe3f0",
-                  backgroundColor: statusFilter === option ? "#dbeafe" : "#f8fafc",
-                  color: statusFilter === option ? "#1d4ed8" : "#475569",
-                  fontWeight: 700,
-                  cursor: "pointer",
+                  display: "block",
+                  marginBottom: "0.35rem",
+                  fontWeight: 600,
+                  color: "#334155",
                 }}
               >
-                {option === "all" ? "All Statuses" : option === "active" ? "Active" : "Inactive"}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            {(["all", "baseball", "softball"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setSportFilter(option)}
+                Notes
+              </label>
+              <textarea
+                value={createForm.notes}
+                onChange={(e) => setCreateValue("notes", e.target.value)}
                 style={{
-                  padding: "0.55rem 0.85rem",
-                  borderRadius: "999px",
-                  border: sportFilter === option ? "1px solid #93c5fd" : "1px solid #dbe3f0",
-                  backgroundColor: sportFilter === option ? "#dbeafe" : "#f8fafc",
-                  color: sportFilter === option ? "#1d4ed8" : "#475569",
-                  fontWeight: 700,
-                  cursor: "pointer",
+                  ...fieldStyle,
+                  minHeight: "96px",
+                  resize: "vertical",
+                }}
+              />
+            </div>
+
+            <div className="umpire-checkbox-row">
+              <label
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  alignItems: "center",
+                  fontWeight: 600,
+                  color: "#334155",
                 }}
               >
-                {option === "all" ? "All Sports" : option === "baseball" ? "Baseball" : "Softball"}
+                <input
+                  type="checkbox"
+                  checked={createForm.doesBaseball}
+                  onChange={(e) => setCreateValue("doesBaseball", e.target.checked)}
+                />
+                Baseball
+              </label>
+
+              <label
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  alignItems: "center",
+                  fontWeight: 600,
+                  color: "#334155",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={createForm.doesSoftball}
+                  onChange={(e) => setCreateValue("doesSoftball", e.target.checked)}
+                />
+                Softball
+              </label>
+
+              <label
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  alignItems: "center",
+                  fontWeight: 600,
+                  color: "#334155",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={createForm.isActive}
+                  onChange={(e) => setCreateValue("isActive", e.target.checked)}
+                />
+                Active
+              </label>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={isSaving}
+                style={{
+                  padding: "0.85rem 1.25rem",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "12px",
+                  fontWeight: 700,
+                  cursor: isSaving ? "default" : "pointer",
+                }}
+              >
+                {isSaving ? "Saving..." : "Add Umpire"}
               </button>
-            ))}
+            </div>
+          </form>
+        </div>
+
+        <div className="umpire-list-header">
+          <h2 style={{ margin: 0 }}>Umpire List</h2>
+
+          <div className="umpire-filter-stack">
+            <div className="umpire-filter-row">
+              {(["all", "active", "inactive"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setStatusFilter(option)}
+                  style={filterButtonStyle(statusFilter === option)}
+                >
+                  {option === "all"
+                    ? "All Statuses"
+                    : option === "active"
+                    ? "Active"
+                    : "Inactive"}
+                </button>
+              ))}
+            </div>
+
+            <div className="umpire-filter-row">
+              {(["all", "baseball", "softball"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setSportFilter(option)}
+                  style={filterButtonStyle(sportFilter === option)}
+                >
+                  {option === "all"
+                    ? "All Sports"
+                    : option === "baseball"
+                    ? "Baseball"
+                    : "Softball"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {message && <div style={{ color: "#991b1b", fontWeight: 700 }}>{message}</div>}
+        {message && (
+          <div style={{ color: "#991b1b", fontWeight: 700 }}>
+            {message}
+          </div>
+        )}
 
-      {filteredItems.length === 0 ? (
-        <div style={{ padding: "1rem", border: "1px dashed #cbd5e1", borderRadius: "12px", color: "#64748b", backgroundColor: "#ffffff" }}>
-          No umpires match the current filters.
-        </div>
-      ) : (
-        <div style={{ display: "grid", gap: "0.9rem" }}>
-          {filteredItems.map((item) => {
-            const editing = editingId === item.id;
-            return (
-              <div key={item.id} style={{ border: "1px solid #e2e8f0", borderRadius: "14px", backgroundColor: "#ffffff", padding: "1rem" }}>
-                <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1fr) auto", alignItems: "start" }}>
-                  <div>
-                    <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>Umpire</div>
-                    {editing ? (
-                      <div style={{ display: "grid", gap: "0.6rem" }}>
-                        <input value={editForm.name} onChange={(e) => setEditValue("name", e.target.value)} style={fieldStyle} />
-                        <input value={editForm.phone} onChange={(e) => setEditValue("phone", e.target.value)} style={fieldStyle} placeholder="Phone" />
-                        <input value={editForm.email} onChange={(e) => setEditValue("email", e.target.value)} style={fieldStyle} placeholder="Email" />
+        {filteredItems.length === 0 ? (
+          <div
+            style={{
+              padding: "1rem",
+              border: "1px dashed #cbd5e1",
+              borderRadius: "12px",
+              color: "#64748b",
+              backgroundColor: "#ffffff",
+            }}
+          >
+            No umpires match the current filters.
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: "0.9rem" }}>
+            {filteredItems.map((item) => {
+              const editing = editingId === item.id;
+
+              return (
+                <div key={item.id} className="umpire-item-card">
+                  <div className="umpire-item-grid">
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "0.82rem",
+                          color: "#64748b",
+                          marginBottom: "0.25rem",
+                        }}
+                      >
+                        Umpire
                       </div>
-                    ) : (
-                      <>
-                        <div style={{ fontWeight: 800, color: "#0f172a" }}>{item.name}</div>
-                        <div style={{ color: "#475569", marginTop: "0.2rem" }}>{item.phone || "—"}</div>
-                        <div style={{ color: "#475569", marginTop: "0.2rem" }}>{item.email || "—"}</div>
-                      </>
-                    )}
-                  </div>
 
-                  <div>
-                    <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>Notes / Sports</div>
-                    {editing ? (
-                      <div style={{ display: "grid", gap: "0.6rem" }}>
-                        <textarea value={editForm.notes} onChange={(e) => setEditValue("notes", e.target.value)} style={{ ...fieldStyle, minHeight: "96px", resize: "vertical" as const }} />
-                        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                          <label style={{ display: "flex", gap: "0.45rem", alignItems: "center", fontWeight: 600, color: "#334155" }}>
-                            <input type="checkbox" checked={editForm.doesBaseball} onChange={(e) => setEditValue("doesBaseball", e.target.checked)} />
-                            Baseball
-                          </label>
-                          <label style={{ display: "flex", gap: "0.45rem", alignItems: "center", fontWeight: 600, color: "#334155" }}>
-                            <input type="checkbox" checked={editForm.doesSoftball} onChange={(e) => setEditValue("doesSoftball", e.target.checked)} />
-                            Softball
-                          </label>
-                          <label style={{ display: "flex", gap: "0.45rem", alignItems: "center", fontWeight: 600, color: "#334155" }}>
-                            <input type="checkbox" checked={editForm.isActive} onChange={(e) => setEditValue("isActive", e.target.checked)} />
-                            Active
-                          </label>
+                      {editing ? (
+                        <div className="umpire-edit-stack">
+                          <input
+                            value={editForm.name}
+                            onChange={(e) => setEditValue("name", e.target.value)}
+                            style={fieldStyle}
+                          />
+                          <input
+                            value={editForm.phone}
+                            onChange={(e) => setEditValue("phone", e.target.value)}
+                            style={fieldStyle}
+                            placeholder="Phone"
+                          />
+                          <input
+                            value={editForm.email}
+                            onChange={(e) => setEditValue("email", e.target.value)}
+                            style={fieldStyle}
+                            placeholder="Email"
+                          />
                         </div>
+                      ) : (
+                        <>
+                          <div
+                            className="umpire-wrap"
+                            style={{ fontWeight: 800, color: "#0f172a" }}
+                          >
+                            {item.name}
+                          </div>
+                          <div
+                            className="umpire-wrap"
+                            style={{ color: "#475569", marginTop: "0.2rem" }}
+                          >
+                            {item.phone || "—"}
+                          </div>
+                          <div
+                            className="umpire-wrap"
+                            style={{ color: "#475569", marginTop: "0.2rem" }}
+                          >
+                            {item.email || "—"}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "0.82rem",
+                          color: "#64748b",
+                          marginBottom: "0.25rem",
+                        }}
+                      >
+                        Notes / Sports
                       </div>
-                    ) : (
-                      <>
-                        <div style={{ color: "#475569" }}>{item.notes || "—"}</div>
-                        <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap", marginTop: "0.6rem" }}>
-                          {item.doesBaseball && <span style={{ display: "inline-block", padding: "0.3rem 0.55rem", borderRadius: "999px", backgroundColor: "#dbeafe", color: "#1d4ed8", fontWeight: 700, fontSize: "0.8rem" }}>Baseball</span>}
-                          {item.doesSoftball && <span style={{ display: "inline-block", padding: "0.3rem 0.55rem", borderRadius: "999px", backgroundColor: "#fce7f3", color: "#be185d", fontWeight: 700, fontSize: "0.8rem" }}>Softball</span>}
-                          {!item.doesBaseball && !item.doesSoftball && <span style={{ color: "#94a3b8" }}>—</span>}
+
+                      {editing ? (
+                        <div className="umpire-edit-stack">
+                          <textarea
+                            value={editForm.notes}
+                            onChange={(e) => setEditValue("notes", e.target.value)}
+                            style={{
+                              ...fieldStyle,
+                              minHeight: "96px",
+                              resize: "vertical",
+                            }}
+                          />
+
+                          <div className="umpire-checkbox-edit-row">
+                            <label
+                              style={{
+                                display: "flex",
+                                gap: "0.45rem",
+                                alignItems: "center",
+                                fontWeight: 600,
+                                color: "#334155",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={editForm.doesBaseball}
+                                onChange={(e) =>
+                                  setEditValue("doesBaseball", e.target.checked)
+                                }
+                              />
+                              Baseball
+                            </label>
+
+                            <label
+                              style={{
+                                display: "flex",
+                                gap: "0.45rem",
+                                alignItems: "center",
+                                fontWeight: 600,
+                                color: "#334155",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={editForm.doesSoftball}
+                                onChange={(e) =>
+                                  setEditValue("doesSoftball", e.target.checked)
+                                }
+                              />
+                              Softball
+                            </label>
+
+                            <label
+                              style={{
+                                display: "flex",
+                                gap: "0.45rem",
+                                alignItems: "center",
+                                fontWeight: 600,
+                                color: "#334155",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={editForm.isActive}
+                                onChange={(e) =>
+                                  setEditValue("isActive", e.target.checked)
+                                }
+                              />
+                              Active
+                            </label>
+                          </div>
                         </div>
-                      </>
-                    )}
-                  </div>
+                      ) : (
+                        <>
+                          <div className="umpire-wrap" style={{ color: "#475569", lineHeight: 1.4 }}>
+                            {item.notes || "—"}
+                          </div>
 
-                  <div>
-					  <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "0.25rem" }}>
-						Status / Assignments
-					  </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "0.45rem",
+                              flexWrap: "wrap",
+                              marginTop: "0.6rem",
+                            }}
+                          >
+                            {item.doesBaseball && (
+                              <span style={sportBadgeStyle("baseball")}>Baseball</span>
+                            )}
+                            {item.doesSoftball && (
+                              <span style={sportBadgeStyle("softball")}>Softball</span>
+                            )}
+                            {!item.doesBaseball && !item.doesSoftball && (
+                              <span style={{ color: "#94a3b8" }}>—</span>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
 
-					  <div
-						style={{
-						  display: "inline-block",
-						  padding: "0.35rem 0.65rem",
-						  borderRadius: "999px",
-						  backgroundColor: item.isActive ? "#dcfce7" : "#fee2e2",
-						  color: item.isActive ? "#166534" : "#991b1b",
-						  fontWeight: 700,
-						  fontSize: "0.82rem",
-						}}
-					  >
-						{item.isActive ? "Active" : "Inactive"}
-					  </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "0.82rem",
+                          color: "#64748b",
+                          marginBottom: "0.25rem",
+                        }}
+                      >
+                        Status / Assignments
+                      </div>
 
-					  <div style={{ marginTop: "0.45rem" }}>
-						<a
-						  href={`/admin/umpire-schedule?umpireId=${item.id}&assignment=assigned`}
-						  style={{
-							color: "#1d4ed8",
-							fontWeight: 600,
-							textDecoration: "none",
-						  }}
-						>
-						  Upcoming Games: {item.bookingCount}
-						</a>
-					  </div>
-					</div>
+                      <div
+                        style={{
+                          display: "inline-block",
+                          padding: "0.35rem 0.65rem",
+                          borderRadius: "999px",
+                          backgroundColor: item.isActive ? "#dcfce7" : "#fee2e2",
+                          color: item.isActive ? "#166534" : "#991b1b",
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                        }}
+                      >
+                        {item.isActive ? "Active" : "Inactive"}
+                      </div>
 
-                  <div style={{ display: "grid", gap: "0.5rem", minWidth: "180px" }}>
-                    {!editing ? (
-                      <button type="button" onClick={() => startEdit(item)} disabled={isSaving} style={{ padding: "0.6rem 0.85rem", backgroundColor: "#dbeafe", border: "1px solid #93c5fd", borderRadius: "8px", color: "#1d4ed8", fontWeight: 700, cursor: isSaving ? "default" : "pointer" }}>
-                        Edit
+                      <div style={{ marginTop: "0.45rem" }}>
+                        <a
+                          href={`/admin/umpire-schedule?umpireId=${item.id}&assignment=assigned`}
+                          style={{
+                            color: "#1d4ed8",
+                            fontWeight: 600,
+                            textDecoration: "none",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          Upcoming Games: {item.bookingCount}
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="umpire-actions">
+                      {!editing ? (
+                        <button
+                          type="button"
+                          onClick={() => startEdit(item)}
+                          disabled={isSaving}
+                          style={{
+                            padding: "0.6rem 0.85rem",
+                            backgroundColor: "#dbeafe",
+                            border: "1px solid #93c5fd",
+                            borderRadius: "8px",
+                            color: "#1d4ed8",
+                            fontWeight: 700,
+                            cursor: isSaving ? "default" : "pointer",
+                          }}
+                        >
+                          Edit
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEdit(item.id)}
+                            disabled={isSaving}
+                            style={{
+                              padding: "0.6rem 0.85rem",
+                              backgroundColor: "#dcfce7",
+                              border: "1px solid #86efac",
+                              borderRadius: "8px",
+                              color: "#166534",
+                              fontWeight: 700,
+                              cursor: isSaving ? "default" : "pointer",
+                            }}
+                          >
+                            {isSaving ? "Saving..." : "Save"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            disabled={isSaving}
+                            style={{
+                              padding: "0.6rem 0.85rem",
+                              backgroundColor: "#f8fafc",
+                              border: "1px solid #dbe3f0",
+                              borderRadius: "8px",
+                              color: "#475569",
+                              fontWeight: 700,
+                              cursor: isSaving ? "default" : "pointer",
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(item)}
+                        disabled={isSaving}
+                        style={{
+                          padding: "0.6rem 0.85rem",
+                          backgroundColor: item.isActive ? "#fef3c7" : "#dcfce7",
+                          border: item.isActive ? "1px solid #fcd34d" : "1px solid #86efac",
+                          borderRadius: "8px",
+                          color: item.isActive ? "#92400e" : "#166534",
+                          fontWeight: 700,
+                          cursor: isSaving ? "default" : "pointer",
+                        }}
+                      >
+                        {item.isActive ? "Set Inactive" : "Set Active"}
                       </button>
-                    ) : (
-                      <>
-                        <button type="button" onClick={() => handleSaveEdit(item.id)} disabled={isSaving} style={{ padding: "0.6rem 0.85rem", backgroundColor: "#dcfce7", border: "1px solid #86efac", borderRadius: "8px", color: "#166534", fontWeight: 700, cursor: isSaving ? "default" : "pointer" }}>
-                          {isSaving ? "Saving..." : "Save"}
-                        </button>
-                        <button type="button" onClick={cancelEdit} disabled={isSaving} style={{ padding: "0.6rem 0.85rem", backgroundColor: "#f8fafc", border: "1px solid #dbe3f0", borderRadius: "8px", color: "#475569", fontWeight: 700, cursor: isSaving ? "default" : "pointer" }}>
-                          Cancel
-                        </button>
-                      </>
-                    )}
-                    <button type="button" onClick={() => handleToggleActive(item)} disabled={isSaving} style={{ padding: "0.6rem 0.85rem", backgroundColor: item.isActive ? "#fef3c7" : "#dcfce7", border: item.isActive ? "1px solid #fcd34d" : "1px solid #86efac", borderRadius: "8px", color: item.isActive ? "#92400e" : "#166534", fontWeight: 700, cursor: isSaving ? "default" : "pointer" }}>
-                      {item.isActive ? "Set Inactive" : "Set Active"}
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </>
   );
 }

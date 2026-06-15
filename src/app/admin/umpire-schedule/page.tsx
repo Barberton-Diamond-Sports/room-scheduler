@@ -55,11 +55,14 @@ export const revalidate = 0;
 
 export default async function UmpireSchedulePage({ searchParams }: PageProps) {
   const params = await searchParams;
+
   const selectedUmpireId = typeof params.umpireId === "string" ? params.umpireId : "";
+
   const assignmentFilter =
     params.assignment === "assigned" || params.assignment === "unassigned"
       ? params.assignment
       : "all";
+
   const sportFilter =
     params.sport === "baseball" || params.sport === "softball"
       ? params.sport
@@ -67,7 +70,6 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
 
   const today = new Date();
   const defaultStart = new Date(today);
-  defaultStart.setDate(today.getDate());
   defaultStart.setHours(0, 0, 0, 0);
 
   const startDateValue =
@@ -80,7 +82,9 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
   const rangeStart = fromDateInputValue(startDateValue);
   const rawRangeEnd = endDateValue ? fromDateInputValue(endDateValue) : null;
   const rangeEndExclusive = rawRangeEnd ? new Date(rawRangeEnd.getTime()) : null;
-  if (rangeEndExclusive) rangeEndExclusive.setDate(rangeEndExclusive.getDate() + 1);
+  if (rangeEndExclusive) {
+    rangeEndExclusive.setDate(rangeEndExclusive.getDate() + 1);
+  }
 
   const [bookings, umpires] = await Promise.all([
     prisma.booking.findMany({
@@ -97,11 +101,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
         team: true,
         umpireRecord: true,
       },
-      orderBy: [
-        { bookingDate: "asc" },
-        { startTimeMinutes: "asc" },
-        { roomId: "asc" },
-      ],
+      orderBy: [{ bookingDate: "asc" }, { startTimeMinutes: "asc" }, { roomId: "asc" }],
     }),
     prisma.umpire.findMany({
       orderBy: [{ isActive: "desc" }, { name: "asc" }],
@@ -110,6 +110,15 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
 
   const selectedUmpire =
     selectedUmpireId ? umpires.find((u) => u.id === selectedUmpireId) ?? null : null;
+
+  const activeUmpireOptions = umpires
+    .filter((umpire) => umpire.isActive)
+    .map((umpire) => ({
+      id: umpire.id,
+      name: umpire.name,
+      doesBaseball: umpire.doesBaseball,
+      doesSoftball: umpire.doesSoftball,
+    }));
 
   const filteredBookings = bookings.filter((booking) => {
     if (selectedUmpireId && booking.umpireId !== selectedUmpireId) return false;
@@ -146,32 +155,138 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
     return acc;
   }, []);
 
+  const hasActiveFilters =
+    !!selectedUmpire ||
+    assignmentFilter !== "all" ||
+    sportFilter !== "all" ||
+    !!endDateValue;
+
   return (
     <main
       style={{
         minHeight: "100vh",
         backgroundColor: "#f5f7fb",
-        padding: "2rem",
+        padding: "1rem",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+      <style>{`
+        .umpire-schedule-shell {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .umpire-schedule-card {
+          background-color: #ffffff;
+          border: 1px solid #dbe3f0;
+          border-radius: 16px;
+          padding: 1.25rem;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        .umpire-schedule-top-links {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+          margin-bottom: 1rem;
+        }
+
+        .umpire-schedule-filter-grid {
+          display: grid;
+          gap: 1rem;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .umpire-schedule-filter-actions {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .umpire-schedule-groups {
+          display: grid;
+          gap: 1.5rem;
+        }
+
+        .umpire-schedule-section-heading {
+          margin-bottom: 0.9rem;
+          font-size: 1.35rem;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.25;
+        }
+
+        .umpire-schedule-booking-list {
+          display: grid;
+          gap: 0.85rem;
+        }
+
+        .umpire-schedule-booking-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 1rem;
+          background-color: #ffffff;
+        }
+
+        .umpire-schedule-booking-grid {
+          display: grid;
+          gap: 1rem;
+          grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(320px, 420px);
+          align-items: start;
+        }
+
+        .umpire-schedule-wrap {
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 768px) {
+          .umpire-schedule-card {
+            padding: 1rem;
+            border-radius: 14px;
+          }
+
+          .umpire-schedule-top-links,
+          .umpire-schedule-filter-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .umpire-schedule-top-links a,
+          .umpire-schedule-filter-actions a,
+          .umpire-schedule-filter-actions button {
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+          }
+
+          .umpire-schedule-booking-grid {
+            grid-template-columns: 1fr;
+            gap: 0.85rem;
+          }
+
+          .umpire-schedule-section-heading {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+          }
+
+          .umpire-schedule-booking-card {
+            padding: 0.9rem;
+          }
+        }
+      `}</style>
+
+      <div className="umpire-schedule-shell">
         <div
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #dbe3f0",
-            borderRadius: "16px",
-            padding: "1.5rem",
-            marginBottom: "1.5rem",
-            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
-          }}
+          className="umpire-schedule-card"
+          style={{ marginBottom: "1.5rem" }}
         >
           <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Umpire Schedule</h1>
-          <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem" }}>
+          <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
             Assign active umpires and filter the game list by umpire, assignment status, sport, and date range.
           </p>
 
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+          <div className="umpire-schedule-top-links">
             <Link
               href="/admin"
               style={{
@@ -222,13 +337,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
           </div>
 
           <form method="GET" style={{ display: "grid", gap: "1rem" }}>
-            <div
-              style={{
-                display: "grid",
-                gap: "1rem",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              }}
-            >
+            <div className="umpire-schedule-filter-grid">
               <div>
                 <label
                   htmlFor="umpireId"
@@ -252,6 +361,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
                     borderRadius: "10px",
                     backgroundColor: "#f8fafc",
                     fontSize: "0.95rem",
+                    boxSizing: "border-box",
                   }}
                 >
                   <option value="">All games</option>
@@ -287,6 +397,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
                     borderRadius: "10px",
                     backgroundColor: "#f8fafc",
                     fontSize: "0.95rem",
+                    boxSizing: "border-box",
                   }}
                 >
                   <option value="all">All</option>
@@ -318,6 +429,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
                     borderRadius: "10px",
                     backgroundColor: "#f8fafc",
                     fontSize: "0.95rem",
+                    boxSizing: "border-box",
                   }}
                 >
                   <option value="all">All sports</option>
@@ -350,6 +462,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
                     borderRadius: "10px",
                     backgroundColor: "#f8fafc",
                     fontSize: "0.95rem",
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
@@ -378,12 +491,13 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
                     borderRadius: "10px",
                     backgroundColor: "#f8fafc",
                     fontSize: "0.95rem",
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div className="umpire-schedule-filter-actions">
               <button
                 type="submit"
                 style={{
@@ -417,10 +531,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
             </div>
           </form>
 
-          {(selectedUmpire ||
-            assignmentFilter !== "all" ||
-            sportFilter !== "all" ||
-            endDateValue) && (
+          {hasActiveFilters && (
             <div
               style={{
                 marginTop: "1rem",
@@ -430,6 +541,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
                 border: "1px solid #bfdbfe",
                 color: "#1e3a8a",
                 fontWeight: 700,
+                lineHeight: 1.45,
               }}
             >
               Filters active
@@ -440,19 +552,12 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
               {sportFilter !== "all"
                 ? ` · ${sportFilter === "softball" ? "Softball" : "Baseball"}`
                 : ""}
+              {endDateValue ? ` · Through ${endDateValue}` : ""}
             </div>
           )}
         </div>
 
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #dbe3f0",
-            borderRadius: "16px",
-            padding: "1rem",
-            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
-          }}
-        >
+        <div className="umpire-schedule-card" style={{ padding: "1rem" }}>
           {groupedBookings.length === 0 ? (
             <div
               style={{
@@ -465,21 +570,14 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
               No games match the current filters.
             </div>
           ) : (
-            <div style={{ display: "grid", gap: "1.5rem" }}>
+            <div className="umpire-schedule-groups">
               {groupedBookings.map((group) => (
                 <section key={group.key}>
-                  <h2
-                    style={{
-                      marginBottom: "0.9rem",
-                      fontSize: "1.35rem",
-                      fontWeight: 800,
-                      color: "#0f172a",
-                    }}
-                  >
+                  <h2 className="umpire-schedule-section-heading">
                     {formatDayHeading(group.date)}
                   </h2>
 
-                  <div style={{ display: "grid", gap: "0.85rem" }}>
+                  <div className="umpire-schedule-booking-list">
                     {group.items.map((booking) => {
                       const sport = inferSport(booking.team?.ageGroup);
 
@@ -489,34 +587,40 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
 
                       return (
                         <div
-                          key={booking.id}
-                          style={{
-                            border: "1px solid #e2e8f0",
-                            borderRadius: "14px",
-                            padding: "1rem",
-                            backgroundColor: "#ffffff",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "grid",
-                              gap: "1rem",
-                              gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(320px, 420px)",
-                              alignItems: "start",
-                            }}
-                          >
+						  key={booking.id}
+						  className="umpire-schedule-booking-card"
+						  style={{
+							backgroundColor: booking.umpireId ? "#ffffff" : "#fff1f2",
+							borderColor: booking.umpireId ? "#e2e8f0" : "#fca5a5",
+						  }}
+						>
+                          <div className="umpire-schedule-booking-grid">
                             <div>
-                              <div style={{ fontWeight: 800, color: "#0f172a" }}>
+                              <div
+                                className="umpire-schedule-wrap"
+                                style={{ fontWeight: 800, color: "#0f172a", lineHeight: 1.35 }}
+                              >
                                 {booking.team?.ageGroup || "—"}
                               </div>
-                              <div style={{ color: "#334155", marginTop: "0.2rem", fontWeight: 600 }}>
+
+                              <div
+                                className="umpire-schedule-wrap"
+                                style={{
+                                  color: "#334155",
+                                  marginTop: "0.2rem",
+                                  fontWeight: 600,
+                                  lineHeight: 1.4,
+                                }}
+                              >
                                 {matchup}
                               </div>
+
                               <div
                                 style={{
                                   color: "#64748b",
                                   marginTop: "0.2rem",
                                   fontSize: "0.92rem",
+                                  lineHeight: 1.35,
                                 }}
                               >
                                 {formatTimeLabel(booking.startTimeMinutes)} -{" "}
@@ -525,18 +629,34 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
                             </div>
 
                             <div>
-                              <div style={{ color: "#334155", fontWeight: 700 }}>{booking.room.name}</div>
-                              <div style={{ color: "#64748b", marginTop: "0.2rem" }}>
-                                Sport: {sport === "softball" ? "Softball" : "Baseball"}
+                              <div
+                                className="umpire-schedule-wrap"
+                                style={{ color: "#334155", fontWeight: 700, lineHeight: 1.35 }}
+                              >
+                                {booking.room.name}
                               </div>
 
                               <div
                                 style={{
+                                  color: "#64748b",
                                   marginTop: "0.2rem",
-                                  fontWeight: 600,
-                                  color: booking.umpireRecord?.name ? "#475569" : "#b91c1c",
+                                  lineHeight: 1.35,
                                 }}
                               >
+                                Sport: {sport === "softball" ? "Softball" : "Baseball"}
+                              </div>
+
+
+							<div
+							  className="umpire-schedule-wrap"
+							  style={{
+								marginTop: "0.2rem",
+								fontWeight: 700,
+								color: booking.umpireRecord?.name ? "#475569" : "#991b1b",
+								lineHeight: 1.35,
+							  }}
+							>
+
                                 Assigned: {booking.umpireRecord?.name || "Unassigned"}
                               </div>
                             </div>
@@ -546,14 +666,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
                               currentUmpireId={booking.umpireId}
                               currentUmpireName={booking.umpireRecord?.name || null}
                               sport={sport}
-                              umpires={umpires
-                                .filter((umpire) => umpire.isActive)
-                                .map((umpire) => ({
-                                  id: umpire.id,
-                                  name: umpire.name,
-                                  doesBaseball: umpire.doesBaseball,
-                                  doesSoftball: umpire.doesSoftball,
-                                }))}
+                              umpires={activeUmpireOptions}
                             />
                           </div>
                         </div>
