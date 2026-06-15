@@ -18,6 +18,54 @@ function formatTimeLabel(totalMinutes: number) {
   return `${hours12}:${pad(minutes)} ${suffix}`;
 }
 
+function getTypeBadge(title?: string | null) {
+  const type = (title || "").toLowerCase();
+
+  if (type === "game") {
+    return {
+      label: "Game",
+      bg: "#dcfce7",
+      border: "#86efac",
+      color: "#166534",
+    };
+  }
+
+  if (type === "practice") {
+    return {
+      label: "Practice",
+      bg: "#e0f2fe",
+      border: "#7dd3fc",
+      color: "#075985",
+    };
+  }
+
+  if (type === "scrimmage") {
+    return {
+      label: "Scrimmage",
+      bg: "#fef3c7",
+      border: "#facc15",
+      color: "#92400e",
+    };
+  }
+
+  if (type === "tournament") {
+    return {
+      label: "Tournament",
+      bg: "#f3e8ff",
+      border: "#d8b4fe",
+      color: "#7c3aed",
+    };
+  }
+
+  return {
+    label: title || "Other",
+    bg: "#f1f5f9",
+    border: "#cbd5e1",
+    color: "#475569",
+  };
+}
+
+
 function formatPageDate(date: Date) {
   return date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -112,6 +160,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
       include: {
         room: true,
         team: true,
+
+  umpireRecord: true,
+
       },
       orderBy: [{ startTimeMinutes: "asc" }, { roomId: "asc" }],
       take: 12,
@@ -475,21 +526,118 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   >
                     <div className="admin-schedule-item-row">
                       <div>
-                        <div style={{ color: "#0f172a", fontWeight: 700, lineHeight: 1.35 }}>
-                          {booking.title || "Booking"}
-                        </div>
-                        <div style={{ color: "#334155", marginTop: "0.15rem", lineHeight: 1.35 }}>
-                          {booking.team?.teamName || "—"}
-                        </div>
-                        <div style={{ color: "#64748b", marginTop: "0.15rem", fontSize: "0.9rem", lineHeight: 1.35 }}>
-                          {booking.room.name}
-                        </div>
-                      </div>
+  {/* Field name (top line) */}
+  <div style={{ color: "#0f172a", fontWeight: 700, lineHeight: 1.35 }}>
+    {booking.room.name}
+  </div>
 
-                      <div style={{ color: "#1d4ed8", fontWeight: 600, lineHeight: 1.35 }}>
-                        {formatTimeLabel(booking.startTimeMinutes)} -{" "}
-                        {formatTimeLabel(booking.endTimeMinutes)}
-                      </div>
+  {/* Team vs Opponent */}
+  <div
+    style={{
+      color: "#334155",
+      marginTop: "0.15rem",
+      fontWeight: 600,
+      lineHeight: 1.35,
+	  
+    }}
+  >
+    {booking.opponent && booking.opponent.trim()
+      ? `${booking.team?.teamName || "—"} vs. ${booking.opponent}`
+      : booking.team?.teamName || "—"}
+  </div>
+
+  {/* Age Group + Type */}
+  <div
+    style={{
+      color: "#64748b",
+      marginTop: "0.15rem",
+      fontSize: "0.9rem",
+      lineHeight: 1.35,
+    }}
+  >
+    
+  </div>
+
+  {/* Umpire */}
+  {booking.umpireRecord?.name && (
+    <div
+      style={{
+        color: "#475569",
+        marginTop: "0.2rem",
+        fontSize: "0.88rem",
+        lineHeight: 1.35,
+      }}
+    >
+      Umpire: {booking.umpireRecord.name}
+    </div>
+  )}
+
+  {/* Notes */}
+  {booking.notes && (
+    <div
+      style={{
+        color: "#475569",
+        marginTop: "0.2rem",
+        fontSize: "0.85rem",
+        lineHeight: 1.35,
+      }}
+    >
+      {booking.notes}
+    </div>
+  )}
+</div>
+
+
+<div style={{ textAlign: "right" }}>
+  {/* Time */}
+  <div
+    style={{
+      color: "#1d4ed8",
+      fontWeight: 700,
+      lineHeight: 1.35,
+    }}
+  >
+    {formatTimeLabel(booking.startTimeMinutes)} -{" "}
+    {formatTimeLabel(booking.endTimeMinutes)}
+  </div>
+
+  {/* Badge */}
+  <div style={{ marginTop: "0.2rem" }}>
+    {(() => {
+      const badge = getTypeBadge(booking.title);
+
+      return (
+        <span
+          style={{
+            padding: "0.15rem 0.5rem",
+            borderRadius: "999px",
+            fontSize: "0.75rem",
+            fontWeight: 700,
+            backgroundColor: badge.bg,
+            border: `1px solid ${badge.border}`,
+            color: badge.color,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {badge.label}
+        </span>
+      );
+    })()}
+  </div>
+
+  {/* Age Group */}
+  <div
+    style={{
+      color: "#64748b",
+      marginTop: "0.3rem",
+      fontSize: "0.85rem",
+      lineHeight: 1.35,
+    }}
+  >
+    {booking.team?.ageGroup || "—"}
+  </div>
+</div>
+
                     </div>
                   </Link>
                 );

@@ -35,20 +35,7 @@ export default function HomePage() {
             boxShadow: "0 14px 40px rgba(15, 23, 42, 0.08)",
           }}
         >
-          <div
-            style={{
-              display: "inline-block",
-              padding: "0.35rem 0.75rem",
-              borderRadius: "999px",
-              backgroundColor: "#dbeafe",
-              color: "#1d4ed8",
-              fontWeight: 700,
-              fontSize: "0.8rem",
-              marginBottom: "0.75rem",
-            }}
-          >
-            Barberton Diamond Sports
-          </div>
+          
 
           <h1
             style={{
@@ -162,35 +149,6 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div style={{ display: "grid", gap: "0.75rem" }}>
-            {[
-              "Day and week calendar views with clickable bookings",
-              "Game and scrimmage details",
-              "Umpire assignments and unassigned games",
-            ].map((item) => (
-              <div
-                key={item}
-                style={{
-                  display: "flex",
-                  gap: "0.6rem",
-                  alignItems: "flex-start",
-                  color: "#334155",
-                }}
-              >
-                <div
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "999px",
-                    backgroundColor: "#2563eb",
-                    marginTop: "0.45rem",
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ lineHeight: 1.5 }}>{item}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
     </main>
