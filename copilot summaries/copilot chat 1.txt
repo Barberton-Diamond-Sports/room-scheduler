@@ -1,0 +1,246 @@
+Project Summary — Barberton Diamond Sports Scheduling App
+Stack / Environment
+
+App: Next.js
+Database: PostgreSQL via Prisma
+Hosting: Vercel
+Auth model: simple admin unlock cookie (admin_access=granted)
+Main areas: bookings calendar, booking details/editing, blackout dates, umpire management, umpire assignment
+
+
+Working Preferences / How to Respond
+
+Please ignore any other chats unless I explicitly reference them
+I prefer:
+
+full replacement code when updating files
+one step at a time
+direct, practical answers
+
+
+I often paste entire file contents and want the updated file back ready to paste
+
+
+Current Functional Status
+Admin / Security
+
+Admin access uses a cookie-based unlock flow.
+The unlock flow was fixed for Vercel by using a hard redirect after successful unlock instead of only router.push(...).
+middleware.ts currently protects /admin/*.
+There is still a Next.js warning that middleware is deprecated in favor of proxy, but it is only a warning right now.
+
+Booking Detail / Edit / Delete
+
+Public booking detail page:
+
+used to show Edit/Delete publicly
+latest direction is:
+
+Edit/Delete should only show if admin is already unlocked
+otherwise public users only see view details + calendar/admin navigation
+
+
+
+
+Booking edit page:
+
+should be protected by admin cookie check
+if not unlocked, redirect to:
+
+/admin/unlock?next=/bookings/[id]/edit
+
+
+
+
+Booking PATCH/DELETE API:
+
+should be protected by the same admin cookie check
+unauthorized users should get 401 Unauthorized
+
+
+
+Umpire Data Model
+
+We migrated away from old Booking.umpire text field.
+Current intended model:
+
+booking.umpireId
+booking.umpireRecord
+
+
+We removed old Booking.umpire references from multiple files/routes.
+This caused several Vercel/runtime issues earlier, which were debugged and fixed.
+
+Calendar / Bookings
+
+Calendar now defaults to week view.
+Booking details page preserves date/view links back to calendar.
+“Book a Field” page now has a live daily field schedule at the bottom:
+
+updates automatically when date changes
+grouped by field
+currently requested tweak:
+
+make those field boxes narrower so 3 fit across instead of one long list
+
+
+
+
+
+Blackouts
+
+Field blackout system is working.
+Blackout route had TypeScript/build issues that were fixed.
+Blackout creation checks for:
+
+existing bookings
+duplicate blackouts
+
+
+
+Umpires / Assignments
+
+Umpire management exists:
+
+alphabetical list
+active/inactive filter
+baseball/softball filter
+booking counts limited to today/future ACTIVE bookings
+
+
+Umpire schedule page exists:
+
+assignment dropdown
+overlap conflict checking
+filters:
+
+umpire
+assigned/unassigned
+baseball/softball
+date range
+
+
+
+
+On umpire schedule cards, latest requested layout changes included:
+
+show the reserver name under the title
+hide duplicate umpire-name display
+remove “Umpire Assignment” header / “Current” line
+make assigned/unassigned status clearer
+
+
+
+
+Recent Major Debugging / Deployment Work
+We worked through a long set of Vercel build/runtime issues, including:
+Fixed
+
+DeleteBookingButton prop mismatch (backHref)
+Linux/Vercel case-sensitive import path issues
+old Booking.umpire references causing Prisma runtime errors
+syntax/parsing issues in:
+
+booking route
+booking details page
+
+
+TypeScript strictness issues in blackout routes
+duplicate declarations in blackout route
+admin unlock redirect timing issue on Vercel
+
+Important rule established
+Before pushing, I should run:
+PowerShellnpm run buildShow more lines
+not just npm run dev
+
+Files That Were Reviewed / Stabilized
+We did a cleanup pass on many key files. Major files reviewed included:
+
+src/app/api/bookings/[id]/route.ts
+src/app/bookings/[id]/page.tsx
+src/app/api/admin/blackouts/route.ts
+src/app/api/bookings/[id]/umpire/route.ts
+src/app/admin/umpire-schedule/page.tsx
+src/app/admin/umpires/page.tsx
+src/components/admin/umpire-management-panel.tsx
+src/app/admin/page.tsx
+src/app/api/bookings/route.ts
+src/app/bookings/[id]/edit/page.tsx
+src/components/booking/edit-booking-form.tsx
+src/components/booking/delete-booking-button.tsx
+middleware.ts
+
+Also, component naming was checked:
+
+components are using lower-case kebab-case paths, e.g.:
+
+@/components/booking/delete-booking-button
+@/components/admin/umpire-management-panel
+
+
+
+
+Current / Recent Feature Work
+1) Public unassigned games page
+We started building a page that is:
+
+not behind admin wall
+intended as a shareable link
+only linked from admin dashboard for now
+shows games without an umpire
+allows assigning an umpire
+does not allow editing/deleting bookings
+does not allow editing umpires
+
+Latest requested layout for that page
+
+group games by day
+per game card:
+
+Line 1: name vs. opponent
+Line 2: Field - group
+Line 3: time only
+
+
+hide Back to Admin button if not logged in
+show Back to Admin only if admin cookie exists
+
+
+Important Navigation / UX Decisions
+
+Booking details:
+
+public can view
+admin-only edit/delete
+
+
+Admin page links should stay clear and practical
+A public/shareable assigning page is okay as long as it only exposes umpire assignment, not broader admin powers
+
+
+Known Notes / Cleanup Still Possible
+These are not immediate blockers, but future cleanup items:
+
+convert middleware.ts to modern proxy convention
+remove/move any .old backup files from src
+continue checking for any escaped &amp; or HTML entity issues in source files if they show up
+maybe tighten route string sanitation / typing further over time
+
+
+Likely Next Task
+The most recent active topics were:
+Option A — Continue the public unassigned games page
+
+finalize grouped-by-day layout
+line 3 should be time only
+hide “Back to Admin” when not logged in
+
+Option B — Finish booking details admin-only controls
+
+ensure booking details page only shows Edit/Delete when unlocked
+ensure edit page and PATCH/DELETE API are protected
+
+Option C — Improve Book a Field daily schedule layout
+
+change field schedule cards at bottom of booking page so 3 fit across

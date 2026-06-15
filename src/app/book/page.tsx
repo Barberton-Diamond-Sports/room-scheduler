@@ -23,98 +23,116 @@ export default async function BookPage() {
       style={{
         minHeight: "100vh",
         backgroundColor: "#f5f7fb",
-        padding: "2rem",
+        padding: "1rem", // ✅ smaller padding for mobile
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div
-        style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #dbe3f0",
-            borderRadius: "16px",
-            padding: "1.5rem",
-            marginBottom: "1.5rem",
-            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
-          }}
-        >
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Book a Field</h1>
-          <p style={{ marginTop: 0, color: "#4b5563" }}>
-            Use the form below to reserve a field in 30-minute blocks. If this is a game, please enter the game - for example "Barberton Purple vs. Manchester"
+      {/* ✅ responsive helper styles (server-safe) */}
+      <style>{`
+        .page-container {
+          max-width: 900px;
+          margin: 0 auto;
+        }
+
+        .card {
+          background: #ffffff;
+          border: 1px solid #dbe3f0;
+          border-radius: 16px;
+          padding: 1.25rem;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        .nav-row {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          margin-top: 1rem;
+        }
+
+        .nav-link {
+          display: inline-block;
+          padding: 0.65rem 1rem;
+          border-radius: 10px;
+          text-decoration: none;
+          font-weight: 600;
+          text-align: center;
+        }
+
+        @media (max-width: 768px) {
+          .nav-row {
+            flex-direction: column;   /* ✅ stack buttons on phone */
+          }
+
+          .nav-row a {
+            width: 100%;              /* ✅ full-width buttons */
+            box-sizing: border-box;
+          }
+
+          .card {
+            padding: 1rem;            /* ✅ tighter spacing */
+            border-radius: 14px;
+          }
+        }
+      `}</style>
+
+      <div className="page-container">
+        {/* HEADER CARD */}
+        <div className="card" style={{ marginBottom: "1rem" }}>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
+            Book a Field
+          </h1>
+
+          <p style={{ marginTop: 0, color: "#4b5563", lineHeight: 1.5 }}>
+            Use the form below to reserve a field in 30-minute blocks.
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "1rem",
-              flexWrap: "wrap",
-              marginTop: "1rem",
-            }}
-          >
+          <p style={{ marginTop: "0.5rem", color: "#4b5563", lineHeight: 1.5 }}>
+            If this is a game, please enter the matchup (for example:
+            <strong> Barberton Purple vs. Manchester</strong>).
+          </p>
+
+          {/* NAV BUTTONS */}
+          <div className="nav-row">
             <Link
               href="/"
+              className="nav-link"
               style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
                 backgroundColor: "#eef2ff",
                 border: "1px solid #c7d2fe",
-                borderRadius: "10px",
                 color: "#1e3a8a",
-                textDecoration: "none",
-                fontWeight: 600,
               }}
             >
               Home
             </Link>
 
             <Link
-              href="/admin"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#f3e8ff",
-                border: "1px solid #d8b4fe",
-                borderRadius: "10px",
-                color: "#6b21a8",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Admin
-            </Link>
-
-            <Link
               href="/bookings"
+              className="nav-link"
               style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
                 backgroundColor: "#ecfeff",
                 border: "1px solid #a5f3fc",
-                borderRadius: "10px",
                 color: "#155e75",
-                textDecoration: "none",
-                fontWeight: 600,
               }}
             >
               Calendar
             </Link>
+
+            <Link
+              href="/admin"
+              className="nav-link"
+              style={{
+                backgroundColor: "#f3e8ff",
+                border: "1px solid #d8b4fe",
+                color: "#6b21a8",
+              }}
+            >
+              Admin
+            </Link>
           </div>
         </div>
 
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #dbe3f0",
-            borderRadius: "16px",
-            padding: "1.5rem",
-            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
-          }}
-        >
+        {/* FORM CARD */}
+        <div className="card">
           <BookingForm rooms={rooms} teams={teams} />
         </div>
       </div>

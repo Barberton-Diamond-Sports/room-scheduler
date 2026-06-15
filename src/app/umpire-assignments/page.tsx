@@ -40,9 +40,7 @@ function formatTimeRange(startMinutes: number, endMinutes: number) {
 }
 
 function inferSport(ageGroup: string | null | undefined) {
-  return ageGroup?.toLowerCase().includes("softball")
-    ? "softball"
-    : "baseball";
+  return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
 }
 
 function isTeeBall(ageGroup: string | null | undefined) {
@@ -59,7 +57,8 @@ function filterButtonStyle(active: boolean) {
     border: active ? "1px solid #93c5fd" : "1px solid #dbe3f0",
     backgroundColor: active ? "#dbeafe" : "#f8fafc",
     color: active ? "#1d4ed8" : "#475569",
-  } as const;
+    textAlign: "center" as const,
+  };
 }
 
 export const dynamic = "force-dynamic";
@@ -122,44 +121,192 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
     return acc;
   }, []);
 
+  const umpireOptions = umpires.map((u) => ({
+    id: u.id,
+    name: u.name,
+    doesBaseball: u.doesBaseball,
+    doesSoftball: u.doesSoftball,
+  }));
+
   return (
     <main
       style={{
         minHeight: "100vh",
         backgroundColor: "#f5f7fb",
-        padding: "2rem",
+        padding: "1rem",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #dbe3f0",
-            borderRadius: "16px",
-            padding: "1.5rem",
-            marginBottom: "1.5rem",
-            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "1rem",
-            }}
-          >
+      <style>{`
+        .umpire-page-shell {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .umpire-card {
+          background-color: #ffffff;
+          border: 1px solid #dbe3f0;
+          border-radius: 16px;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        .umpire-header-card {
+          padding: 1.25rem;
+          margin-bottom: 1rem;
+        }
+
+        .umpire-header-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .umpire-header-links,
+        .umpire-filter-row {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .umpire-header-links {
+          align-items: center;
+        }
+
+        .umpire-empty {
+          padding: 1rem;
+          border: 1px dashed #cbd5e1;
+          border-radius: 12px;
+          color: #64748b;
+          background-color: #ffffff;
+        }
+
+        .umpire-group-list {
+          display: grid;
+          gap: 1.5rem;
+        }
+
+        .umpire-group-heading {
+          margin-top: 0;
+          margin-bottom: 0.9rem;
+          font-size: 1.45rem;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.25;
+        }
+
+        .umpire-booking-list {
+          display: grid;
+          gap: 0.85rem;
+        }
+
+        .umpire-booking-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 1rem;
+          background-color: #ffffff;
+        }
+
+        .umpire-booking-grid {
+          display: grid;
+          gap: 1rem;
+          grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(320px, 420px);
+          align-items: start;
+        }
+
+        .umpire-detail-title {
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.3;
+        }
+
+        .umpire-detail-matchup {
+          color: #334155;
+          margin-top: 0.2rem;
+          font-weight: 600;
+          line-height: 1.35;
+          word-break: break-word;
+        }
+
+        .umpire-detail-time {
+          color: #64748b;
+          margin-top: 0.2rem;
+          font-size: 0.92rem;
+          line-height: 1.35;
+        }
+
+        .umpire-detail-room {
+          color: #334155;
+          font-weight: 700;
+          line-height: 1.35;
+          word-break: break-word;
+        }
+
+        .umpire-detail-sport {
+          color: #64748b;
+          margin-top: 0.2rem;
+          line-height: 1.35;
+        }
+
+        .umpire-detail-status {
+          margin-top: 0.2rem;
+          font-weight: 600;
+          color: #b91c1c;
+          line-height: 1.35;
+        }
+
+        @media (max-width: 768px) {
+          .umpire-header-card {
+            padding: 1rem;
+            border-radius: 14px;
+          }
+
+          .umpire-header-top {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .umpire-header-links,
+          .umpire-filter-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .umpire-header-links a,
+          .umpire-filter-row a {
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .umpire-group-heading {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+          }
+
+          .umpire-booking-card {
+            padding: 0.9rem;
+            border-radius: 12px;
+          }
+
+          .umpire-booking-grid {
+            grid-template-columns: 1fr;
+            gap: 0.85rem;
+          }
+        }
+      `}</style>
+
+      <div className="umpire-page-shell">
+        <div className="umpire-card umpire-header-card">
+          <div className="umpire-header-top">
             <div>
-              <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-                Unassigned Games
-              </h1>
-              <p style={{ margin: 0, color: "#4b5563" }}>
+              <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Unassigned Games</h1>
+              <p style={{ margin: 0, color: "#4b5563", lineHeight: 1.5 }}>
                 Upcoming games that still need an umpire.
               </p>
             </div>
 
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div className="umpire-header-links">
               <Link
                 href="/umpire-my-games"
                 style={{
@@ -171,6 +318,7 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
                   color: "#155e75",
                   textDecoration: "none",
                   fontWeight: 600,
+                  textAlign: "center",
                 }}
               >
                 View My Assigned Games
@@ -188,6 +336,7 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
                     color: "#1e3a8a",
                     textDecoration: "none",
                     fontWeight: 600,
+                    textAlign: "center",
                   }}
                 >
                   Back to Admin
@@ -196,14 +345,7 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "0.75rem",
-              flexWrap: "wrap",
-              marginTop: "1rem",
-            }}
-          >
+          <div className="umpire-filter-row" style={{ marginTop: "1rem" }}>
             <Link href="/umpire-assignments" style={filterButtonStyle(sportFilter === "all")}>
               All
             </Link>
@@ -225,33 +367,16 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
         </div>
 
         {groups.length === 0 ? (
-          <div
-            style={{
-              padding: "1rem",
-              border: "1px dashed #cbd5e1",
-              borderRadius: "12px",
-              color: "#64748b",
-              backgroundColor: "#ffffff",
-            }}
-          >
+          <div className="umpire-empty">
             No unassigned games match the current filter.
           </div>
         ) : (
-          <div style={{ display: "grid", gap: "1.5rem" }}>
+          <div className="umpire-group-list">
             {groups.map((group) => (
               <section key={group.key}>
-                <h2
-                  style={{
-                    marginBottom: "0.9rem",
-                    fontSize: "1.45rem",
-                    fontWeight: 800,
-                    color: "#0f172a",
-                  }}
-                >
-                  {formatDayHeading(group.date)}
-                </h2>
+                <h2 className="umpire-group-heading">{formatDayHeading(group.date)}</h2>
 
-                <div style={{ display: "grid", gap: "0.85rem" }}>
+                <div className="umpire-booking-list">
                   {group.items.map((booking) => {
                     const sport = inferSport(booking.team?.ageGroup);
 
@@ -260,44 +385,14 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
                       : booking.team?.teamName || "—";
 
                     return (
-                      <div
-                        key={booking.id}
-                        style={{
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "14px",
-                          padding: "1rem",
-                          backgroundColor: "#ffffff",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "grid",
-                            gap: "1rem",
-                            gridTemplateColumns:
-                              "minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(320px, 420px)",
-                            alignItems: "start",
-                          }}
-                        >
+                      <div key={booking.id} className="umpire-booking-card">
+                        <div className="umpire-booking-grid">
                           <div>
-                            <div style={{ fontWeight: 800, color: "#0f172a" }}>
+                            <div className="umpire-detail-title">
                               {booking.team?.ageGroup || "—"}
                             </div>
-                            <div
-                              style={{
-                                color: "#334155",
-                                marginTop: "0.2rem",
-                                fontWeight: 600,
-                              }}
-                            >
-                              {matchup}
-                            </div>
-                            <div
-                              style={{
-                                color: "#64748b",
-                                marginTop: "0.2rem",
-                                fontSize: "0.92rem",
-                              }}
-                            >
+                            <div className="umpire-detail-matchup">{matchup}</div>
+                            <div className="umpire-detail-time">
                               {formatTimeRange(
                                 booking.startTimeMinutes,
                                 booking.endTimeMinutes
@@ -306,19 +401,11 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
                           </div>
 
                           <div>
-                            <div style={{ color: "#334155", fontWeight: 700 }}>
-                              {booking.room.name}
-                            </div>
-                            <div style={{ color: "#64748b", marginTop: "0.2rem" }}>
+                            <div className="umpire-detail-room">{booking.room.name}</div>
+                            <div className="umpire-detail-sport">
                               Sport: {sport === "softball" ? "Softball" : "Baseball"}
                             </div>
-                            <div
-                              style={{
-                                marginTop: "0.2rem",
-                                fontWeight: 600,
-                                color: "#b91c1c",
-                              }}
-                            >
+                            <div className="umpire-detail-status">
                               Assigned: Unassigned
                             </div>
                           </div>
@@ -328,12 +415,7 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
                             currentUmpireId={null}
                             currentUmpireName={null}
                             sport={sport}
-                            umpires={umpires.map((u) => ({
-                              id: u.id,
-                              name: u.name,
-                              doesBaseball: u.doesBaseball,
-                              doesSoftball: u.doesSoftball,
-                            }))}
+                            umpires={umpireOptions}
                             hideClearButton
                           />
                         </div>

@@ -1,0 +1,300 @@
+Project Summary / Current State
+We are working on the Barberton Diamond Sports scheduling app.
+Big architecture change completed
+We migrated bookings from legacy text fields to a proper Team relationship.
+Booking model change
+We added a proper Prisma relation:
+
+Booking.teamId
+Booking.team
+Team.bookings
+
+We then updated the app so bookings use the related Team record instead of these old booking fields:
+
+bookedByName
+bookedByEmail
+teamGroup
+
+Final database cleanup completed
+We already removed these legacy fields from Prisma / DB:
+
+bookedByName
+bookedByEmail
+teamGroup
+
+npx prisma db push and npx prisma generate were already run successfully after removing those fields.
+
+Booking flow changes completed
+Book a Field page
+We changed the booking form so:
+
+Team Name is now a dropdown of active teams
+manual E-mail field was removed
+manual Group field was removed
+booking submits teamId
+booking form also now defaults Team and Field to blank instead of the first item, so users must intentionally select both
+
+Related files updated
+
+src/components/booking/booking-form.tsx
+src/app/book/page.tsx
+src/app/api/bookings/route.ts
+
+
+Edit Booking flow
+We updated edit booking to use the same team-based model:
+
+edit form now uses a team dropdown
+no manual name/email/group editing
+edit API uses teamId
+
+Related files updated
+
+src/app/bookings/[id]/edit/page.tsx
+src/components/booking/edit-booking-form.tsx
+src/app/api/bookings/[id]/route.ts
+
+
+Booking detail page
+We updated the booking details page to use the related Team record:
+
+Team
+Coach E-mail
+Age Group
+
+We also added a Book a Field button to the booking details screen.
+Related file updated
+
+src/app/bookings/[id]/page.tsx
+
+
+Calendar page
+We updated the calendar page to use the related Team record instead of legacy fields.
+Related file updated
+
+src/app/bookings/page.tsx
+
+
+Admin / dashboard cleanup completed
+Admin dashboard
+We updated the admin dashboard to remove legacy booking display references and use team-based data where applicable.
+Related file updated
+
+src/app/admin/page.tsx
+
+
+Teams management completed
+We built and iterated on the Teams admin area.
+Team model now includes:
+
+id
+teamName
+coachName
+coachEmail
+coachPhone
+ageGroup
+season
+year
+isActive
+
+Manage Teams page features completed
+
+Add team
+Edit team
+Soft delete behavior:
+
+active team can be made inactive
+inactive team can be reactivated
+only inactive teams can be permanently deleted
+
+
+delete confirmation
+filtering:
+
+active / inactive / all
+season dropdown
+
+
+only show Clear when filters are active
+season dropdown only shows seasons that actually exist in DB within the last two years
+filter UI moved into a small client component because auto-submit in a server component caused errors
+list layout changed to multi-column cards
+team ID removed from visible card
+
+Related files
+
+prisma/schema.prisma
+src/app/admin/teams/page.tsx
+src/components/admin/team-filters.tsx
+
+
+Umpire pages completed / updated
+Public umpire assignments page
+We made a lot of changes to:
+
+src/app/umpire-assignments/page.tsx
+
+Completed changes
+
+uses Team relation instead of legacy booking fields
+grouped by date
+larger/bolder date headings
+baseball / softball filters
+Tee Ball games excluded
+layout changed to match admin-style multi-column cards
+cards now show:
+
+age group on bold top line
+matchup line like:
+
+10U Peters vs. 10U Manchester
+or just team name if no opponent
+
+
+time only (date removed because it’s already in the heading)
+
+
+removed separate Opponent: field
+removed Clear Umpire button from the public page
+added link to a new page:
+
+/umpire-my-games
+
+
+
+
+Admin umpire schedule page
+We updated:
+
+src/app/admin/umpire-schedule/page.tsx
+
+Completed changes
+
+uses Team relation instead of legacy booking fields
+baseball / softball filters
+Tee Ball games excluded
+grouped by date
+layout matches the public page style
+top card line now uses age group, not the word “Game”
+matchup line is now:
+
+Team vs. Opponent
+or just team if no opponent
+
+
+removed separate Opponent: field
+removed redundant date from each card (keeps time only)
+
+
+Umpire assignment actions component
+We updated:
+
+src/components/admin/umpire-assignment-actions.tsx
+
+Completed changes
+
+added optional prop:
+
+hideClearButton?: boolean
+
+
+public page passes hideClearButton
+admin page does not pass it
+
+
+Umpire assignment API
+We updated:
+
+src/app/api/bookings/[id]/umpire/route.ts
+
+Completed changes
+
+no longer uses legacy teamGroup
+now infers sport from:
+
+booking.team?.ageGroup
+
+
+
+
+New “My Assigned Games” page added
+We added a new page:
+
+src/app/umpire-my-games/page.tsx
+
+and a helper client component:
+
+src/components/umpire/my-games-umpire-picker.tsx
+
+Features completed
+
+umpire can choose a name from a dropdown
+page shows all upcoming assigned games for that umpire
+grouped by date
+Tee Ball excluded
+dropdown only shows active umpires who actually have upcoming assigned games
+remembers the last selected umpire using local storage
+
+
+Home page change completed
+We added a new button to the home page:
+
+Umpire Information
+
+It goes between:
+
+View Calendar
+Administration
+
+and links to:
+
+/umpire-assignments
+
+Related file updated
+
+home page file (main landing page)
+
+
+Important current state
+At the end of the migration, a PowerShell search for legacy references showed only temporary API write-through lines, and then we completed final Prisma cleanup and removed the columns entirely.
+So the app should now be considered team-based end-to-end.
+
+Useful PowerShell search command we used
+To find remaining legacy references:
+PowerShellGet-ChildItem -Path .\src -Recurse -Include *.ts,*.tsx |  Select-String -Pattern 'bookedByName|bookedByEmail|teamGroup'Show more lines
+
+If continuing in a new chat
+A good prompt to continue would be something like:
+
+We already migrated bookings to use teamId / booking.team, removed legacy booking fields from Prisma/DB, updated booking create/edit/detail/calendar/admin pages, updated umpire pages, and added /umpire-my-games. Please help me continue from this state. I can paste the next file I want to update.
+
+
+Suggested next steps if needed
+If we continue later, good next areas would be:
+
+
+Testing / bug pass
+
+create booking
+edit booking
+detail page
+calendar page
+umpire assignment page
+my games page
+
+
+
+UI consistency pass
+
+make public/admin umpire pages visually identical where desired
+
+
+
+Any remaining page cleanup
+
+if any page still feels like it references old concepts such as “Booked By” rather than “Team”
+
+
+
+
+If you want, I can also turn this into a shorter version or a bullet-only version that’s easier to paste into a fresh chat window.

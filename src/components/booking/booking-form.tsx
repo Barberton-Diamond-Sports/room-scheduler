@@ -256,6 +256,12 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
       return;
     }
 
+    if (!roomId) {
+      setMessage("Please select a field.");
+      setMessageType("error");
+      return;
+    }
+
     setMessage("Submitting booking...");
     setMessageType("info");
 
@@ -301,318 +307,412 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
           color: "#166534",
         }
       : messageType === "error"
-      ? {
-          backgroundColor: "#fef2f2",
-          border: "1px solid #fca5a5",
-          color: "#991b1b",
-        }
-      : {
-          backgroundColor: "#eff6ff",
-          border: "1px solid #93c5fd",
-          color: "#1d4ed8",
-        };
+        ? {
+            backgroundColor: "#fef2f2",
+            border: "1px solid #fca5a5",
+            color: "#991b1b",
+          }
+        : {
+            backgroundColor: "#eff6ff",
+            border: "1px solid #93c5fd",
+            color: "#1d4ed8",
+          };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "grid", gap: "1.25rem" }}>
-      <div
-        style={{
-          display: "grid",
-          gap: "1.25rem",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        }}
-      >
-        <div>
-          <label htmlFor="teamId" style={fieldLabelStyle}>
-            Team
-          </label>
-			<select
-			  id="teamId"
-			  value={teamId}
-			  onChange={(e) => setTeamId(e.target.value)}
-			  style={fieldStyle}
-			  required
-			  disabled={activeTeams.length === 0}
-			>
-			  {activeTeams.length === 0 ? (
-				<option value="">No active teams available</option>
-			  ) : (
-				<>
-				  <option value="">Select a team</option>
-				  {activeTeams.map((team) => (
-					<option key={team.id} value={team.id}>
-					  {teamLabel(team)}
-					</option>
-				  ))}
-				</>
-			  )}
-			</select>
+    <>
+      <style>{`
+        .booking-form-root {
+          display: grid;
+          gap: 1.25rem;
+        }
+
+        .booking-form-grid {
+          display: grid;
+          gap: 1rem;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .booking-form-actions {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .booking-form-submit {
+          padding: 0.85rem 1.25rem;
+          border: none;
+          border-radius: 12px;
+          font-weight: 600;
+          width: auto;
+        }
+
+        .booking-team-card {
+          border: 1px solid #dbe3f0;
+          border-radius: 14px;
+          padding: 1rem;
+          background-color: #f8fafc;
+        }
+
+        .booking-schedule-card {
+          border: 1px solid #dbe3f0;
+          border-radius: 16px;
+          padding: 1.25rem;
+          background-color: #ffffff;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+        }
+
+        .booking-schedule-grid {
+          display: grid;
+          gap: 0.85rem;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          align-items: start;
+        }
+
+        .booking-room-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          background-color: #f8fafc;
+          padding: 1rem;
+          min-width: 0;
+        }
+
+        .booking-room-bookings {
+          display: grid;
+          gap: 0.5rem;
+        }
+
+        .booking-room-booking-card {
+          background-color: #ffffff;
+          border: 1px solid #dbe3f0;
+          border-radius: 10px;
+          padding: 0.75rem 0.85rem;
+          min-width: 0;
+        }
+
+        .booking-wrap-text {
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 980px) {
+          .booking-form-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .booking-schedule-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 768px) {
+          .booking-form-grid {
+            grid-template-columns: 1fr;
+            gap: 0.9rem;
+          }
+
+          .booking-form-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .booking-form-submit {
+            width: 100%;
+          }
+
+          .booking-schedule-card {
+            padding: 1rem;
+            border-radius: 14px;
+          }
+
+          .booking-schedule-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .booking-room-card {
+            padding: 0.9rem;
+          }
+        }
+      `}</style>
+
+      <form onSubmit={handleSubmit} className="booking-form-root">
+        <div className="booking-form-grid">
+          <div>
+            <label htmlFor="teamId" style={fieldLabelStyle}>
+              Team
+            </label>
+            <select
+              id="teamId"
+              value={teamId}
+              onChange={(e) => setTeamId(e.target.value)}
+              style={fieldStyle}
+              required
+              disabled={activeTeams.length === 0}
+            >
+              {activeTeams.length === 0 ? (
+                <option value="">No active teams available</option>
+              ) : (
+                <>
+                  <option value="">Select a team</option>
+                  {activeTeams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {teamLabel(team)}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="room" style={fieldLabelStyle}>
+              Field
+            </label>
+            <select
+              id="room"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              style={fieldStyle}
+              required
+            >
+              <option value="">Select a field</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {roomLabel(room)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="date" style={fieldLabelStyle}>
+              Date
+            </label>
+            <input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              style={fieldStyle}
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="startTime" style={fieldLabelStyle}>
+              Start Time
+            </label>
+            <select
+              id="startTime"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              style={fieldStyle}
+            >
+              {timeOptions.map((time) => (
+                <option key={time} value={time}>
+                  {formatTimeLabel(time)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="duration" style={fieldLabelStyle}>
+              Duration
+            </label>
+            <select
+              id="duration"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              style={fieldStyle}
+            >
+              {availableDurations.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="purpose" style={fieldLabelStyle}>
+              Purpose
+            </label>
+            <select
+              id="purpose"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              style={fieldStyle}
+            >
+              {purposeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {showOpponent && (
+            <div>
+              <label htmlFor="opponent" style={fieldLabelStyle}>
+                Opponent
+              </label>
+              <input
+                id="opponent"
+                value={opponent}
+                onChange={(e) => setOpponent(e.target.value)}
+                style={fieldStyle}
+              />
+            </div>
+          )}
         </div>
 
-        <div>
-          <label htmlFor="room" style={fieldLabelStyle}>
-            Field
-          </label>
-			<select
-			  id="room"
-			  value={roomId}
-			  onChange={(e) => setRoomId(e.target.value)}
-			  style={fieldStyle}
-			  required
-			>
-			  <option value="">Select a field</option>
-			  {rooms.map((room) => (
-				<option key={room.id} value={room.id}>
-				  {roomLabel(room)}
-				</option>
-			  ))}
-			</select>
+        {selectedTeam && (
+          <div className="booking-team-card">
+            <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "0.4rem" }}>
+              Selected Team
+            </div>
+            <div className="booking-wrap-text" style={{ color: "#334155" }}>
+              {selectedTeam.teamName}
+            </div>
+            <div
+              className="booking-wrap-text"
+              style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem", lineHeight: 1.45 }}
+            >
+              {selectedTeam.ageGroup} • {formatSeasonLabel(selectedTeam.season)} {selectedTeam.year}
+            </div>
+            <div
+              className="booking-wrap-text"
+              style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem", lineHeight: 1.45 }}
+            >
+              {selectedTeam.coachName}
+              {selectedTeam.coachEmail ? ` • ${selectedTeam.coachEmail}` : ""}
+              {selectedTeam.coachPhone?.trim() ? ` • ${selectedTeam.coachPhone}` : ""}
+            </div>
+          </div>
+        )}
 
-        </div>
-
         <div>
-          <label htmlFor="date" style={fieldLabelStyle}>
-            Date
+          <label htmlFor="notes" style={fieldLabelStyle}>
+            Notes
           </label>
-          <input
-            id="date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            style={fieldStyle}
-            required
+          <textarea
+            id="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            style={textareaStyle}
+            placeholder="Optional details"
           />
         </div>
 
-        <div>
-          <label htmlFor="startTime" style={fieldLabelStyle}>
-            Start Time
-          </label>
-          <select
-            id="startTime"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            style={fieldStyle}
+        <div className="booking-form-actions">
+          <button
+            type="submit"
+            disabled={activeTeams.length === 0}
+            className="booking-form-submit"
+            style={{
+              backgroundColor: activeTeams.length === 0 ? "#94a3b8" : "#2563eb",
+              color: "#ffffff",
+              cursor: activeTeams.length === 0 ? "not-allowed" : "pointer",
+              boxShadow: activeTeams.length === 0 ? "none" : "0 4px 12px rgba(37, 99, 235, 0.22)",
+            }}
           >
-            {timeOptions.map((time) => (
-              <option key={time} value={time}>
-                {formatTimeLabel(time)}
-              </option>
-            ))}
-          </select>
+            Submit Booking
+          </button>
+
+          <span style={{ color: "#64748b", fontSize: "0.95rem", lineHeight: 1.45 }}>
+            Default date is today. Default time is 5:00 PM.
+          </span>
         </div>
 
-        <div>
-          <label htmlFor="duration" style={fieldLabelStyle}>
-            Duration
-          </label>
-          <select
-            id="duration"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            style={fieldStyle}
+        {message && (
+          <div
+            style={{
+              ...messageStyles,
+              borderRadius: "12px",
+              padding: "0.9rem 1rem",
+              fontWeight: 600,
+              lineHeight: 1.45,
+            }}
           >
-            {availableDurations.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="purpose" style={fieldLabelStyle}>
-            Purpose
-          </label>
-          <select
-            id="purpose"
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            style={fieldStyle}
-          >
-            {purposeOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {showOpponent && (
-          <div>
-            <label htmlFor="opponent" style={fieldLabelStyle}>
-              Opponent
-            </label>
-            <input
-              id="opponent"
-              value={opponent}
-              onChange={(e) => setOpponent(e.target.value)}
-              style={fieldStyle}
-            />
+            {message}
           </div>
         )}
-      </div>
 
-      {selectedTeam && (
-        <div
-          style={{
-            border: "1px solid #dbe3f0",
-            borderRadius: "14px",
-            padding: "1rem",
-            backgroundColor: "#f8fafc",
-          }}
-        >
-          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "0.4rem" }}>
-            Selected Team
-          </div>
-          <div style={{ color: "#334155" }}>{selectedTeam.teamName}</div>
-          <div style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem" }}>
-            {selectedTeam.ageGroup} • {formatSeasonLabel(selectedTeam.season)} {selectedTeam.year}
-          </div>
-          <div style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem" }}>
-            {selectedTeam.coachName}
-            {selectedTeam.coachEmail ? ` • ${selectedTeam.coachEmail}` : ""}
-            {selectedTeam.coachPhone?.trim() ? ` • ${selectedTeam.coachPhone}` : ""}
-          </div>
-        </div>
-      )}
+        <div className="booking-schedule-card">
+          <h2 style={{ marginTop: 0, marginBottom: "0.5rem", lineHeight: 1.3 }}>
+            Field Schedule for {date}
+          </h2>
+          <p style={{ marginTop: 0, color: "#64748b", marginBottom: "1rem", lineHeight: 1.5 }}>
+            This updates automatically when you choose a different date above.
+          </p>
 
-      <div>
-        <label htmlFor="notes" style={fieldLabelStyle}>
-          Notes
-        </label>
-        <textarea
-          id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          style={textareaStyle}
-          placeholder="Optional details"
-        />
-      </div>
+          {isLoadingDailyBookings ? (
+            <div
+              style={{
+                padding: "1rem",
+                border: "1px dashed #cbd5e1",
+                borderRadius: "12px",
+                color: "#64748b",
+              }}
+            >
+              Loading schedule...
+            </div>
+          ) : (
+            <div className="booking-schedule-grid">
+              {bookingsByRoom.map(({ room, bookings }) => (
+                <div key={room.id} className="booking-room-card">
+                  <div style={{ marginBottom: "0.65rem" }}>
+                    <div
+                      className="booking-wrap-text"
+                      style={{ fontWeight: 800, color: "#0f172a", lineHeight: 1.35 }}
+                    >
+                      {room.name}
+                    </div>
+                    {room.description?.trim() && (
+                      <div
+                        className="booking-wrap-text"
+                        style={{ color: "#64748b", fontSize: "0.9rem", marginTop: "0.15rem", lineHeight: 1.4 }}
+                      >
+                        {room.description}
+                      </div>
+                    )}
+                  </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-        <button
-          type="submit"
-          disabled={activeTeams.length === 0}
-          style={{
-            padding: "0.85rem 1.25rem",
-            backgroundColor: activeTeams.length === 0 ? "#94a3b8" : "#2563eb",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "12px",
-            fontWeight: 600,
-            cursor: activeTeams.length === 0 ? "not-allowed" : "pointer",
-            boxShadow: activeTeams.length === 0 ? "none" : "0 4px 12px rgba(37, 99, 235, 0.22)",
-          }}
-        >
-          Submit Booking
-        </button>
-
-        <span style={{ color: "#64748b", fontSize: "0.95rem" }}>
-          Default date is today. Default time is 5:00 PM.
-        </span>
-      </div>
-
-      {message && (
-        <div
-          style={{
-            ...messageStyles,
-            borderRadius: "12px",
-            padding: "0.9rem 1rem",
-            fontWeight: 600,
-          }}
-        >
-          {message}
-        </div>
-      )}
-
-      <div
-        style={{
-          border: "1px solid #dbe3f0",
-          borderRadius: "16px",
-          padding: "1.25rem",
-          backgroundColor: "#ffffff",
-          boxShadow: "0 6px 18px rgba(0, 0, 0, 0.04)",
-        }}
-      >
-        <h2 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-          Field Schedule for {date}
-        </h2>
-        <p style={{ marginTop: 0, color: "#64748b", marginBottom: "1rem" }}>
-          This updates automatically when you choose a different date above.
-        </p>
-
-        {isLoadingDailyBookings ? (
-          <div
-            style={{
-              padding: "1rem",
-              border: "1px dashed #cbd5e1",
-              borderRadius: "12px",
-              color: "#64748b",
-            }}
-          >
-            Loading schedule...
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "grid",
-              gap: "0.85rem",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-              alignItems: "start",
-            }}
-          >
-            {bookingsByRoom.map(({ room, bookings }) => (
-              <div
-                key={room.id}
-                style={{
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "14px",
-                  backgroundColor: "#f8fafc",
-                  padding: "1rem",
-                }}
-              >
-                <div style={{ marginBottom: "0.65rem" }}>
-                  <div style={{ fontWeight: 800, color: "#0f172a" }}>{room.name}</div>
-                  {room.description?.trim() && (
-                    <div style={{ color: "#64748b", fontSize: "0.9rem", marginTop: "0.15rem" }}>
-                      {room.description}
+                  {bookings.length === 0 ? (
+                    <div style={{ color: "#94a3b8", lineHeight: 1.4 }}>— No bookings for this field</div>
+                  ) : (
+                    <div className="booking-room-bookings">
+                      {bookings.map((dailyBooking) => (
+                        <div key={dailyBooking.id} className="booking-room-booking-card">
+                          <div
+                            className="booking-wrap-text"
+                            style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
+                          >
+                            {dailyBooking.title || "Booking"}
+                          </div>
+                          <div
+                            className="booking-wrap-text"
+                            style={{ color: "#334155", marginTop: "0.15rem", lineHeight: 1.4 }}
+                          >
+                            {dailyBooking.team?.teamName || "—"}
+                          </div>
+                          <div
+                            style={{ color: "#64748b", marginTop: "0.15rem", fontSize: "0.92rem", lineHeight: 1.4 }}
+                          >
+                            {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
+                            {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-
-                {bookings.length === 0 ? (
-                  <div style={{ color: "#94a3b8" }}>— No bookings for this field</div>
-                ) : (
-                  <div style={{ display: "grid", gap: "0.5rem" }}>
-                    {bookings.map((dailyBooking) => (
-                      <div
-                        key={dailyBooking.id}
-                        style={{
-                          backgroundColor: "#ffffff",
-                          border: "1px solid #dbe3f0",
-                          borderRadius: "10px",
-                          padding: "0.75rem 0.85rem",
-                        }}
-                      >
-                        <div style={{ fontWeight: 700, color: "#0f172a" }}>
-                          {dailyBooking.title || "Booking"}
-                        </div>
-                        <div style={{ color: "#334155", marginTop: "0.15rem" }}>
-                          {dailyBooking.team?.teamName}
-                        </div>
-                        <div style={{ color: "#64748b", marginTop: "0.15rem", fontSize: "0.92rem" }}>
-                          {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
-                          {formatMinutesLabel(dailyBooking.endTimeMinutes)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </form>
+              ))}
+            </div>
+          )}
+        </div>
+      </form>
+    </>
   );
 }

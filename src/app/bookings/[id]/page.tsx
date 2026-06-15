@@ -55,7 +55,8 @@ function buttonStyle(bg: string, border: string, color: string) {
     color,
     textDecoration: "none",
     fontWeight: 600,
-  } as const;
+    textAlign: "center" as const,
+  };
 }
 
 export default async function BookingDetailsPage({ params, searchParams }: PageProps) {
@@ -123,46 +124,119 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
       style={{
         minHeight: "100vh",
         backgroundColor: "#f5f7fb",
-        padding: "2rem",
+        padding: "1rem",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #dbe3f0",
-            borderRadius: "16px",
-            padding: "1.5rem",
-            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: "1rem",
-              flexWrap: "wrap",
-              marginBottom: "1rem",
-            }}
-          >
+      <style>{`
+        .booking-detail-shell {
+          max-width: 900px;
+          margin: 0 auto;
+        }
+
+        .booking-detail-card {
+          background-color: #ffffff;
+          border: 1px solid #dbe3f0;
+          border-radius: 16px;
+          padding: 1.25rem;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        .booking-detail-header {
+          display: flex;
+          justify-content: space-between;
+          gap: 1rem;
+          flex-wrap: wrap;
+          margin-bottom: 1rem;
+          align-items: flex-start;
+        }
+
+        .booking-detail-actions {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          align-items: stretch;
+          justify-content: flex-start;
+        }
+
+        .booking-detail-grid {
+          display: grid;
+          gap: 0.85rem;
+        }
+
+        .booking-detail-row {
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          background-color: #f8fafc;
+          padding: 0.9rem 1rem;
+        }
+
+        .booking-detail-label {
+          font-size: 0.82rem;
+          color: #64748b;
+          line-height: 1.35;
+        }
+
+        .booking-detail-value {
+          color: #0f172a;
+          font-weight: 700;
+          line-height: 1.4;
+          margin-top: 0.15rem;
+          word-break: break-word;
+        }
+
+        .booking-detail-subvalue {
+          color: #475569;
+          margin-top: 0.15rem;
+          line-height: 1.4;
+          word-break: break-word;
+        }
+
+        .booking-detail-unassigned {
+          color: #b91c1c;
+          font-weight: 700;
+          line-height: 1.4;
+          margin-top: 0.15rem;
+        }
+
+        @media (max-width: 768px) {
+          .booking-detail-card {
+            padding: 1rem;
+            border-radius: 14px;
+          }
+
+          .booking-detail-header {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .booking-detail-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .booking-detail-actions a {
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .booking-detail-row {
+            padding: 0.85rem 0.9rem;
+          }
+        }
+      `}</style>
+
+      <div className="booking-detail-shell">
+        <div className="booking-detail-card">
+          <div className="booking-detail-header">
             <div>
-              <h1 style={{ marginTop: 0, marginBottom: "0.35rem" }}>
-                Booking Details
-              </h1>
-              <div style={{ color: "#64748b" }}>
+              <h1 style={{ marginTop: 0, marginBottom: "0.35rem" }}>Booking Details</h1>
+              <div style={{ color: "#64748b", lineHeight: 1.5 }}>
                 View booking information.
               </div>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "0.75rem",
-                flexWrap: "wrap",
-                alignItems: "start",
-              }}
-            >
+            <div className="booking-detail-actions">
               <Link
                 href={calendarHref}
                 style={buttonStyle("#eef2ff", "#c7d2fe", "#1e3a8a")}
@@ -202,45 +276,27 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: "0.85rem" }}>
+          <div className="booking-detail-grid">
             {rows.map((row) => {
               if (row.label === "Assigned Umpire") {
                 const umpire = booking.umpireRecord;
 
                 return (
-                  <div
-                    key={row.label}
-                    style={{
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "12px",
-                      backgroundColor: "#f8fafc",
-                      padding: "0.9rem 1rem",
-                    }}
-                  >
-                    <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                      Assigned Umpire
-                    </div>
+                  <div key={row.label} className="booking-detail-row">
+                    <div className="booking-detail-label">Assigned Umpire</div>
 
                     {!umpire ? (
-                      <div style={{ color: "#b91c1c", fontWeight: 700 }}>
-                        Unassigned
-                      </div>
+                      <div className="booking-detail-unassigned">Unassigned</div>
                     ) : (
                       <div style={{ marginTop: "0.2rem" }}>
-                        <div style={{ color: "#0f172a", fontWeight: 700 }}>
-                          {umpire.name}
-                        </div>
+                        <div className="booking-detail-value">{umpire.name}</div>
 
                         {umpire.phone && (
-                          <div style={{ color: "#475569", marginTop: "0.15rem" }}>
-                            {umpire.phone}
-                          </div>
+                          <div className="booking-detail-subvalue">{umpire.phone}</div>
                         )}
 
                         {umpire.email && (
-                          <div style={{ color: "#475569", marginTop: "0.15rem" }}>
-                            {umpire.email}
-                          </div>
+                          <div className="booking-detail-subvalue">{umpire.email}</div>
                         )}
                       </div>
                     )}
@@ -249,21 +305,9 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
               }
 
               return (
-                <div
-                  key={row.label}
-                  style={{
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "12px",
-                    backgroundColor: "#f8fafc",
-                    padding: "0.9rem 1rem",
-                  }}
-                >
-                  <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                    {row.label}
-                  </div>
-                  <div style={{ color: "#0f172a", fontWeight: 700 }}>
-                    {row.value}
-                  </div>
+                <div key={row.label} className="booking-detail-row">
+                  <div className="booking-detail-label">{row.label}</div>
+                  <div className="booking-detail-value">{row.value}</div>
                 </div>
               );
             })}
