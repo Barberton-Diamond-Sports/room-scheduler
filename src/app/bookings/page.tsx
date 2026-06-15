@@ -92,6 +92,31 @@ function formatBlackoutLabel(reason: string | null | undefined) {
   return trimmed ? `BLACKED OUT · ${trimmed}` : "BLACKED OUT";
 }
 
+function buildBlackoutMap(
+  roomBlackouts: Array<{
+    roomId: string;
+    startDateTime: Date;
+    endDateTime: Date;
+    reason: string | null;
+  }>
+) {
+  const blackoutMap = new Map<string, { label: string }>();
+
+  for (const blackout of roomBlackouts) {
+    let cursor = fromDateInputValue(toDateInputValue(blackout.startDateTime));
+    const blackoutEnd = fromDateInputValue(toDateInputValue(blackout.endDateTime));
+
+    while (cursor < blackoutEnd) {
+      blackoutMap.set(`${blackout.roomId}|${toDateKey(cursor)}`, {
+        label: formatBlackoutLabel(blackout.reason),
+      });
+      cursor = addDaysToDate(cursor, 1);
+    }
+  }
+
+  return blackoutMap;
+}
+
 function bookingBlockColors(title: string | null) {
   if (title === "Game" || title === "Tournament") {
     return { backgroundColor: "#ede9fe", borderColor: "#a78bfa" };
@@ -130,9 +155,11 @@ export default async function BookingsPage({ searchParams }: PageProps) {
 
   const previousWeekDate = addDays(selectedDate, -7);
   const nextWeekDate = addDays(selectedDate, 7);
+  const previousDayDate = addDays(selectedDate, -1);
+  const nextDayDate = addDays(selectedDate, 1);
   const todayDate = toDateInputValue(new Date());
 
-  const [rooms, bookings, roomBlackouts] = await Promise.all([
+  const [rooms, dayBookings, weekBookings, dayRoomBlackouts, weekRoomBlackouts] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
@@ -140,10 +167,18 @@ export default async function BookingsPage({ searchParams }: PageProps) {
     prisma.booking.findMany({
       where: {
         status: "ACTIVE",
-        bookingDate:
-          view === "week"
-            ? { gte: weekStart, lt: weekEnd }
-            : { gte: dayStart, lt: nextDay },
+        bookingDate: { gte: dayStart, lt: nextDay },
+      },
+      include: {
+        room: true,
+        team: true,
+      },
+      orderBy: [{ bookingDate: "asc" }, { roomId: "asc" }, { startTimeMinutes: "asc" }],
+    }),
+    prisma.booking.findMany({
+      where: {
+        status: "ACTIVE",
+        bookingDate: { gte: weekStart, lt: weekEnd },
       },
       include: {
         room: true,
@@ -152,10 +187,12 @@ export default async function BookingsPage({ searchParams }: PageProps) {
       orderBy: [{ bookingDate: "asc" }, { roomId: "asc" }, { startTimeMinutes: "asc" }],
     }),
     prisma.roomBlackout.findMany({
-      where:
-        view === "week"
-          ? { startDateTime: { lt: weekEnd }, endDateTime: { gt: weekStart } }
-          : { startDateTime: { lt: nextDay }, endDateTime: { gt: dayStart } },
+      where: { startDateTime: { lt: nextDay }, endDateTime: { gt: dayStart } },
+      include: { room: true },
+      orderBy: [{ startDateTime: "asc" }, { roomId: "asc" }],
+    }),
+    prisma.roomBlackout.findMany({
+      where: { startDateTime: { lt: weekEnd }, endDateTime: { gt: weekStart } },
       include: { room: true },
       orderBy: [{ startDateTime: "asc" }, { roomId: "asc" }],
     }),
@@ -168,18 +205,24 @@ export default async function BookingsPage({ searchParams }: PageProps) {
 
   const totalHeight = slots.length * SLOT_HEIGHT;
 
-  const blackoutMap = new Map<string, { label: string }>();
-  for (const blackout of roomBlackouts) {
-    let cursor = fromDateInputValue(toDateInputValue(blackout.startDateTime));
-    const blackoutEnd = fromDateInputValue(toDateInputValue(blackout.endDateTime));
+const dayBlackoutMap = buildBlackoutMap(
+  dayRoomBlackouts.map((item) => ({
+    roomId: item.roomId,
+    startDateTime: item.startDateTime,
+    endDateTime: item.endDateTime,
+    reason: item.reason,
+  }))
+);
 
-    while (cursor < blackoutEnd) {
-      blackoutMap.set(`${blackout.roomId}|${toDateKey(cursor)}`, {
-        label: formatBlackoutLabel(blackout.reason),
-      });
-      cursor = addDaysToDate(cursor, 1);
-    }
-  }
+const weekBlackoutMap = buildBlackoutMap(
+  weekRoomBlackouts.map((item) => ({
+    roomId: item.roomId,
+    startDateTime: item.startDateTime,
+    endDateTime: item.endDateTime,
+    reason: item.reason,
+  }))
+);
+
 
   const blackoutCellStyle = {
     backgroundColor: "#374151",
@@ -273,6 +316,10 @@ export default async function BookingsPage({ searchParams }: PageProps) {
         .mobile-only {
           display: none;
         }
+
+		.mobile-hide {
+		display: inline-block;
+		}
 
         .nav-link {
           display: inline-block;
@@ -373,6 +420,10 @@ export default async function BookingsPage({ searchParams }: PageProps) {
             padding: 1rem;
           }
 
+		  .mobile-hide {
+		    display: none !important;
+		  }
+
           .title-row-bottom {
             flex-direction: column;
             align-items: stretch;
@@ -466,6 +517,83 @@ export default async function BookingsPage({ searchParams }: PageProps) {
             </div>
           )}
 
+{view === "day" && (
+  <div className="button-row desktop-only">
+    <Link
+      href={`/bookings?date=${previousDayDate}&view=day`}
+      className="nav-link"
+      style={{
+        backgroundColor: "#f8fafc",
+        border: "1px solid #dbe3f0",
+        color: "#334155",
+      }}
+    >
+      ← Previous Day
+    </Link>
+
+    <Link
+      href={`/bookings?date=${todayDate}&view=day`}
+      className="nav-link"
+      style={{
+        backgroundColor: "#dbeafe",
+        border: "1px solid #93c5fd",
+        color: "#1d4ed8",
+      }}
+    >
+      Today
+    </Link>
+
+    <Link
+      href={`/bookings?date=${nextDayDate}&view=day`}
+      className="nav-link"
+      style={{
+        backgroundColor: "#f8fafc",
+        border: "1px solid #dbe3f0",
+        color: "#334155",
+      }}
+    >
+      Next Day →
+    </Link>
+  </div>
+)}
+<div className="button-row mobile-only">
+  <Link
+    href={`/bookings?date=${previousDayDate}&view=day`}
+    className="nav-link"
+    style={{
+      backgroundColor: "#f8fafc",
+      border: "1px solid #dbe3f0",
+      color: "#334155",
+    }}
+  >
+    ← Previous Day
+  </Link>
+
+  <Link
+    href={`/bookings?date=${todayDate}&view=day`}
+    className="nav-link"
+    style={{
+      backgroundColor: "#dbeafe",
+      border: "1px solid #93c5fd",
+      color: "#1d4ed8",
+    }}
+  >
+    Today
+  </Link>
+
+  <Link
+    href={`/bookings?date=${nextDayDate}&view=day`}
+    className="nav-link"
+    style={{
+      backgroundColor: "#f8fafc",
+      border: "1px solid #dbe3f0",
+      color: "#334155",
+    }}
+  >
+    Next Day →
+  </Link>
+</div>
+
           <div className="title-row-bottom">
             <div className="top-links">
               <Link
@@ -510,16 +638,17 @@ export default async function BookingsPage({ searchParams }: PageProps) {
             <div className="view-controls">
               <div className="view-controls">
                 <Link
-                  href={`/bookings?date=${selectedDate}&view=day`}
-                  className="pill-link"
-                  style={{
-                    border: view === "day" ? "1px solid #93c5fd" : "1px solid #dbe3f0",
-                    backgroundColor: view === "day" ? "#dbeafe" : "#f8fafc",
-                    color: view === "day" ? "#1d4ed8" : "#475569",
-                  }}
-                >
-                  Day View
-                </Link>
+  href={`/bookings?date=${selectedDate}&view=week`}
+  className="pill-link mobile-hide"
+  style={{
+    border: view === "week" ? "1px solid #93c5fd" : "1px solid #dbe3f0",
+    backgroundColor: view === "week" ? "#dbeafe" : "#f8fafc",
+    color: view === "week" ? "#1d4ed8" : "#475569",
+  }}
+>
+  Week View
+</Link>
+
 
                 <Link
                   href={`/bookings?date=${selectedDate}&view=week`}
@@ -590,8 +719,8 @@ export default async function BookingsPage({ searchParams }: PageProps) {
             <div className="mobile-only">
               <div className="mobile-stack">
                 {rooms.map((room) => {
-                  const roomBookings = bookings.filter((booking) => booking.roomId === room.id);
-                  const roomBlackout = blackoutMap.get(`${room.id}|${selectedDate}`);
+                  const roomBookings = dayBookings.filter((booking) => booking.roomId === room.id);
+                  const roomBlackout = dayBlackoutMap.get(`${room.id}|${selectedDate}`);
 
                   return (
                     <section key={room.id} className="mobile-day-section">
@@ -722,8 +851,8 @@ export default async function BookingsPage({ searchParams }: PageProps) {
                   </div>
 
                   {rooms.map((room) => {
-                    const roomBookings = bookings.filter((booking) => booking.roomId === room.id);
-                    const roomBlackout = blackoutMap.get(`${room.id}|${selectedDate}`);
+                    const roomBookings = dayBookings.filter((booking) => booking.roomId === room.id);
+                    const roomBlackout = dayBlackoutMap.get(`${room.id}|${selectedDate}`);
 
                     return (
                       <div key={room.id} style={{ minWidth: "220px", flex: 1 }}>
@@ -888,109 +1017,6 @@ export default async function BookingsPage({ searchParams }: PageProps) {
           </>
         ) : (
           <>
-            {/* MOBILE WEEK VIEW */}
-            <div className="mobile-only">
-              <div className="mobile-stack">
-                {weekDays.map((day) => (
-                  <section key={day.value} className="mobile-week-day">
-                    <h2 className="mobile-day-heading">{day.longLabel}</h2>
-
-                    <div className="mobile-subsections">
-                      {rooms.map((room) => {
-                        const cellBookings = bookings.filter(
-                          (booking) =>
-                            booking.roomId === room.id &&
-                            toDateInputValue(new Date(booking.bookingDate)) === day.value
-                        );
-                        const cellBlackout = blackoutMap.get(`${room.id}|${day.value}`);
-
-                        return (
-                          <div key={`${day.value}-${room.id}`} className="mobile-room-card">
-                            <div className="mobile-room-heading">{room.name}</div>
-                            {room.description && (
-                              <div className="mobile-room-description">{room.description}</div>
-                            )}
-
-                            {cellBlackout ? (
-                              <div
-                                style={{
-                                  marginTop: "0.75rem",
-                                  ...blackoutCellStyle,
-                                  lineHeight: 1.4,
-                                }}
-                              >
-                                {cellBlackout.label}
-                              </div>
-                            ) : cellBookings.length === 0 ? (
-                              <div className="mobile-empty" style={{ marginTop: "0.6rem" }}>
-                                No bookings.
-                              </div>
-                            ) : (
-                              <div className="mobile-bookings-list">
-                                {cellBookings.map((booking) => {
-                                  const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
-                                  const hoverText = [
-                                    booking.title || "Booking",
-                                    booking.team?.teamName,
-                                    booking.team?.coachEmail || "",
-                                    formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
-                                    booking.notes || "",
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" • ");
-
-                                  return (
-                                    <Link
-                                      key={booking.id}
-                                      href={`/bookings/${booking.id}?date=${selectedDate}&view=week`}
-                                      title={hoverText}
-                                      className="mobile-booking-link"
-                                      style={{
-                                        backgroundColor,
-                                        border: `1px solid ${borderColor}`,
-                                      }}
-                                    >
-                                      <div
-                                        style={{
-                                          fontWeight: 700,
-                                          color: "#0f172a",
-                                          fontSize: "0.95rem",
-                                          lineHeight: 1.35,
-                                        }}
-                                      >
-                                        {booking.title || "Booking"}
-                                      </div>
-                                      <div
-                                        style={{
-                                          color: "#334155",
-                                          marginTop: "0.2rem",
-                                          lineHeight: 1.35,
-                                        }}
-                                      >
-                                        {booking.team?.teamName || "No team"}
-                                      </div>
-                                      <div
-                                        style={{
-                                          color: "#475569",
-                                          marginTop: "0.2rem",
-                                          fontSize: "0.88rem",
-                                        }}
-                                      >
-                                        {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}
-                                      </div>
-                                    </Link>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            </div>
 
             {/* DESKTOP WEEK VIEW */}
             <div className="desktop-only">
@@ -1060,12 +1086,12 @@ export default async function BookingsPage({ searchParams }: PageProps) {
                         </div>
 
                         {weekDays.map((day) => {
-                          const cellBookings = bookings.filter(
+                          const cellBookings = weekBookings.filter(
                             (booking) =>
                               booking.roomId === room.id &&
                               toDateInputValue(new Date(booking.bookingDate)) === day.value
                           );
-                          const cellBlackout = blackoutMap.get(`${room.id}|${day.value}`);
+                          const cellBlackout = weekBlackoutMap.get(`${room.id}|${day.value}`);
 
                           return (
                             <div
