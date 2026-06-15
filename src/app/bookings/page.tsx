@@ -1,3 +1,5 @@
+
+
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
@@ -471,14 +473,26 @@ const weekBlackoutMap = buildBlackoutMap(
       <div className="page-shell">
         <div className="hero-card">
           <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Bookings Calendar</h1>
-          <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
-            {view === "week"
-              ? `Week of ${formatPageDate(weekDays[0].value)}`
-              : formatPageDate(selectedDate)}
-          </p>
+<p
+  className="desktop-only"
+  style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}
+>
+  {view === "week"
+    ? `Week of ${formatPageDate(weekDays[0].value)}`
+    : formatPageDate(selectedDate)}
+</p>
 
-          {view === "week" && (
-            <div className="button-row">
+<p
+  className="mobile-only"
+  style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}
+>
+  {formatPageDate(selectedDate)}
+</p>
+
+          
+{view === "week" && (
+  <div className="button-row desktop-only">
+
               <Link
                 href={`/bookings?date=${previousWeekDate}&view=week`}
                 className="nav-link"
@@ -636,32 +650,31 @@ const weekBlackoutMap = buildBlackoutMap(
             </div>
 
             <div className="view-controls">
-              <div className="view-controls">
-                <Link
-  href={`/bookings?date=${selectedDate}&view=week`}
-  className="pill-link mobile-hide"
-  style={{
-    border: view === "week" ? "1px solid #93c5fd" : "1px solid #dbe3f0",
-    backgroundColor: view === "week" ? "#dbeafe" : "#f8fafc",
-    color: view === "week" ? "#1d4ed8" : "#475569",
-  }}
->
-  Week View
-</Link>
+<div className="view-controls">
+  <Link
+    href={`/bookings?date=${selectedDate}&view=day`}
+    className="pill-link"
+    style={{
+      border: view === "day" ? "1px solid #93c5fd" : "1px solid #dbe3f0",
+      backgroundColor: view === "day" ? "#dbeafe" : "#f8fafc",
+      color: view === "day" ? "#1d4ed8" : "#475569",
+    }}
+  >
+    Day View
+  </Link>
 
-
-                <Link
-                  href={`/bookings?date=${selectedDate}&view=week`}
-                  className="pill-link"
-                  style={{
-                    border: view === "week" ? "1px solid #93c5fd" : "1px solid #dbe3f0",
-                    backgroundColor: view === "week" ? "#dbeafe" : "#f8fafc",
-                    color: view === "week" ? "#1d4ed8" : "#475569",
-                  }}
-                >
-                  Week View
-                </Link>
-              </div>
+  <Link
+    href={`/bookings?date=${selectedDate}&view=week`}
+    className="pill-link mobile-hide"
+    style={{
+      border: view === "week" ? "1px solid #93c5fd" : "1px solid #dbe3f0",
+      backgroundColor: view === "week" ? "#dbeafe" : "#f8fafc",
+      color: view === "week" ? "#1d4ed8" : "#475569",
+    }}
+  >
+    Week View
+  </Link>
+</div>
 
               <form method="GET" className="date-form">
                 <input type="hidden" name="view" value={view} />
@@ -699,506 +712,503 @@ const weekBlackoutMap = buildBlackoutMap(
           </div>
         </div>
 
-        <div className="legend-row">
-          <div
-            style={{
-              width: "18px",
-              height: "18px",
-              borderRadius: "4px",
-              backgroundColor: "#374151",
-              border: "1px solid #1f2937",
-              flexShrink: 0,
-            }}
-          />
-          <div style={{ color: "#475569", fontWeight: 600 }}>Blackout date</div>
-        </div>
+<div className="legend-row">
+  <div
+    style={{
+      width: "18px",
+      height: "18px",
+      borderRadius: "4px",
+      backgroundColor: "#374151",
+      border: "1px solid #1f2937",
+      flexShrink: 0,
+    }}
+  />
+  <div style={{ color: "#475569", fontWeight: 600 }}>Blackout date</div>
+</div>
 
-        {view === "day" ? (
-          <>
-            {/* MOBILE DAY VIEW */}
-            <div className="mobile-only">
-              <div className="mobile-stack">
-                {rooms.map((room) => {
-                  const roomBookings = dayBookings.filter((booking) => booking.roomId === room.id);
-                  const roomBlackout = dayBlackoutMap.get(`${room.id}|${selectedDate}`);
+{/* MOBILE DAY VIEW - ALWAYS */}
+<div className="mobile-only">
+  <div className="mobile-stack">
+    {rooms.map((room) => {
+      const roomBookings = dayBookings.filter((booking) => booking.roomId === room.id);
+      const roomBlackout = dayBlackoutMap.get(`${room.id}|${selectedDate}`);
 
-                  return (
-                    <section key={room.id} className="mobile-day-section">
-                      <h2 className="mobile-room-heading">{room.name}</h2>
-                      {room.description && (
-                        <div className="mobile-room-description">{room.description}</div>
-                      )}
+      return (
+        <section key={room.id} className="mobile-day-section">
+          <h2 className="mobile-room-heading">{room.name}</h2>
+          {room.description && (
+            <div className="mobile-room-description">{room.description}</div>
+          )}
 
-                      {roomBlackout ? (
-                        <div
-                          style={{
-                            marginTop: "0.85rem",
-                            ...blackoutCellStyle,
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {roomBlackout.label}
-                        </div>
-                      ) : roomBookings.length === 0 ? (
-                        <div className="mobile-empty" style={{ marginTop: "0.85rem" }}>
-                          No bookings for this field.
-                        </div>
-                      ) : (
-                        <div className="mobile-bookings-list">
-                          {roomBookings.map((booking) => {
-                            const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
-                            const hoverText = [
-                              booking.title || "Booking",
-                              booking.team?.teamName,
-                              booking.team?.coachEmail || "",
-                              formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
-                              booking.notes || "",
-                            ]
-                              .filter(Boolean)
-                              .join(" • ");
-
-                            return (
-                              <Link
-                                key={booking.id}
-                                href={`/bookings/${booking.id}?date=${selectedDate}&view=day`}
-                                title={hoverText}
-                                className="mobile-booking-link"
-                                style={{
-                                  backgroundColor,
-                                  border: `1px solid ${borderColor}`,
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    fontWeight: 700,
-                                    color: "#0f172a",
-                                    fontSize: "0.96rem",
-                                    lineHeight: 1.35,
-                                  }}
-                                >
-                                  {booking.title || "Booking"}
-                                </div>
-                                <div
-                                  style={{
-                                    color: "#334155",
-                                    marginTop: "0.2rem",
-                                    lineHeight: 1.35,
-                                  }}
-                                >
-                                  {booking.team?.teamName || "No team"}
-                                </div>
-                                <div
-                                  style={{
-                                    color: "#475569",
-                                    marginTop: "0.2rem",
-                                    fontSize: "0.88rem",
-                                  }}
-                                >
-                                  {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}
-                                </div>
-                                {booking.notes && (
-                                  <div
-                                    style={{
-                                      color: "#475569",
-                                      marginTop: "0.35rem",
-                                      fontSize: "0.84rem",
-                                      lineHeight: 1.35,
-                                    }}
-                                  >
-                                    {booking.notes}
-                                  </div>
-                                )}
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </section>
-                  );
-                })}
-              </div>
+          {roomBlackout ? (
+            <div
+              style={{
+                marginTop: "0.85rem",
+                ...blackoutCellStyle,
+                lineHeight: 1.4,
+              }}
+            >
+              {roomBlackout.label}
             </div>
-
-            {/* DESKTOP DAY VIEW */}
-            <div className="desktop-only">
-              <div
-                className="view-card"
-                style={{
-                  padding: "1rem",
-                  overflowX: "auto",
-                }}
-              >
-                <div style={{ display: "flex", gap: "1rem", minWidth: "1200px" }}>
-                  <div style={{ width: "100px", flexShrink: 0 }}>
-                    <div style={{ height: "48px" }} />
-                    <div style={{ position: "relative", height: `${totalHeight}px` }}>
-                      {slots.map((slot, index) => (
-                        <div
-                          key={slot}
-                          style={{
-                            position: "absolute",
-                            top: `${index * SLOT_HEIGHT - 10}px`,
-                            left: 0,
-                            right: 0,
-                            fontSize: "0.85rem",
-                            color: "#64748b",
-                          }}
-                        >
-                          {formatTimeLabel(slot)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {rooms.map((room) => {
-                    const roomBookings = dayBookings.filter((booking) => booking.roomId === room.id);
-                    const roomBlackout = dayBlackoutMap.get(`${room.id}|${selectedDate}`);
-
-                    return (
-                      <div key={room.id} style={{ minWidth: "220px", flex: 1 }}>
-                        <div
-                          style={{
-                            height: "60px",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            border: "1px solid #dbe3f0",
-                            backgroundColor: "#f8fafc",
-                            borderRadius: "12px 12px 0 0",
-                            padding: "0.35rem 0.5rem",
-                            textAlign: "center",
-                          }}
-                        >
-                          <div style={{ fontWeight: 700, color: "#334155" }}>{room.name}</div>
-                          {room.description && (
-                            <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.15rem" }}>
-                              {room.description}
-                            </div>
-                          )}
-                        </div>
-
-                        <div
-                          style={{
-                            position: "relative",
-                            height: `${totalHeight}px`,
-                            border: "1px solid #dbe3f0",
-                            borderTop: "none",
-                            backgroundColor: roomBlackout ? "#374151" : "#ffffff",
-                            borderRadius: "0 0 12px 12px",
-                          }}
-                        >
-                          {roomBlackout ? (
-                            <div
-                              style={{
-                                position: "absolute",
-                                inset: "0",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                padding: "1rem",
-                                textAlign: "center",
-                                color: "#ffffff",
-                                fontWeight: 800,
-                                lineHeight: 1.4,
-                              }}
-                            >
-                              {roomBlackout.label}
-                            </div>
-                          ) : (
-                            <>
-                              {slots.map((slot, index) => (
-                                <div
-                                  key={slot}
-                                  style={{
-                                    position: "absolute",
-                                    top: `${index * SLOT_HEIGHT}px`,
-                                    left: 0,
-                                    right: 0,
-                                    borderTop: "1px solid #eef2f7",
-                                    height: `${SLOT_HEIGHT}px`,
-                                  }}
-                                />
-                              ))}
-
-                              {roomBookings.map((booking) => {
-                                const top =
-                                  ((booking.startTimeMinutes - START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
-                                const height = booking.durationBlocks * SLOT_HEIGHT - 4;
-                                const showNotes = booking.durationBlocks >= 4 && Boolean(booking.notes);
-                                const hoverText = [
-                                  booking.title || "Booking",
-                                  booking.team?.teamName,
-                                  booking.team?.coachEmail || "",
-                                  formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
-                                  booking.notes || "",
-                                ]
-                                  .filter(Boolean)
-                                  .join(" • ");
-                                const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
-
-                                return (
-                                  <Link
-                                    key={booking.id}
-                                    href={`/bookings/${booking.id}?date=${selectedDate}&view=day`}
-                                    title={hoverText}
-                                    style={{
-                                      position: "absolute",
-                                      top: `${top + 2}px`,
-                                      left: "6px",
-                                      right: "6px",
-                                      height: `${height}px`,
-                                      backgroundColor,
-                                      border: `1px solid ${borderColor}`,
-                                      borderRadius: "10px",
-                                      padding: "0.45rem",
-                                      overflow: "hidden",
-                                      fontSize: "0.85rem",
-                                      boxSizing: "border-box",
-                                      boxShadow: "0 3px 10px rgba(15, 23, 42, 0.10)",
-                                      textDecoration: "none",
-                                      display: "block",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <div
-                                      style={{
-                                        fontWeight: 700,
-                                        color: "#0f172a",
-                                        whiteSpace: "nowrap",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                      }}
-                                    >
-                                      {booking.title || "Booking"}
-                                    </div>
-                                    <div
-                                      style={{
-                                        color: "#334155",
-                                        marginTop: "0.15rem",
-                                        whiteSpace: "nowrap",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                      }}
-                                    >
-                                      {booking.team?.teamName}
-                                    </div>
-                                    <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.8rem" }}>
-                                      {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}
-                                    </div>
-                                    {showNotes && (
-                                      <div
-                                        style={{
-                                          color: "#475569",
-                                          marginTop: "0.3rem",
-                                          fontSize: "0.78rem",
-                                          lineHeight: 1.25,
-                                          display: "-webkit-box",
-                                          WebkitLineClamp: 2,
-                                          WebkitBoxOrient: "vertical",
-                                          overflow: "hidden",
-                                        }}
-                                      >
-                                        {booking.notes}
-                                      </div>
-                                    )}
-                                  </Link>
-                                );
-                              })}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+          ) : roomBookings.length === 0 ? (
+            <div className="mobile-empty" style={{ marginTop: "0.85rem" }}>
+              No bookings for this field.
             </div>
-          </>
-        ) : (
-          <>
+          ) : (
+            <div className="mobile-bookings-list">
+              {roomBookings.map((booking) => {
+                const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
+                const hoverText = [
+                  booking.title || "Booking",
+                  booking.team?.teamName,
+                  booking.team?.coachEmail || "",
+                  formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
+                  booking.notes || "",
+                ]
+                  .filter(Boolean)
+                  .join(" • ");
 
-            {/* DESKTOP WEEK VIEW */}
-            <div className="desktop-only">
-              <div
-                className="view-card"
-                style={{
-                  padding: "1rem",
-                  overflowX: "auto",
-                }}
-              >
-                <div style={{ minWidth: "1200px" }}>
-                  <div
+                return (
+                  <Link
+                    key={booking.id}
+                    href={`/bookings/${booking.id}?date=${selectedDate}&view=day`}
+                    title={hoverText}
+                    className="mobile-booking-link"
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: `220px repeat(${weekDays.length}, minmax(150px, 1fr))`,
-                      gap: "0.75rem",
-                      marginBottom: "0.75rem",
+                      backgroundColor,
+                      border: `1px solid ${borderColor}`,
                     }}
                   >
-                    <div />
-                    {weekDays.map((day) => (
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        color: "#0f172a",
+                        fontSize: "0.96rem",
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {booking.title || "Booking"}
+                    </div>
+                    <div
+                      style={{
+                        color: "#334155",
+                        marginTop: "0.2rem",
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {booking.team?.teamName || "No team"}
+                    </div>
+                    <div
+                      style={{
+                        color: "#475569",
+                        marginTop: "0.2rem",
+                        fontSize: "0.88rem",
+                      }}
+                    >
+                      {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}
+                    </div>
+                    {booking.notes && (
                       <div
-                        key={day.value}
                         style={{
-                          backgroundColor: day.value === selectedDate ? "#dbeafe" : "#f8fafc",
-                          border: "1px solid #dbe3f0",
-                          borderRadius: "12px",
-                          padding: "0.85rem 0.75rem",
-                          textAlign: "center",
-                          fontWeight: 700,
-                          color: "#334155",
+                          color: "#475569",
+                          marginTop: "0.35rem",
+                          fontSize: "0.84rem",
+                          lineHeight: 1.35,
                         }}
                       >
-                        {day.label}
+                        {booking.notes}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      );
+    })}
+  </div>
+</div>
 
-                  <div style={{ display: "grid", gap: "0.75rem" }}>
-                    {rooms.map((room) => (
+{/* DESKTOP DAY VIEW */}
+{view === "day" && (
+  <div className="desktop-only">
+    <div
+      className="view-card"
+      style={{
+        padding: "1rem",
+        overflowX: "auto",
+      }}
+    >
+      <div style={{ display: "flex", gap: "1rem", minWidth: "1200px" }}>
+        <div style={{ width: "100px", flexShrink: 0 }}>
+          <div style={{ height: "48px" }} />
+          <div style={{ position: "relative", height: `${totalHeight}px` }}>
+            {slots.map((slot, index) => (
+              <div
+                key={slot}
+                style={{
+                  position: "absolute",
+                  top: `${index * SLOT_HEIGHT - 10}px`,
+                  left: 0,
+                  right: 0,
+                  fontSize: "0.85rem",
+                  color: "#64748b",
+                }}
+              >
+                {formatTimeLabel(slot)}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {rooms.map((room) => {
+          const roomBookings = dayBookings.filter((booking) => booking.roomId === room.id);
+          const roomBlackout = dayBlackoutMap.get(`${room.id}|${selectedDate}`);
+
+          return (
+            <div key={room.id} style={{ minWidth: "220px", flex: 1 }}>
+              <div
+                style={{
+                  height: "60px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px solid #dbe3f0",
+                  backgroundColor: "#f8fafc",
+                  borderRadius: "12px 12px 0 0",
+                  padding: "0.35rem 0.5rem",
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontWeight: 700, color: "#334155" }}>{room.name}</div>
+                {room.description && (
+                  <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.15rem" }}>
+                    {room.description}
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  position: "relative",
+                  height: `${totalHeight}px`,
+                  border: "1px solid #dbe3f0",
+                  borderTop: "none",
+                  backgroundColor: roomBlackout ? "#374151" : "#ffffff",
+                  borderRadius: "0 0 12px 12px",
+                }}
+              >
+                {roomBlackout ? (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: "0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "1rem",
+                      textAlign: "center",
+                      color: "#ffffff",
+                      fontWeight: 800,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {roomBlackout.label}
+                  </div>
+                ) : (
+                  <>
+                    {slots.map((slot, index) => (
                       <div
-                        key={room.id}
+                        key={slot}
                         style={{
-                          display: "grid",
-                          gridTemplateColumns: `220px repeat(${weekDays.length}, minmax(150px, 1fr))`,
-                          gap: "0.75rem",
-                          alignItems: "stretch",
+                          position: "absolute",
+                          top: `${index * SLOT_HEIGHT}px`,
+                          left: 0,
+                          right: 0,
+                          borderTop: "1px solid #eef2f7",
+                          height: `${SLOT_HEIGHT}px`,
                         }}
-                      >
-                        <div
+                      />
+                    ))}
+
+                    {roomBookings.map((booking) => {
+                      const top =
+                        ((booking.startTimeMinutes - START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
+                      const height = booking.durationBlocks * SLOT_HEIGHT - 4;
+                      const showNotes = booking.durationBlocks >= 4 && Boolean(booking.notes);
+                      const hoverText = [
+                        booking.title || "Booking",
+                        booking.team?.teamName,
+                        booking.team?.coachEmail || "",
+                        formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
+                        booking.notes || "",
+                      ]
+                        .filter(Boolean)
+                        .join(" • ");
+                      const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
+
+                      return (
+                        <Link
+                          key={booking.id}
+                          href={`/bookings/${booking.id}?date=${selectedDate}&view=day`}
+                          title={hoverText}
                           style={{
-                            backgroundColor: "#f8fafc",
-                            border: "1px solid #dbe3f0",
-                            borderRadius: "12px",
-                            padding: "0.9rem 1rem",
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "center",
+                            position: "absolute",
+                            top: `${top + 2}px`,
+                            left: "6px",
+                            right: "6px",
+                            height: `${height}px`,
+                            backgroundColor,
+                            border: `1px solid ${borderColor}`,
+                            borderRadius: "10px",
+                            padding: "0.45rem",
+                            overflow: "hidden",
+                            fontSize: "0.85rem",
+                            boxSizing: "border-box",
+                            boxShadow: "0 3px 10px rgba(15, 23, 42, 0.10)",
+                            textDecoration: "none",
+                            display: "block",
+                            cursor: "pointer",
                           }}
                         >
-                          <div style={{ fontWeight: 700, color: "#334155" }}>{room.name}</div>
-                          {room.description && (
-                            <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.18rem" }}>
-                              {room.description}
-                            </div>
-                          )}
-                        </div>
-
-                        {weekDays.map((day) => {
-                          const cellBookings = weekBookings.filter(
-                            (booking) =>
-                              booking.roomId === room.id &&
-                              toDateInputValue(new Date(booking.bookingDate)) === day.value
-                          );
-                          const cellBlackout = weekBlackoutMap.get(`${room.id}|${day.value}`);
-
-                          return (
+                          <div
+                            style={{
+                              fontWeight: 700,
+                              color: "#0f172a",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {booking.title || "Booking"}
+                          </div>
+                          <div
+                            style={{
+                              color: "#334155",
+                              marginTop: "0.15rem",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {booking.team?.teamName}
+                          </div>
+                          <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.8rem" }}>
+                            {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}
+                          </div>
+                          {showNotes && (
                             <div
-                              key={day.value}
                               style={{
-                                backgroundColor: cellBlackout ? "#374151" : "#ffffff",
-                                border: cellBlackout ? "1px solid #1f2937" : "1px solid #dbe3f0",
-                                borderRadius: "12px",
-                                padding: "0.55rem",
-                                minHeight: "88px",
+                                color: "#475569",
+                                marginTop: "0.3rem",
+                                fontSize: "0.78rem",
+                                lineHeight: 1.25,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
                               }}
                             >
-                              {cellBlackout ? (
-                                <div
-                                  style={{
-                                    ...blackoutCellStyle,
-                                    minHeight: "76px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                  }}
-                                >
-                                  {cellBlackout.label}
-                                </div>
-                              ) : cellBookings.length === 0 ? (
-                                <div
-                                  style={{
-                                    color: "#cbd5e1",
-                                    fontSize: "0.88rem",
-                                    textAlign: "center",
-                                    paddingTop: "0.65rem",
-                                  }}
-                                >
-                                  —
-                                </div>
-                              ) : (
-                                <div style={{ display: "grid", gap: "0.45rem" }}>
-                                  {cellBookings.map((booking) => {
-                                    const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
-                                    const hoverText = [
-                                      booking.title || "Booking",
-                                      booking.team?.teamName,
-                                      booking.team?.coachEmail || "",
-                                      formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
-                                      booking.notes || "",
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" • ");
-
-                                    return (
-                                      <Link
-                                        key={booking.id}
-                                        href={`/bookings/${booking.id}?date=${selectedDate}&view=week`}
-                                        title={hoverText}
-                                        style={{
-                                          display: "block",
-                                          backgroundColor,
-                                          border: `1px solid ${borderColor}`,
-                                          borderRadius: "10px",
-                                          padding: "0.5rem 0.55rem",
-                                          textDecoration: "none",
-                                          boxShadow: "0 2px 8px rgba(15, 23, 42, 0.08)",
-                                        }}
-                                      >
-                                        <div
-                                          style={{
-                                            fontWeight: 700,
-                                            color: "#0f172a",
-                                            fontSize: "0.83rem",
-                                            whiteSpace: "nowrap",
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                          }}
-                                        >
-                                          {booking.title || "Booking"}
-                                        </div>
-                                        <div
-                                          style={{
-                                            color: "#334155",
-                                            marginTop: "0.15rem",
-                                            fontSize: "0.8rem",
-                                            whiteSpace: "nowrap",
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                          }}
-                                        >
-                                          {booking.team?.teamName}
-                                        </div>
-                                        <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.77rem" }}>
-                                          {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}
-                                        </div>
-                                      </Link>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                              {booking.notes}
                             </div>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+)}
+
+{/* DESKTOP WEEK VIEW */}
+{view === "week" && (
+  <div className="desktop-only">
+    <div
+      className="view-card"
+      style={{
+        padding: "1rem",
+        overflowX: "auto",
+      }}
+    >
+      <div style={{ minWidth: "1200px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: `220px repeat(${weekDays.length}, minmax(150px, 1fr))`,
+            gap: "0.75rem",
+            marginBottom: "0.75rem",
+          }}
+        >
+          <div />
+          {weekDays.map((day) => (
+            <div
+              key={day.value}
+              style={{
+                backgroundColor: day.value === selectedDate ? "#dbeafe" : "#f8fafc",
+                border: "1px solid #dbe3f0",
+                borderRadius: "12px",
+                padding: "0.85rem 0.75rem",
+                textAlign: "center",
+                fontWeight: 700,
+                color: "#334155",
+              }}
+            >
+              {day.label}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gap: "0.75rem" }}>
+          {rooms.map((room) => (
+            <div
+              key={room.id}
+              style={{
+                display: "grid",
+                gridTemplateColumns: `220px repeat(${weekDays.length}, minmax(150px, 1fr))`,
+                gap: "0.75rem",
+                alignItems: "stretch",
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #dbe3f0",
+                  borderRadius: "12px",
+                  padding: "0.9rem 1rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <div style={{ fontWeight: 700, color: "#334155" }}>{room.name}</div>
+                {room.description && (
+                  <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.18rem" }}>
+                    {room.description}
+                  </div>
+                )}
+              </div>
+
+              {weekDays.map((day) => {
+                const cellBookings = weekBookings.filter(
+                  (booking) =>
+                    booking.roomId === room.id &&
+                    toDateInputValue(new Date(booking.bookingDate)) === day.value
+                );
+                const cellBlackout = weekBlackoutMap.get(`${room.id}|${day.value}`);
+
+                return (
+                  <div
+                    key={day.value}
+                    style={{
+                      backgroundColor: cellBlackout ? "#374151" : "#ffffff",
+                      border: cellBlackout ? "1px solid #1f2937" : "1px solid #dbe3f0",
+                      borderRadius: "12px",
+                      padding: "0.55rem",
+                      minHeight: "88px",
+                    }}
+                  >
+                    {cellBlackout ? (
+                      <div
+                        style={{
+                          ...blackoutCellStyle,
+                          minHeight: "76px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {cellBlackout.label}
+                      </div>
+                    ) : cellBookings.length === 0 ? (
+                      <div
+                        style={{
+                          color: "#cbd5e1",
+                          fontSize: "0.88rem",
+                          textAlign: "center",
+                          paddingTop: "0.65rem",
+                        }}
+                      >
+                        —
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gap: "0.45rem" }}>
+                        {cellBookings.map((booking) => {
+                          const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
+                          const hoverText = [
+                            booking.title || "Booking",
+                            booking.team?.teamName,
+                            booking.team?.coachEmail || "",
+                            formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
+                            booking.notes || "",
+                          ]
+                            .filter(Boolean)
+                            .join(" • ");
+
+                          return (
+                            <Link
+                              key={booking.id}
+                              href={`/bookings/${booking.id}?date=${selectedDate}&view=week`}
+                              title={hoverText}
+                              style={{
+                                display: "block",
+                                backgroundColor,
+                                border: `1px solid ${borderColor}`,
+                                borderRadius: "10px",
+                                padding: "0.5rem 0.55rem",
+                                textDecoration: "none",
+                                boxShadow: "0 2px 8px rgba(15, 23, 42, 0.08)",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontWeight: 700,
+                                  color: "#0f172a",
+                                  fontSize: "0.83rem",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {booking.title || "Booking"}
+                              </div>
+                              <div
+                                style={{
+                                  color: "#334155",
+                                  marginTop: "0.15rem",
+                                  fontSize: "0.8rem",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {booking.team?.teamName}
+                              </div>
+                              <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.77rem" }}>
+                                {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}
+                              </div>
+                            </Link>
                           );
                         })}
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-          </>
-        )}
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </main>
   );
