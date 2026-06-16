@@ -1,6 +1,47 @@
 
 
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
+async function loginAction(formData: FormData) {
+  "use server";
+
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const password = String(formData.get("password") || "");
+  const next = String(formData.get("next") || "/admin");
+
+  if (!email || !password) {
+    redirect("/admin-login?error=missing");
+  }
+
+  const user = await prisma.adminUser.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    redirect("/admin-login?error=invalid");
+  }
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+
+  if (!valid) {
+    redirect("/admin-login?error=invalid");
+  }
+
+  const cookieStore = await cookies();
+
+  cookieStore.set("admin_access", "granted", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 8,
+  });
+
+  redirect(next);
+}
 
 export default async function AdminLoginPage({
   searchParams,
@@ -52,7 +93,7 @@ export default async function AdminLoginPage({
           </div>
         )}
 
-        <form method="POST" action="/api/admin/login" style={{ display: "grid", gap: "1rem" }}>
+        <form method="POST" action={loginAction} style={{ display: "grid", gap: "1rem" }}>
           <div>
             <label style={{ fontWeight: 600 }}>Email</label>
 			<input type="hidden" name="next" value={next} />
