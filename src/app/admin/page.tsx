@@ -539,15 +539,25 @@ export default async function AdminPage({ searchParams }: PageProps) {
             </div>
           ) : (
             <div style={{ display: "grid", gap: "0.85rem" }}>
-              {todaysBookings.map((booking) => {
-                const detailsHref = `/bookings/${booking.id}?date=${todayValue}`;
+			  {todaysBookings.map((booking) => {
+				const detailsHref = `/bookings/${booking.id}?date=${todayValue}`;
+				const needsUmpire = !!booking.team?.requiresUmpire;
+				const isMissingUmpire = needsUmpire && !booking.umpireRecord;
                 const badge = getTypeBadge(booking.title);
                 const matchup = booking.opponent && booking.opponent.trim()
                   ? `${booking.team?.teamName || "—"} vs. ${booking.opponent}`
                   : booking.team?.teamName || "—";
 
                 return (
-                  <Link key={booking.id} href={detailsHref} className="admin-schedule-item">
+                  <Link
+					key={booking.id}
+					href={detailsHref}
+					className="admin-schedule-item"
+					style={{
+					backgroundColor: isMissingUmpire ? "#fff1f2" : "#f8fafc",
+					borderColor: isMissingUmpire ? "#fca5a5" : "#e2e8f0",
+					}}
+				  >
                     <div className="admin-schedule-item-row">
                       <div>
                         <div style={{ color: "#0f172a", fontWeight: 700, lineHeight: 1.35 }}>
@@ -565,18 +575,19 @@ export default async function AdminPage({ searchParams }: PageProps) {
                           {matchup}
                         </div>
 
-                        {booking.umpireRecord?.name && (
-                          <div
-                            style={{
-                              color: "#475569",
-                              marginTop: "0.2rem",
-                              fontSize: "0.88rem",
-                              lineHeight: 1.35,
-                            }}
-                          >
-                            Umpire: {booking.umpireRecord.name}
-                          </div>
-                        )}
+                        {needsUmpire && (
+						  <div
+							style={{
+							  color: booking.umpireRecord ? "#475569" : "#991b1b",
+							  marginTop: "0.2rem",
+							  fontSize: "0.88rem",
+							  lineHeight: 1.35,
+							  fontWeight: booking.umpireRecord ? 400 : 700,
+							}}
+						  >
+							Umpire: {booking.umpireRecord?.name || "Unassigned"}
+						  </div>
+						)}
 
                         {booking.notes && (
                           <div
