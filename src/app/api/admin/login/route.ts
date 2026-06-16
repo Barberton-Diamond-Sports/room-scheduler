@@ -28,17 +28,18 @@ export async function POST(request: Request) {
   }
 
 // ✅ Set login cookie (PERSISTENT)
-const cookieStore = await cookies();
-cookieStore.set("admin_access", "granted", {
+const next = String(formData.get("next") || "/admin");
+
+const response = NextResponse.redirect(new URL(next, request.url));
+
+// ✅ SET COOKIE ON RESPONSE (this is the fix)
+response.cookies.set("admin_access", "granted", {
   httpOnly: true,
   sameSite: "lax",
   path: "/",
-  maxAge: 60 * 60 * 8, // ✅ 8 hours
+  maxAge: 60 * 60 * 8,
 });
 
-// ✅ Use next from form (NOT URL)
-const next = String(formData.get("next") || "/admin");
-
-return NextResponse.redirect(new URL(next, request.url));
+return response;
 
 }
