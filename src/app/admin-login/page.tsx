@@ -34,10 +34,17 @@ async function loginAction(formData: FormData) {
   const cookieStore = await cookies();
 
   cookieStore.set("admin_access", "granted", {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 8,
+	httpOnly: true,
+	sameSite: "lax",
+	path: "/",
+	maxAge: 60 * 60 * 8,
+  });
+
+  cookieStore.set("admin_email", user.email, {
+	httpOnly: true,
+	sameSite: "lax",
+	path: "/",
+	maxAge: 60 * 60 * 8,
   });
 
   redirect(next);

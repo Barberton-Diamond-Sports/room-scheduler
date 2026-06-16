@@ -8,5 +8,10 @@ export async function GET(request: Request) {
     path: "/",
   });
 
+  response.cookies.set("admin_email", "", {
+    expires: new Date(0),
+    path: "/",
+  });
+
   return response;
 }
