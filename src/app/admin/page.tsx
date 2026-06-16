@@ -256,7 +256,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
 .admin-section-title {
   font-weight: 700;
-  color: #334155;
   margin-top: 0.6rem;
   margin-bottom: 0.2rem;
   font-size: 0.9rem;

@@ -1,12 +1,15 @@
+
+
 import Link from "next/link";
 
 export default async function AdminLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const params = await searchParams;
   const error = params.error;
+  const next = params.next || "/admin";
 
   return (
     <main
@@ -52,6 +55,7 @@ export default async function AdminLoginPage({
         <form method="POST" action="/api/admin/login" style={{ display: "grid", gap: "1rem" }}>
           <div>
             <label style={{ fontWeight: 600 }}>Email</label>
+			<input type="hidden" name="next" value={next} />
             <input
               name="email"
               type="email"

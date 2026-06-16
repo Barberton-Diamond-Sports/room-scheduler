@@ -27,16 +27,17 @@ export async function POST(request: Request) {
     return NextResponse.redirect("/admin-login?error=invalid");
   }
 
-  // ✅ Set login cookie
-  const cookieStore = await cookies();
-  cookieStore.set("admin_access", "granted", {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-  });
+// ✅ Set login cookie (PERSISTENT)
+const cookieStore = await cookies();
+cookieStore.set("admin_access", "granted", {
+  httpOnly: true,
+  sameSite: "lax",
+  path: "/",
+  maxAge: 60 * 60 * 8, // ✅ 8 hours
+});
 
-const url = new URL(request.url);
-const next = url.searchParams.get("next") || "/admin";
+// ✅ Use next from form (NOT URL)
+const next = String(formData.get("next") || "/admin");
 
 return NextResponse.redirect(new URL(next, request.url));
 
