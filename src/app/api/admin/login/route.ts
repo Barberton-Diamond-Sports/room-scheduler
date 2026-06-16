@@ -35,13 +35,15 @@ const next = String(formData.get("next") || "/admin");
 const response = NextResponse.redirect(new URL(next, request.url));
 
 // ✅ SET COOKIE ON RESPONSE (this is the fix)
+
 response.cookies.set("admin_access", "granted", {
   httpOnly: true,
-  sameSite: "lax",
-  secure: process.env.NODE_ENV === "production",
+  sameSite: "none",   // ✅ CRITICAL FIX
+  secure: true,       // ✅ REQUIRED when sameSite = "none"
   path: "/",
   maxAge: 60 * 60 * 8,
 });
+
 
 return response;
 
