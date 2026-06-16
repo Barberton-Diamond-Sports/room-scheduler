@@ -93,7 +93,7 @@ export default async function AdminLoginPage({
           </div>
         )}
 
-        <form method="POST" action={loginAction} style={{ display: "grid", gap: "1rem" }}>
+        <form action={loginAction} style={{ display: "grid", gap: "1rem" }}>
           <div>
             <label style={{ fontWeight: 600 }}>Email</label>
 			<input type="hidden" name="next" value={next} />
