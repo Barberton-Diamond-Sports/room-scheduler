@@ -245,10 +245,23 @@ export default async function AdminPage({ searchParams }: PageProps) {
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
 
-        .admin-nav-stack {
-          display: grid;
-          gap: 0.85rem;
-        }
+
+.admin-nav-stack {
+  gap: 0.5rem;
+}
+
+.admin-section-group {
+  gap: 0.2rem;
+}
+
+.admin-section-title {
+  font-weight: 700;
+  color: #334155;
+  margin-top: 0.6rem;
+  margin-bottom: 0.2rem;
+  font-size: 0.9rem;
+}
+
 
         .admin-link-row {
           display: flex;
@@ -345,99 +358,116 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
       <div className="admin-shell">
         <div className="admin-card" style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>BDS Administration</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>BDS Admin Page</h1>
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
             Quick access to field bookings, blackout controls, umpire scheduling, team management, and recent booking changes.
-			<Link href="/admin/users">Manage Admin Users</Link>
           </p>
 		  
-		  
+		  <div className="admin-nav-stack">
+  <div className="admin-section-group">
+    <div className="admin-section-title">Home</div>
+    <div className="admin-link-row">
+      <Link
+        href="/"
+        style={dashboardLinkStyle("#eef2ff", "#c7d2fe", "#1e3a8a")}
+      >
+        Home
+      </Link>
+    </div>
+  </div>
 
-          <div className="admin-nav-stack">
-            <div className="admin-link-row">
-              <Link
-                href="/"
-                style={dashboardLinkStyle("#eef2ff", "#c7d2fe", "#1e3a8a")}
-              >
-                Home
-              </Link>
+  <div className="admin-section-group">
+    <div className="admin-section-title">Fields</div>
+    <div className="admin-link-row">
+      <Link
+        href="/book"
+        style={dashboardLinkStyle("#ecfeff", "#a5f3fc", "#155e75")}
+      >
+        Book a Field
+      </Link>
 
-              <Link
-                href="/book"
-                style={dashboardLinkStyle("#ecfeff", "#a5f3fc", "#155e75")}
-              >
-                Book a Field
-              </Link>
+      <Link
+        href="/admin/blackouts"
+        style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
+      >
+        Field Blackouts
+      </Link>
+    </div>
+  </div>
 
-              <Link
-                href={`/bookings?date=${todayValue}`}
-                style={dashboardLinkStyle("#dbeafe", "#93c5fd", "#1d4ed8")}
-              >
-                Today&apos;s Calendar
-              </Link>
-            </div>
+  <div className="admin-section-group">
+    <div className="admin-section-title">Calendar</div>
+    <div className="admin-link-row">
+      <Link
+        href={`/bookings?date=${todayValue}`}
+        style={dashboardLinkStyle("#dbeafe", "#93c5fd", "#1d4ed8")}
+      >
+        Today&apos;s Calendar
+      </Link>
+    </div>
+  </div>
 
-            <div className="admin-link-row">
-              <Link
-                href="/admin/umpires"
-                style={dashboardLinkStyle("#fef3c7", "#facc15", "#92400e")}
-              >
-                Manage Umpires
-              </Link>
+  <div className="admin-section-group">
+    <div className="admin-section-title">Umpires</div>
+    <div className="admin-link-row">
+      <Link
+        href="/admin/umpire-schedule"
+        style={dashboardLinkStyle("#ede9fe", "#c4b5fd", "#6d28d9")}
+      >
+        Umpire Schedule
+      </Link>
 
-              <Link
-                href="/admin/umpire-schedule"
-                style={dashboardLinkStyle("#ede9fe", "#c4b5fd", "#6d28d9")}
-              >
-                Umpire Schedule
-              </Link>
+      <Link
+        href="/umpire-assignments"
+        style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
+      >
+        Assign Umpires
+      </Link>
+    </div>
+  </div>
 
-              <Link
-                href="/umpire-assignments"
-                style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
-              >
-                Assign Umpires (Public Link)
-              </Link>
-            </div>
+  <div className="admin-section-group">
+    <div className="admin-section-title">Administration</div>
+    <div className="admin-link-row">
+      <Link
+        href="/admin/rooms"
+        style={dashboardLinkStyle("#ecfccb", "#bef264", "#3f6212")}
+      >
+        Manage Fields
+      </Link>
 
-            <div className="admin-link-row">
-              <Link
-                href="/admin/teams"
-                style={dashboardLinkStyle("#f3e8ff", "#d8b4fe", "#7c3aed")}
-              >
-                Manage Teams
-              </Link>
+      <Link
+        href="/admin/teams"
+        style={dashboardLinkStyle("#f3e8ff", "#d8b4fe", "#7c3aed")}
+      >
+        Manage Teams
+      </Link>
 
-              <Link
-                href="/admin/rooms"
-                style={dashboardLinkStyle("#ecfccb", "#bef264", "#3f6212")}
-              >
-                Manage Fields
-              </Link>
+      <Link
+        href="/admin/umpires"
+        style={dashboardLinkStyle("#fef3c7", "#facc15", "#92400e")}
+      >
+        Manage Umpires
+      </Link>
 
-              <Link
-                href="/admin/blackouts"
-                style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
-              >
-                Field Blackouts
-              </Link>
-            </div>
-			<div className="admin-link-row">
-  <Link
-    href="/admin/users"
-    style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
-  >
-    Manage Admin Users
-  </Link>
+      <Link
+        href="/admin/users"
+        style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
+      >
+        Manage Admin Users
+      </Link>
 
-  <Link
-    href="/api/admin/logout"
-    style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
-  >
-    Logout
-  </Link>
+      <Link
+        href="/api/admin/logout"
+        style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
+      >
+        Logout
+      </Link>
+    </div>
+  </div>
 </div>
-          </div>
+
+          
         </div>
 
         <div className="admin-summary-grid">

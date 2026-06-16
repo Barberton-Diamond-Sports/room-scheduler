@@ -1,0 +1,405 @@
+Project Summary — Barberton Diamond Sports Scheduling App
+Stack / Environment
+
+Framework: Next.js (App Router)
+Database: PostgreSQL via Prisma
+Hosting: Vercel
+Auth: now moving from simple cookie unlock toward a real username/password admin system
+Main areas: public bookings calendar, booking create/edit/details, teams management, fields/rooms management, field blackouts, umpire assignment, umpire self-service pages, admin dashboard
+
+
+Current Architecture / Important Data Model State
+Teams / Bookings
+Bookings now use a real Team relationship instead of old text fields.
+Current Booking model uses:
+
+booking.teamId
+booking.team
+
+Legacy booking fields already removed from Prisma / DB:
+
+bookedByName
+bookedByEmail
+teamGroup
+
+So the app should be considered team-based end-to-end.
+
+New Team rule added
+We added this new field to the Team model:
+Plain Textprisma isn’t fully supported. Syntax highlighting is based on Plain Text.requiresUmpire Boolean @default(true)Show more lines
+This replaces hardcoded rules like:
+
+Tee Ball does not need umpires
+8U Baseball does not need umpires
+
+New rule:
+Any page or logic that deals with umpire assignment/schedules should use:
+TypeScriptbooking.team?.requiresUmpireShow more lines
+instead of checking specific age groups in code.
+
+Auth / Admin Security Current State
+What is now in place
+We added a real admin login system.
+Current auth setup:
+
+Admin users are stored in AdminUser
+AdminUser now has:
+
+name
+email
+passwordHash
+role
+
+
+Passwords use bcryptjs
+Login page:
+
+src/app/admin-login/page.tsx
+
+
+Login API:
+
+src/app/api/admin/login/route.ts
+
+
+Logout API:
+
+src/app/api/admin/logout/route.ts
+
+
+Middleware protects:
+
+/admin/:path*
+
+
+Middleware redirects unauthenticated users to:
+
+/admin-login
+
+
+Middleware preserves next so users can be redirected back after login
+
+Important note
+We already had a middleware.ts, and it was updated to use /admin-login instead of the old /admin/unlock.
+
+Admin user management
+A new admin page was added for managing admin accounts:
+
+src/app/admin/users/page.tsx
+
+This supports:
+
+add admin user
+edit admin user
+delete admin user
+password hashing on create/update
+
+Admin dashboard buttons
+We added a 4th row on the admin dashboard with:
+
+Manage Admin Users
+Logout
+
+
+Booking Security Current State
+Booking details page
+Public booking details page remains public, but:
+
+Edit/Delete buttons only show if admin cookie is present
+
+Edit booking page
+src/app/bookings/[id]/edit/page.tsx was rewritten so:
+
+it checks admin_access cookie server-side
+if not admin, it redirects to:
+
+/admin-login?next=/bookings/[id]/edit
+
+
+
+So the edit page is now actually protected even though it is not inside /admin.
+Booking update/delete API
+src/app/api/bookings/[id]/route.ts already had a reusable helper:
+TypeScriptensureAdminAccess()Show more lines
+and both:
+
+PATCH
+DELETE
+
+already enforce admin access server-side.
+Important note
+The delete API was already secure; no further change was needed there.
+
+Mobile-Friendly Work Completed
+Public pages updated for mobile
+We worked on making the public-facing pages readable on a phone in portrait mode.
+Public pages/components improved:
+
+src/app/page.tsx
+src/app/book/page.tsx
+src/components/booking/booking-form.tsx
+src/app/bookings/[id]/page.tsx
+src/app/umpire-assignments/page.tsx
+src/app/umpire-my-games/page.tsx
+src/components/umpire/my-games-umpire-picker.tsx
+
+Admin pages updated for mobile
+We also did mobile improvements on admin pages:
+
+src/app/admin/page.tsx
+src/app/admin/teams/page.tsx
+src/app/admin/umpires/page.tsx
+src/components/admin/umpire-management-panel.tsx
+src/app/admin/umpire-schedule/page.tsx
+src/app/admin/rooms/page.tsx
+src/app/admin/blackouts/page.tsx
+
+
+Public Calendar Page State
+File:
+
+src/app/bookings/page.tsx
+
+Goal of recent work
+We were changing the public calendar so that:
+On mobile:
+
+Week view should not be used
+mobile should effectively behave as day-only
+
+On desktop:
+
+both day and week views remain available
+
+Additional requested change:
+Add these buttons to day view:
+
+Previous Day
+Today
+Next Day
+
+This applies to:
+
+desktop day view
+mobile day view
+
+Important note
+Work on src/app/bookings/page.tsx became messy because the file is long and the render branches were intertwined. The last known issue was that:
+
+mobile day view needs to render independently of the view === "day" / view === "week" desktop conditional
+the top view switch block accidentally lost the proper Day View button and duplicated Week View
+the file likely needs a careful cleanup pass in the next chat
+
+Best next approach for that page
+In the next chat, it would be smart to specifically fix:
+
+restore proper Day View / Week View buttons on desktop
+make mobile always show day view
+keep desktop-only week view
+add previous/today/next buttons in day mode
+
+
+Teams Page Current State
+File:
+
+src/app/admin/teams/page.tsx
+
+Current features already in place
+
+add team
+edit team
+soft delete / inactivate
+reactivate
+delete only when inactive
+filters for status + season
+mobile-friendly layout updates
+
+New work started
+We added requiresUmpire to Prisma and started updating this page.
+Still needed / partially done
+The next chat should verify that src/app/admin/teams/page.tsx now includes:
+In Add Team form:
+A checkbox:
+
+Requires Umpire
+
+In Edit Team form:
+A checkbox:
+
+Requires Umpire
+
+In server actions:
+Both addTeam and updateTeam should read:
+TypeScriptconst requiresUmpire = formData.get("requiresUmpire") === "on";Show more lines
+and save it into Prisma.
+Important note
+At the time of the last chat, I had shown where to place these changes, but the next chat should verify the final file carefully.
+
+Umpire Logic Refactor State
+Pages already updated or identified for update
+We started replacing hardcoded umpire rules with requiresUmpire.
+Booking details page
+src/app/bookings/[id]/page.tsx
+The “Assigned Umpire” block should only show when:
+
+the team requires an umpire
+the booking type is still one that should show umpire info
+
+Current logic now should be:
+TypeScriptconst showAssignedUmpire =  booking.team?.requiresUmpire &&  bookingPurpose !== "practice" &&  bookingPurpose !== "scrimmage" &&  bookingPurpose !== "other";Show more lines
+Public umpire assignments page
+src/app/umpire-assignments/page.tsx
+We replaced Tee Ball filtering with:
+TypeScriptif (!booking.team?.requiresUmpire) return false;Show more lines
+Admin umpire schedule page
+src/app/admin/umpire-schedule/page.tsx
+We replaced Tee Ball filtering with:
+TypeScriptif (!booking.team?.requiresUmpire) return false;Show more lines
+Umpire “My Games” page
+src/app/umpire-my-games/page.tsx
+We replaced:
+TypeScript!isTeeBall(...)Show more lines
+with:
+TypeScriptbooking.team?.requiresUmpireShow more lines
+
+Admin Dashboard — Today’s Schedule Block Changes
+File:
+
+src/app/admin/page.tsx
+
+We changed the “Today’s Schedule” cards so they should now show richer info.
+Requested / implemented layout goals
+Instead of showing:
+
+title
+team
+field
+
+The card should show:
+Left side:
+
+Field name (top line — instead of “Game”)
+Team vs Opponent if opponent exists
+
+example: 10U Kadilak vs. 10U Peters
+
+
+Umpire (if assigned)
+Notes (if present)
+
+Right side:
+
+Time
+Game type badge (colored badge)
+Age group below the badge
+
+Additional change needed
+The todaysBookings Prisma query on admin page should include:
+
+umpireRecord: true
+
+So that umpire name can be shown in those cards.
+Game type badges
+We also discussed a helper function like:
+TypeScriptfunction getTypeBadge(title?: string | null) { ... }Show more lines
+for:
+
+Game
+Practice
+Scrimmage
+Tournament
+Other
+
+The final desired right-side layout is:
+Plain Text6:00 PM - 8:00 PM[Game]10U SoftballShow more lines
+The next chat should verify whether this block was fully implemented or still needs final cleanup.
+
+Rooms Page Current State
+File:
+
+src/app/admin/rooms/page.tsx
+
+We updated it so booking counts should now reflect:
+✅ ACTIVE bookings only
+✅ today and future bookings only
+This was done via groupBy instead of _count, because _count was counting all bookings including past ones.
+
+Blackouts Page Current State
+File:
+
+src/app/admin/blackouts/page.tsx
+
+This page was cleaned up for mobile and uses:
+
+active rooms only
+existing blackout list
+RoomBlackoutManager
+
+
+Login / Logout Route Fixes That Were Needed
+Admin login page
+src/app/admin-login/page.tsx
+Needed to be updated because searchParams is async in App Router:
+
+must use await searchParams
+
+Login route
+src/app/api/admin/login/route.ts
+Needed absolute redirect URL:
+
+use NextResponse.redirect(new URL(next, request.url))
+
+Also should pass next through login form using hidden input.
+Logout route
+src/app/api/admin/logout/route.ts
+Needed:
+
+GET(request: Request)
+redirect with absolute URL:
+
+TypeScriptreturn NextResponse.redirect(new URL("/admin-login", request.url));Show more lines
+
+Important Known Issue / Cleanup
+Admin dashboard hydration error
+A hydration issue happened because a <Link> and/or extra <p> got accidentally inserted inside a <p> tag on src/app/admin/page.tsx.
+This caused:
+
+invalid nested <p>
+hydration mismatch
+
+The next chat should ensure that the admin page intro paragraph contains only valid text and that the Manage Admin Users button exists only in the button row, not inside paragraph text.
+
+Suggested Next Priorities in a New Chat
+If continuing in a new chat, the best next tasks are:
+Priority 1
+Finish/verify src/app/bookings/page.tsx
+
+mobile day-only
+desktop day/week
+previous/today/next day buttons
+remove broken duplicate week button logic
+
+Priority 2
+Finish/verify src/app/admin/teams/page.tsx
+
+add/edit requiresUmpire checkbox
+save value in Prisma correctly
+
+Priority 3
+Finish/verify the “Today’s Schedule” block on src/app/admin/page.tsx
+
+field name on left
+matchup line
+time + badge + age group on right
+umpire + notes under matchup
+include umpireRecord in query
+
+Priority 4
+Quick verification pass on auth files:
+
+src/app/admin-login/page.tsx
+src/app/api/admin/login/route.ts
+src/app/api/admin/logout/route.ts
+src/middleware.ts
+
+to make sure login/logout/redirect flow is fully clean.
