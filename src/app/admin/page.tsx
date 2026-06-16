@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -69,7 +67,6 @@ function getTypeBadge(title?: string | null) {
     color: "#475569",
   };
 }
-
 
 function formatPageDate(date: Date) {
   return date.toLocaleDateString("en-US", {
@@ -165,9 +162,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
       include: {
         room: true,
         team: true,
-
-  umpireRecord: true,
-
+        umpireRecord: true,
       },
       orderBy: [{ startTimeMinutes: "asc" }, { roomId: "asc" }],
       take: 12,
@@ -250,22 +245,23 @@ export default async function AdminPage({ searchParams }: PageProps) {
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
 
+        .admin-nav-stack {
+          display: grid;
+          gap: 0.5rem;
+        }
 
-.admin-nav-stack {
-  gap: 0.5rem;
-}
+        .admin-section-group {
+          display: grid;
+          gap: 0.2rem;
+        }
 
-.admin-section-group {
-  gap: 0.2rem;
-}
-
-.admin-section-title {
-  font-weight: 700;
-  margin-top: 0.6rem;
-  margin-bottom: 0.2rem;
-  font-size: 0.9rem;
-}
-
+        .admin-section-title {
+          font-weight: 700;
+          margin-top: 0.6rem;
+          margin-bottom: 0.2rem;
+          font-size: 0.9rem;
+          color: #334155;
+        }
 
         .admin-link-row {
           display: flex;
@@ -339,7 +335,8 @@ export default async function AdminPage({ searchParams }: PageProps) {
             flex-direction: column;
           }
 
-          .admin-link-row a {
+          .admin-link-row a,
+          .admin-link-row button {
             width: 100%;
             box-sizing: border-box;
           }
@@ -366,112 +363,110 @@ export default async function AdminPage({ searchParams }: PageProps) {
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
             Quick access to field bookings, blackout controls, umpire scheduling, team management, and recent booking changes.
           </p>
-		  
-		  <div className="admin-nav-stack">
-  <div className="admin-section-group">
-    <div className="admin-section-title">Home</div>
-    <div className="admin-link-row">
-      <Link
-        href="/"
-        style={dashboardLinkStyle("#eef2ff", "#c7d2fe", "#1e3a8a")}
-      >
-        Home
-      </Link>
-    </div>
-  </div>
 
-  <div className="admin-section-group">
-    <div className="admin-section-title">Fields</div>
-    <div className="admin-link-row">
-      <Link
-        href="/book"
-        style={dashboardLinkStyle("#ecfeff", "#a5f3fc", "#155e75")}
-      >
-        Book a Field
-      </Link>
+          <div className="admin-nav-stack">
+            <div className="admin-section-group">
+              <div className="admin-section-title">Home</div>
+              <div className="admin-link-row">
+                <Link
+                  href="/"
+                  style={dashboardLinkStyle("#eef2ff", "#c7d2fe", "#1e3a8a")}
+                >
+                  Home
+                </Link>
+              </div>
+            </div>
 
-      <Link
-        href="/admin/blackouts"
-        style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
-      >
-        Field Blackouts
-      </Link>
-    </div>
-  </div>
+            <div className="admin-section-group">
+              <div className="admin-section-title">Fields</div>
+              <div className="admin-link-row">
+                <Link
+                  href="/book"
+                  style={dashboardLinkStyle("#ecfeff", "#a5f3fc", "#155e75")}
+                >
+                  Book a Field
+                </Link>
 
-  <div className="admin-section-group">
-    <div className="admin-section-title">Calendar</div>
-    <div className="admin-link-row">
-      <Link
-        href={`/bookings?date=${todayValue}`}
-        style={dashboardLinkStyle("#dbeafe", "#93c5fd", "#1d4ed8")}
-      >
-        Today&apos;s Calendar
-      </Link>
-    </div>
-  </div>
+                <Link
+                  href="/admin/blackouts"
+                  style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
+                >
+                  Field Blackouts
+                </Link>
+              </div>
+            </div>
 
-  <div className="admin-section-group">
-    <div className="admin-section-title">Umpires</div>
-    <div className="admin-link-row">
-      <Link
-        href="/admin/umpire-schedule"
-        style={dashboardLinkStyle("#ede9fe", "#c4b5fd", "#6d28d9")}
-      >
-        Umpire Schedule
-      </Link>
+            <div className="admin-section-group">
+              <div className="admin-section-title">Calendar</div>
+              <div className="admin-link-row">
+                <Link
+                  href={`/bookings?date=${todayValue}`}
+                  style={dashboardLinkStyle("#dbeafe", "#93c5fd", "#1d4ed8")}
+                >
+                  Today&apos;s Calendar
+                </Link>
+              </div>
+            </div>
 
-      <Link
-        href="/umpire-assignments"
-        style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
-      >
-        Assign Umpires
-      </Link>
-    </div>
-  </div>
+            <div className="admin-section-group">
+              <div className="admin-section-title">Umpires</div>
+              <div className="admin-link-row">
+                <Link
+                  href="/admin/umpire-schedule"
+                  style={dashboardLinkStyle("#ede9fe", "#c4b5fd", "#6d28d9")}
+                >
+                  Umpire Schedule
+                </Link>
 
-  <div className="admin-section-group">
-    <div className="admin-section-title">Administration</div>
-    <div className="admin-link-row">
-      <Link
-        href="/admin/rooms"
-        style={dashboardLinkStyle("#ecfccb", "#bef264", "#3f6212")}
-      >
-        Manage Fields
-      </Link>
+                <Link
+                  href="/umpire-assignments"
+                  style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
+                >
+                  Assign Umpires
+                </Link>
+              </div>
+            </div>
 
-      <Link
-        href="/admin/teams"
-        style={dashboardLinkStyle("#f3e8ff", "#d8b4fe", "#7c3aed")}
-      >
-        Manage Teams
-      </Link>
+            <div className="admin-section-group">
+              <div className="admin-section-title">Administration</div>
+              <div className="admin-link-row">
+                <Link
+                  href="/admin/rooms"
+                  style={dashboardLinkStyle("#ecfccb", "#bef264", "#3f6212")}
+                >
+                  Manage Fields
+                </Link>
 
-      <Link
-        href="/admin/umpires"
-        style={dashboardLinkStyle("#fef3c7", "#facc15", "#92400e")}
-      >
-        Manage Umpires
-      </Link>
+                <Link
+                  href="/admin/teams"
+                  style={dashboardLinkStyle("#f3e8ff", "#d8b4fe", "#7c3aed")}
+                >
+                  Manage Teams
+                </Link>
 
-      <Link
-        href="/admin/users"
-        style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
-      >
-        Manage Admin Users
-      </Link>
+                <Link
+                  href="/admin/umpires"
+                  style={dashboardLinkStyle("#fef3c7", "#facc15", "#92400e")}
+                >
+                  Manage Umpires
+                </Link>
 
-      <Link
-        href="/api/admin/logout"
-        style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
-      >
-        Logout
-      </Link>
-    </div>
-  </div>
-</div>
+                <Link
+                  href="/admin/users"
+                  style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
+                >
+                  Manage Admin Users
+                </Link>
 
-          
+                <a
+                  href="/api/admin/logout"
+                  style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
+                >
+                  Logout
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="admin-summary-grid">
@@ -512,12 +507,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-        <div
-          className="admin-card"
-          style={{
-            marginBottom: "1.5rem",
-          }}
-        >
+        <div className="admin-card" style={{ marginBottom: "1.5rem" }}>
           <div
             style={{
               display: "flex",
@@ -551,127 +541,96 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <div style={{ display: "grid", gap: "0.85rem" }}>
               {todaysBookings.map((booking) => {
                 const detailsHref = `/bookings/${booking.id}?date=${todayValue}`;
+                const badge = getTypeBadge(booking.title);
+                const matchup = booking.opponent && booking.opponent.trim()
+                  ? `${booking.team?.teamName || "—"} vs. ${booking.opponent}`
+                  : booking.team?.teamName || "—";
 
                 return (
-                  <Link
-                    key={booking.id}
-                    href={detailsHref}
-                    className="admin-schedule-item"
-                  >
+                  <Link key={booking.id} href={detailsHref} className="admin-schedule-item">
                     <div className="admin-schedule-item-row">
                       <div>
-  {/* Field name (top line) */}
-  <div style={{ color: "#0f172a", fontWeight: 700, lineHeight: 1.35 }}>
-    {booking.room.name}
-  </div>
+                        <div style={{ color: "#0f172a", fontWeight: 700, lineHeight: 1.35 }}>
+                          {booking.room.name}
+                        </div>
 
-  {/* Team vs Opponent */}
-  <div
-    style={{
-      color: "#334155",
-      marginTop: "0.15rem",
-      fontWeight: 600,
-      lineHeight: 1.35,
-	  
-    }}
-  >
-    {booking.opponent && booking.opponent.trim()
-      ? `${booking.team?.teamName || "—"} vs. ${booking.opponent}`
-      : booking.team?.teamName || "—"}
-  </div>
+                        <div
+                          style={{
+                            color: "#334155",
+                            marginTop: "0.15rem",
+                            fontWeight: 600,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {matchup}
+                        </div>
 
-  {/* Age Group + Type */}
-  <div
-    style={{
-      color: "#64748b",
-      marginTop: "0.15rem",
-      fontSize: "0.9rem",
-      lineHeight: 1.35,
-    }}
-  >
-    
-  </div>
+                        {booking.umpireRecord?.name && (
+                          <div
+                            style={{
+                              color: "#475569",
+                              marginTop: "0.2rem",
+                              fontSize: "0.88rem",
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            Umpire: {booking.umpireRecord.name}
+                          </div>
+                        )}
 
-  {/* Umpire */}
-  {booking.umpireRecord?.name && (
-    <div
-      style={{
-        color: "#475569",
-        marginTop: "0.2rem",
-        fontSize: "0.88rem",
-        lineHeight: 1.35,
-      }}
-    >
-      Umpire: {booking.umpireRecord.name}
-    </div>
-  )}
+                        {booking.notes && (
+                          <div
+                            style={{
+                              color: "#475569",
+                              marginTop: "0.2rem",
+                              fontSize: "0.85rem",
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            {booking.notes}
+                          </div>
+                        )}
+                      </div>
 
-  {/* Notes */}
-  {booking.notes && (
-    <div
-      style={{
-        color: "#475569",
-        marginTop: "0.2rem",
-        fontSize: "0.85rem",
-        lineHeight: 1.35,
-      }}
-    >
-      {booking.notes}
-    </div>
-  )}
-</div>
+                      <div style={{ textAlign: "right" }}>
+                        <div
+                          style={{
+                            color: "#1d4ed8",
+                            fontWeight: 700,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {formatTimeLabel(booking.startTimeMinutes)} - {formatTimeLabel(booking.endTimeMinutes)}
+                        </div>
 
+                        <div style={{ marginTop: "0.2rem" }}>
+                          <span
+                            style={{
+                              padding: "0.15rem 0.5rem",
+                              borderRadius: "999px",
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              backgroundColor: badge.bg,
+                              border: `1px solid ${badge.border}`,
+                              color: badge.color,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {badge.label}
+                          </span>
+                        </div>
 
-<div style={{ textAlign: "right" }}>
-  {/* Time */}
-  <div
-    style={{
-      color: "#1d4ed8",
-      fontWeight: 700,
-      lineHeight: 1.35,
-    }}
-  >
-    {formatTimeLabel(booking.startTimeMinutes)} -{" "}
-    {formatTimeLabel(booking.endTimeMinutes)}
-  </div>
-
-  {/* Badge */}
-  <div style={{ marginTop: "0.2rem" }}>
-    {(() => {
-      const badge = getTypeBadge(booking.title);
-
-      return (
-        <span
-          style={{
-            padding: "0.15rem 0.5rem",
-            borderRadius: "999px",
-            fontSize: "0.75rem",
-            fontWeight: 700,
-            backgroundColor: badge.bg,
-            border: `1px solid ${badge.border}`,
-            color: badge.color,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {badge.label}
-        </span>
-      );
-    })()}
-  </div>
-
-  {/* Age Group */}
-  <div
-    style={{
-      color: "#64748b",
-      marginTop: "0.3rem",
-      fontSize: "0.85rem",
-      lineHeight: 1.35,
-    }}
-  >
-    {booking.team?.ageGroup || "—"}
-  </div>
-</div>
-
+                        <div
+                          style={{
+                            color: "#64748b",
+                            marginTop: "0.3rem",
+                            fontSize: "0.85rem",
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {booking.team?.ageGroup || "—"}
+                        </div>
+                      </div>
                     </div>
                   </Link>
                 );
