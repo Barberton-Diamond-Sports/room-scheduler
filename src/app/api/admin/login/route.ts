@@ -1,3 +1,5 @@
+
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -36,6 +38,7 @@ const response = NextResponse.redirect(new URL(next, request.url));
 response.cookies.set("admin_access", "granted", {
   httpOnly: true,
   sameSite: "lax",
+  secure: process.env.NODE_ENV === "production",
   path: "/",
   maxAge: 60 * 60 * 8,
 });
