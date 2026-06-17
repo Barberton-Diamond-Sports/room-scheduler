@@ -82,7 +82,6 @@ const purposeOptions = [
   "Practice",
   "Scrimmage",
   "Game",
-  "Tournament",
   "Other",
 ];
 

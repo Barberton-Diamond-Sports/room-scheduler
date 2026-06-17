@@ -702,11 +702,13 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
             </div>
           ) : (
             <div style={{ display: "grid", gap: "0.85rem" }}>
-              {todaysBookings.map((booking) => {
-                const detailsHref = `/bookings/${booking.id}?date=${todayValue}&view=day&from=admin`;
-                const needsUmpire = !!booking.team?.requiresUmpire;
-                const isMissingUmpire = needsUmpire && !booking.umpireRecord;
-                const badge = getTypeBadge(booking.title);
+              {todaysBookings.map((booking) => {                
+				const detailsHref = `/bookings/${booking.id}?date=${todayValue}&view=day&from=admin`;
+				const bookingPurpose = booking.title?.trim().toLowerCase() ?? "";
+				const needsUmpire = !!booking.team?.requiresUmpire && bookingPurpose === "game";
+				const isMissingUmpire = needsUmpire && !booking.umpireRecord;
+				const badge = getTypeBadge(booking.title);
+
                 const matchup =
                   booking.opponent && booking.opponent.trim()
                     ? `${booking.team?.teamName || "—"} vs. ${booking.opponent}`
@@ -882,7 +884,7 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
             {group.items.map((item) => (
               <Link
                 key={item.bookingId}
-                href={`/bookings/${item.bookingId}?date=${group.dateValue}&view=day`}
+                href={`/bookings/${item.bookingId}?date=${group.dateValue}&view=day&from=admin`}
                 style={{
                   display: "inline-block",
                   padding: "0.55rem 0.85rem",

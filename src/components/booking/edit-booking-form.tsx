@@ -86,7 +86,7 @@ const durationOptions = [
   { value: "6", label: "3 hours" },
 ];
 
-const purposeOptions = ["Practice", "Scrimmage", "Game", "Tournament", "Other"];
+const purposeOptions = ["Practice", "Scrimmage", "Game", "Other"];
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -189,11 +189,11 @@ export default function EditBookingForm({
   );
 
   const showOpponent =
-    purpose === "Game" || purpose === "Scrimmage" || purpose === "Tournament";
+    purpose === "Game" || purpose === "Scrimmage";
 
   const showUmpire =
     !!selectedTeam?.requiresUmpire &&
-    (purpose === "Game" || purpose === "Scrimmage" || purpose === "Tournament");
+    (purpose === "Game");
 
   const selectedSport = inferSport(selectedTeam?.ageGroup);
 

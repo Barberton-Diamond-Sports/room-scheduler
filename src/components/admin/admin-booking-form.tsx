@@ -92,7 +92,7 @@ const durationOptions = [
   { value: "6", label: "3 hours" },
 ];
 
-const purposeOptions = ["Practice", "Scrimmage", "Game", "Tournament", "Other"];
+const purposeOptions = ["Practice", "Scrimmage", "Game", "Other"];
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -193,11 +193,11 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
   );
 
   const showOpponent =
-    purpose === "Game" || purpose === "Scrimmage" || purpose === "Tournament";
+    purpose === "Game" || purpose === "Scrimmage";
 
   const showUmpire =
     !!selectedTeam?.requiresUmpire &&
-    (purpose === "Game" || purpose === "Scrimmage" || purpose === "Tournament");
+    (purpose === "Game";
 
   const selectedSport = inferSport(selectedTeam?.ageGroup);
 
@@ -496,7 +496,7 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
       <form onSubmit={handleSubmit} className="booking-form-root">
         <div className="booking-admin-banner">
           This admin-only booking form can assign an umpire during booking when the selected team
-          requires one and the purpose is a game, scrimmage, or tournament.
+          requires one and the purpose is a game.
         </div>
 
         <div className="booking-form-grid">
