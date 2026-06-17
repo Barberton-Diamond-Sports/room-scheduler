@@ -11,6 +11,13 @@ function isoDay(dateText: string) {
   return new Date(`${dateText}T00:00:00`);
 }
 
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 async function ensureAdminAccess() {
   const cookieStore = await cookies();
   const adminAccess = cookieStore.get("admin_access")?.value;
@@ -176,7 +183,7 @@ export async function PATCH(
               ageGroup: existingRecord.team?.ageGroup ?? null,
               roomId: existingRecord.roomId,
               roomName: existingRecord.room?.name || null,
-              bookingDate: existingRecord.bookingDate.toISOString(),
+              bookingDate: toDateInputValue(existingRecord.bookingDate),
               startTimeMinutes: existingRecord.startTimeMinutes,
               endTimeMinutes: existingRecord.endTimeMinutes,
               durationBlocks: existingRecord.durationBlocks,
@@ -193,7 +200,7 @@ export async function PATCH(
               ageGroup: booking.team?.ageGroup ?? null,
               roomId: booking.roomId,
               roomName: booking.room?.name || null,
-              bookingDate: booking.bookingDate.toISOString(),
+              bookingDate: toDateInputValue(booking.bookingDate),
               startTimeMinutes: booking.startTimeMinutes,
               endTimeMinutes: booking.endTimeMinutes,
               durationBlocks: booking.durationBlocks,
@@ -290,7 +297,7 @@ export async function DELETE(
               ageGroup: booking.team?.ageGroup ?? null,
               roomId: booking.roomId,
               roomName: booking.room?.name || null,
-              bookingDate: booking.bookingDate.toISOString(),
+              bookingDate: toDateInputValue(booking.bookingDate),
               startTimeMinutes: booking.startTimeMinutes,
               endTimeMinutes: booking.endTimeMinutes,
               durationBlocks: booking.durationBlocks,

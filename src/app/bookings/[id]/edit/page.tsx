@@ -146,7 +146,7 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
               id: booking.id,
               roomId: booking.roomId,
               teamId: booking.teamId ?? "",
-              bookingDate: booking.bookingDate.toISOString(),
+              bookingDate: `${booking.bookingDate.getFullYear()}-${String(booking.bookingDate.getMonth() + 1).padStart(2, "0")}-${String(booking.bookingDate.getDate()).padStart(2, "0")}`,
               startTimeMinutes: booking.startTimeMinutes,
               durationBlocks: booking.durationBlocks,
               title: booking.title,

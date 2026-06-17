@@ -16,6 +16,21 @@ function dateKey(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+function getEasternTodayValue() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
+}
+
 function formatDayHeading(date: Date) {
   return date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -49,8 +64,8 @@ export default async function UmpireMyGamesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const requestedUmpireId = typeof params.umpireId === "string" ? params.umpireId : "";
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayValue = getEasternTodayValue();
+  const today = new Date(`${todayValue}T00:00:00`);
 
   const [allUpcomingAssignedBookings, allActiveUmpires] = await Promise.all([
     prisma.booking.findMany({

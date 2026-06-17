@@ -17,6 +17,21 @@ function toDateInputValue(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+function getEasternTodayValue() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
+}
+
 function fromDateInputValue(dateString: string) {
   return new Date(`${dateString}T00:00:00`);
 }
@@ -140,7 +155,7 @@ type PageProps = {
 
 export default async function BookingsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const selectedDate = params.date || toDateInputValue(new Date());
+  const selectedDate = params.date || getEasternTodayValue();
   const view = params.view === "day" ? "day" : "week";
 
   const cookieStore = await cookies();
@@ -159,7 +174,7 @@ export default async function BookingsPage({ searchParams }: PageProps) {
   const nextWeekDate = addDays(selectedDate, 7);
   const previousDayDate = addDays(selectedDate, -1);
   const nextDayDate = addDays(selectedDate, 1);
-  const todayDate = toDateInputValue(new Date());
+  const todayDate = getEasternTodayValue();
 
   const [rooms, dayBookings, weekBookings, dayRoomBlackouts, weekRoomBlackouts] = await Promise.all([
     prisma.room.findMany({
@@ -1100,7 +1115,7 @@ const weekBlackoutMap = buildBlackoutMap(
                 const cellBookings = weekBookings.filter(
                   (booking) =>
                     booking.roomId === room.id &&
-                    toDateInputValue(new Date(booking.bookingDate)) === day.value
+                    toDateInputValue(booking.bookingDate) === day.value
                 );
                 const cellBlackout = weekBlackoutMap.get(`${room.id}|${day.value}`);
 

@@ -20,6 +20,21 @@ function toDateInputValue(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+function getEasternTodayValue() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
+}
+
 function fromDateInputValue(dateString: string) {
   return new Date(`${dateString}T00:00:00`);
 }
@@ -64,14 +79,15 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
       ? params.sport
       : "all";
 
-  const today = new Date();
-  const defaultStart = new Date(today);
+  
+  const todayValue = getEasternTodayValue();
+  const defaultStart = fromDateInputValue(todayValue);
   defaultStart.setHours(0, 0, 0, 0);
 
   const startDateValue =
     typeof params.startDate === "string" && params.startDate
       ? params.startDate
-      : toDateInputValue(defaultStart);
+      : todayValue;
 
   const endDateValue = typeof params.endDate === "string" ? params.endDate : "";
 
@@ -298,7 +314,7 @@ const filteredBookings = bookings.filter((booking) => {
             </Link>
 
             <Link
-              href={`/bookings?date=${toDateInputValue(new Date())}&view=week`}
+              href={`/bookings?date=${todayValue}&view=week`}
               style={{
                 display: "inline-block",
                 padding: "0.65rem 1rem",

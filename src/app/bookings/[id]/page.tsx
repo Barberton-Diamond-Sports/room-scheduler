@@ -95,7 +95,7 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
     bookingPurpose === "tournament";
 
   const view = search.view === "week" ? "week" : "day";
-  const calendarDate = search.date || toDateInputValue(new Date(booking.bookingDate));
+  const calendarDate = search.date || toDateInputValue(booking.bookingDate);
   const calendarHref = `/bookings?date=${calendarDate}&view=${view}`;
   const editHref = `/bookings/${booking.id}/edit?date=${calendarDate}&view=${view}`;
 
@@ -104,7 +104,7 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
     detailRow("Team", booking.team?.teamName),
     detailRow("Coach E-mail", booking.team?.coachEmail),
     detailRow("Field", booking.room?.name),
-    detailRow("Date", formatDate(new Date(booking.bookingDate))),
+    detailRow("Date", formatDate(booking.bookingDate)),
     detailRow(
       "Time",
       `${formatTimeLabel(booking.startTimeMinutes)} - ${formatTimeLabel(booking.endTimeMinutes)}`

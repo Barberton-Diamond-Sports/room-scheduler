@@ -6,10 +6,25 @@ import UmpireManagementPanel from "@/components/admin/umpire-management-panel";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function AdminUmpiresPage() {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+function getEasternTodayValue() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
 
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
+}
+
+export default async function AdminUmpiresPage() {
+  const todayValue = getEasternTodayValue();
+  const todayStart = new Date(`${todayValue}T00:00:00`);
+  
   const [umpires, bookingCounts] = await Promise.all([
     prisma.umpire.findMany({
       orderBy: { name: "asc" },

@@ -101,7 +101,7 @@ function timeToMinutes(time: string) {
 }
 
 function dateToInputValue(dateString: string) {
-  return dateString.slice(0, 10);
+  return dateString;
 }
 
 function buildTimeOptions() {
