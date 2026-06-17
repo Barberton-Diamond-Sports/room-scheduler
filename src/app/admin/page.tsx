@@ -225,81 +225,92 @@ export default async function AdminPage({ searchParams }: PageProps) {
   const totalFields = rooms.length;
   const bookingCount = todaysBookings.length;
 
-  const conflictWarnings: Array<{
-	  key: string;
-	  teamName: string;
-	  ageGroup: string;
-	  dateLabel: string;
-	  dateValue: string;
-	  firstBookingId: string;
-	  secondBookingId: string;
-	  firstField: string;
-	  firstStart: string;
-	  firstEnd: string;
-	  firstTitle: string;
-	  secondField: string;
-	  secondStart: string;
-	  secondEnd: string;
-	  secondTitle: string;
-	}> = [];
+const conflictGroups: Array<{
+  key: string;
+  teamName: string;
+  ageGroup: string;
+  dateLabel: string;
+  dateValue: string;
+  items: Array<{
+    bookingId: string;
+    roomId: string;
+    field: string;
+    start: string;
+    end: string;
+    title: string;
+  }>;
+}> = [];
 
+const bookingsByTeamAndDate = new Map<string, typeof futureBookings>();
 
-  const bookingsByTeamAndDate = new Map<string, typeof futureBookings>();
+for (const booking of futureBookings) {
+  if (!booking.teamId) continue;
+  const key = `${booking.teamId}|${toDateInputValue(booking.bookingDate)}`;
+  const existing = bookingsByTeamAndDate.get(key);
+  if (existing) {
+    existing.push(booking);
+  } else {
+    bookingsByTeamAndDate.set(key, [booking]);
+  }
+}
 
-  for (const booking of futureBookings) {
-    if (!booking.teamId) continue;
-    const key = `${booking.teamId}|${toDateInputValue(booking.bookingDate)}`;
-    const existing = bookingsByTeamAndDate.get(key);
-    if (existing) {
-      existing.push(booking);
+for (const [, teamBookings] of bookingsByTeamAndDate) {
+  if (teamBookings.length < 2) continue;
+
+  const sortedBookings = [...teamBookings].sort((a, b) => {
+    if (a.startTimeMinutes !== b.startTimeMinutes) {
+      return a.startTimeMinutes - b.startTimeMinutes;
+    }
+    return a.endTimeMinutes - b.endTimeMinutes;
+  });
+
+  let currentGroup: typeof sortedBookings = [];
+  let currentMaxEnd = -1;
+
+  function pushCurrentGroup() {
+    if (currentGroup.length < 2) return;
+
+    const distinctRoomIds = new Set(currentGroup.map((booking) => booking.roomId));
+    if (distinctRoomIds.size < 2) return;
+
+    conflictGroups.push({
+      key: currentGroup.map((booking) => booking.id).sort().join("|"),
+      teamName: currentGroup[0].team?.teamName || "Unknown team",
+      ageGroup: currentGroup[0].team?.ageGroup || "—",
+      dateLabel: formatShortDate(currentGroup[0].bookingDate),
+      dateValue: toDateInputValue(currentGroup[0].bookingDate),
+      items: currentGroup.map((booking) => ({
+        bookingId: booking.id,
+        roomId: booking.roomId,
+        field: booking.room?.name || "Unknown field",
+        start: formatTimeLabel(booking.startTimeMinutes),
+        end: formatTimeLabel(booking.endTimeMinutes),
+        title: booking.title || "Booking",
+      })),
+    });
+  }
+
+  for (const booking of sortedBookings) {
+    if (currentGroup.length === 0) {
+      currentGroup = [booking];
+      currentMaxEnd = booking.endTimeMinutes;
+      continue;
+    }
+
+    const overlapsCurrentGroup = booking.startTimeMinutes < currentMaxEnd;
+
+    if (overlapsCurrentGroup) {
+      currentGroup.push(booking);
+      currentMaxEnd = Math.max(currentMaxEnd, booking.endTimeMinutes);
     } else {
-      bookingsByTeamAndDate.set(key, [booking]);
+      pushCurrentGroup();
+      currentGroup = [booking];
+      currentMaxEnd = booking.endTimeMinutes;
     }
   }
 
-  for (const [, teamBookings] of bookingsByTeamAndDate) {
-    if (teamBookings.length < 2) continue;
-
-    for (let i = 0; i < teamBookings.length; i++) {
-      for (let j = i + 1; j < teamBookings.length; j++) {
-        const first = teamBookings[i];
-        const second = teamBookings[j];
-
-        if (first.roomId === second.roomId) continue;
-
-        const overlaps =
-          first.startTimeMinutes < second.endTimeMinutes &&
-          first.endTimeMinutes > second.startTimeMinutes;
-
-        if (!overlaps) continue;
-
-        const sortedIds = [first.id, second.id].sort();
-        const warningKey = sortedIds.join("|");
-
-        if (conflictWarnings.some((warning) => warning.key === warningKey)) {
-          continue;
-        }
-
-        conflictWarnings.push({
-  key: warningKey,
-  teamName: first.team?.teamName || "Unknown team",
-  ageGroup: first.team?.ageGroup || "—",
-  dateLabel: formatShortDate(first.bookingDate),
-  dateValue: toDateInputValue(first.bookingDate),
-  firstBookingId: first.id,
-  secondBookingId: second.id,
-  firstField: first.room?.name || "Unknown field",
-  firstStart: formatTimeLabel(first.startTimeMinutes),
-  firstEnd: formatTimeLabel(first.endTimeMinutes),
-  firstTitle: first.title || "Booking",
-  secondField: second.room?.name || "Unknown field",
-  secondStart: formatTimeLabel(second.startTimeMinutes),
-  secondEnd: formatTimeLabel(second.endTimeMinutes),
-  secondTitle: second.title || "Booking",
-});
-      }
-    }
-  }
+  pushCurrentGroup();
+}
 
   function filterHref(windowValue: string, typeValue: string) {
     return `/admin?changeWindow=${windowValue}&changeType=${typeValue}`;
@@ -669,7 +680,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
               marginBottom: "1rem",
             }}
           >
-            <h2 style={{ margin: 0 }}>Today&apos;s Schedule</h2>
+            <h2 style={{ margin: 0, fontWeight: 800 }}>Today&apos;s Schedule</h2>
             <Link
               href={`/bookings?date=${todayValue}`}
               style={{ color: "#1d4ed8", textDecoration: "none", fontWeight: 600 }}
@@ -804,88 +815,94 @@ export default async function AdminPage({ searchParams }: PageProps) {
           )}
         </div>
 
-		{conflictWarnings.length > 0 && (
-		  <div className="admin-warning-card">
-			<h2 style={{ marginTop: 0, marginBottom: "0.5rem", color: "#9a3412" }}>
-			  Team Booking Conflicts
-			</h2>
-			<p style={{ marginTop: 0, color: "#9a3412", lineHeight: 1.5, marginBottom: 0 }}>
-			  The following future bookings show the same team scheduled on multiple fields at the
-			  same time. Please review these conflicts.
-			</p>
+{conflictGroups.length > 0 && (
+  <div className="admin-warning-card">
+    <h2
+      style={{
+        marginTop: 0,
+        marginBottom: "0.5rem",
+        color: "#9a3412",
+        fontWeight: 800,
+      }}
+    >
+      Team Booking Conflicts
+    </h2>
+    <p style={{ marginTop: 0, color: "#9a3412", lineHeight: 1.5, marginBottom: 0 }}>
+      The following future bookings show the same team scheduled on multiple fields at the
+      same time. Please review these conflicts.
+    </p>
 
-			<div className="admin-warning-list">
-			  {conflictWarnings.map((warning) => (
-				<div key={warning.key} className="admin-warning-item">
-				  <div
-					style={{
-					  fontWeight: 800,
-					  color: "#7c2d12",
-					  lineHeight: 1.35,
-					}}
-				  >
-					{warning.teamName} {warning.ageGroup !== "—" ? `(${warning.ageGroup})` : ""}
-				  </div>
+    <div className="admin-warning-list">
+      {conflictGroups.map((group) => (
+        <div key={group.key} className="admin-warning-item">
+          <div
+            style={{
+              fontWeight: 600,
+              color: "#7c2d12",
+              lineHeight: 1.35,
+            }}
+          >
+            {group.teamName} {group.ageGroup !== "—" ? `(${group.ageGroup})` : ""}
+          </div>
 
-				  <div
-					style={{
-					  marginTop: "0.2rem",
-					  color: "#9a3412",
-					  lineHeight: 1.4,
-					  fontWeight: 600,
-					}}
-				  >
-					{warning.dateLabel}
-				  </div>
+          <div
+            style={{
+              marginTop: "0.2rem",
+              color: "#9a3412",
+              lineHeight: 1.4,
+              fontWeight: 600,
+            }}
+          >
+            {group.dateLabel}
+          </div>
 
-				  <div
-					  style={{
-						marginTop: "0.35rem",
-						color: "#7c2d12",
-						lineHeight: 1.45,
-					  }}
-					>
-					  {warning.firstField}: {warning.firstStart} - {warning.firstEnd} - {warning.firstTitle}
-					</div>
+          <div style={{ marginTop: "0.5rem", display: "grid", gap: "0.2rem" }}>
+            {group.items.map((item) => (
+              <div
+                key={item.bookingId}
+                style={{
+                  color: "#7c2d12",
+                  lineHeight: 1.45,
+                }}
+              >
+                <span style={{ fontWeight: 600 }}>{item.field}</span>: {item.start} - {item.end} -{" "}
+                <span style={{ fontWeight: 600 }}>{item.title}</span>
+              </div>
+            ))}
+          </div>
 
-					<div
-					  style={{
-						marginTop: "0.15rem",
-						color: "#7c2d12",
-						lineHeight: 1.45,
-					  }}
-					>
-					  {warning.secondField}: {warning.secondStart} - {warning.secondEnd} - {warning.secondTitle}
-					</div>
-
-				  <div
-					  style={{
-						display: "flex",
-						gap: "0.75rem",
-						flexWrap: "wrap",
-						marginTop: "0.75rem",
-					  }}
-					>
-					  <Link
-						href={`/bookings/${warning.firstBookingId}?date=${warning.dateValue}&view=day`}
-						style={dashboardLinkStyle("#fff7ed", "#fdba74", "#9a3412")}
-					  >
-						Open {warning.firstField} Booking
-					  </Link>
-
-					  <Link
-						href={`/bookings/${warning.secondBookingId}?date=${warning.dateValue}&view=day`}
-						style={dashboardLinkStyle("#fff7ed", "#fdba74", "#9a3412")}
-					  >
-						Open {warning.secondField} Booking
-					  </Link>
-					</div>
-
-				</div>
-			  ))}
-			</div>
-		  </div>
-		)}
+          <div
+            style={{
+              display: "flex",
+              gap: "0.75rem",
+              flexWrap: "wrap",
+              marginTop: "0.75rem",
+            }}
+          >
+            {group.items.map((item) => (
+              <Link
+                key={item.bookingId}
+                href={`/bookings/${item.bookingId}?date=${group.dateValue}&view=day`}
+                style={{
+                  display: "inline-block",
+                  padding: "0.55rem 0.85rem",
+                  backgroundColor: "#fff7ed",
+                  border: "1px solid #fdba74",
+                  borderRadius: "10px",
+                  color: "#9a3412",
+                  textDecoration: "none",
+                  fontWeight: 700,
+                }}
+              >
+                Open {item.field} Booking
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
         <div className="admin-card">
           <details>
