@@ -92,6 +92,14 @@ function formatPageDate(date: Date) {
   });
 }
 
+function formatShortDate(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function formatDateTime(date: Date) {
   return date.toLocaleString("en-US", {
     month: "short",
@@ -137,7 +145,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
   const changeWindow = params.changeWindow || "7d";
   const changeType = params.changeType || "all";
 
-  
   const todayValue = getEasternTodayValue();
   const today = new Date(`${todayValue}T12:00:00`);
   const dayStart = new Date(`${todayValue}T00:00:00`);
@@ -162,41 +169,137 @@ export default async function AdminPage({ searchParams }: PageProps) {
       ? ["DELETE"]
       : ["UPDATE", "DELETE"];
 
-  const [rooms, todaysBookings, recentAuditLogs, umpireCount] = await Promise.all([
-    prisma.room.findMany({
-      where: { isActive: true },
-      orderBy: { name: "asc" },
-    }),
-    prisma.booking.findMany({
-      where: {
-        status: "ACTIVE",
-        bookingDate: {
-          gte: dayStart,
-          lt: nextDay,
+  const [rooms, todaysBookings, futureBookings, recentAuditLogs, umpireCount] =
+    await Promise.all([
+      prisma.room.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.booking.findMany({
+        where: {
+          status: "ACTIVE",
+          bookingDate: {
+            gte: dayStart,
+            lt: nextDay,
+          },
         },
-      },
-      include: {
-        room: true,
-        team: true,
-        umpireRecord: true,
-      },
-      orderBy: [{ startTimeMinutes: "asc" }, { roomId: "asc" }],
-      take: 12,
-    }),
-    prisma.auditLog.findMany({
-      where: {
-        entityType: "Booking",
-        action: { in: auditActionFilter },
-        createdAt: { gte: auditSince },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    }),
-    prisma.umpire.count({ where: { isActive: true } }),
-  ]);
+        include: {
+          room: true,
+          team: true,
+          umpireRecord: true,
+        },
+        orderBy: [{ startTimeMinutes: "asc" }, { roomId: "asc" }],
+        take: 12,
+      }),
+      prisma.booking.findMany({
+        where: {
+          status: "ACTIVE",
+          bookingDate: {
+            gte: dayStart,
+          },
+          teamId: { not: null },
+        },
+        include: {
+          room: true,
+          team: true,
+        },
+        orderBy: [
+          { bookingDate: "asc" },
+          { teamId: "asc" },
+          { startTimeMinutes: "asc" },
+          { roomId: "asc" },
+        ],
+      }),
+      prisma.auditLog.findMany({
+        where: {
+          entityType: "Booking",
+          action: { in: auditActionFilter },
+          createdAt: { gte: auditSince },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+      prisma.umpire.count({ where: { isActive: true } }),
+    ]);
 
   const totalFields = rooms.length;
   const bookingCount = todaysBookings.length;
+
+  const conflictWarnings: Array<{
+	  key: string;
+	  teamName: string;
+	  ageGroup: string;
+	  dateLabel: string;
+	  dateValue: string;
+	  firstBookingId: string;
+	  secondBookingId: string;
+	  firstField: string;
+	  firstStart: string;
+	  firstEnd: string;
+	  firstTitle: string;
+	  secondField: string;
+	  secondStart: string;
+	  secondEnd: string;
+	  secondTitle: string;
+	}> = [];
+
+
+  const bookingsByTeamAndDate = new Map<string, typeof futureBookings>();
+
+  for (const booking of futureBookings) {
+    if (!booking.teamId) continue;
+    const key = `${booking.teamId}|${toDateInputValue(booking.bookingDate)}`;
+    const existing = bookingsByTeamAndDate.get(key);
+    if (existing) {
+      existing.push(booking);
+    } else {
+      bookingsByTeamAndDate.set(key, [booking]);
+    }
+  }
+
+  for (const [, teamBookings] of bookingsByTeamAndDate) {
+    if (teamBookings.length < 2) continue;
+
+    for (let i = 0; i < teamBookings.length; i++) {
+      for (let j = i + 1; j < teamBookings.length; j++) {
+        const first = teamBookings[i];
+        const second = teamBookings[j];
+
+        if (first.roomId === second.roomId) continue;
+
+        const overlaps =
+          first.startTimeMinutes < second.endTimeMinutes &&
+          first.endTimeMinutes > second.startTimeMinutes;
+
+        if (!overlaps) continue;
+
+        const sortedIds = [first.id, second.id].sort();
+        const warningKey = sortedIds.join("|");
+
+        if (conflictWarnings.some((warning) => warning.key === warningKey)) {
+          continue;
+        }
+
+        conflictWarnings.push({
+  key: warningKey,
+  teamName: first.team?.teamName || "Unknown team",
+  ageGroup: first.team?.ageGroup || "—",
+  dateLabel: formatShortDate(first.bookingDate),
+  dateValue: toDateInputValue(first.bookingDate),
+  firstBookingId: first.id,
+  secondBookingId: second.id,
+  firstField: first.room?.name || "Unknown field",
+  firstStart: formatTimeLabel(first.startTimeMinutes),
+  firstEnd: formatTimeLabel(first.endTimeMinutes),
+  firstTitle: first.title || "Booking",
+  secondField: second.room?.name || "Unknown field",
+  secondStart: formatTimeLabel(second.startTimeMinutes),
+  secondEnd: formatTimeLabel(second.endTimeMinutes),
+  secondTitle: second.title || "Booking",
+});
+      }
+    }
+  }
 
   function filterHref(windowValue: string, typeValue: string) {
     return `/admin?changeWindow=${windowValue}&changeType=${typeValue}`;
@@ -341,8 +444,31 @@ export default async function AdminPage({ searchParams }: PageProps) {
           flex-wrap: wrap;
         }
 
+        .admin-warning-card {
+          background-color: #fff7ed;
+          border: 1px solid #fdba74;
+          border-radius: 16px;
+          padding: 1.25rem;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+          margin-bottom: 1.5rem;
+        }
+
+        .admin-warning-list {
+          display: grid;
+          gap: 0.75rem;
+          margin-top: 1rem;
+        }
+
+        .admin-warning-item {
+          border: 1px solid #fed7aa;
+          background-color: #fffbeb;
+          border-radius: 12px;
+          padding: 0.9rem 1rem;
+        }
+
         @media (max-width: 768px) {
-          .admin-card {
+          .admin-card,
+          .admin-warning-card {
             padding: 1rem;
             border-radius: 14px;
           }
@@ -375,9 +501,12 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
       <div className="admin-shell">
         <div className="admin-card" style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>BDS Admin Page</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
+            BDS Admin Page
+          </h1>
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
-            Quick access to field bookings, blackout controls, umpire scheduling, team management, and recent booking changes.
+            Quick access to field bookings, blackout controls, umpire scheduling, team management,
+            and recent booking changes.
           </p>
 
           <div className="admin-nav-stack">
@@ -397,10 +526,10 @@ export default async function AdminPage({ searchParams }: PageProps) {
               <div className="admin-section-title">Fields</div>
               <div className="admin-link-row">
                 <Link
-                  href="/book"
+                  href="/admin/book-with-umpire"
                   style={dashboardLinkStyle("#ecfeff", "#a5f3fc", "#155e75")}
                 >
-                  Book a Field
+                  Book a Field (Admin)
                 </Link>
 
                 <Link
@@ -490,7 +619,14 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>
               Today&apos;s Date
             </div>
-            <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a", lineHeight: 1.4 }}>
+            <div
+              style={{
+                fontSize: "1.15rem",
+                fontWeight: 700,
+                color: "#0f172a",
+                lineHeight: 1.4,
+              }}
+            >
               {formatPageDate(today)}
             </div>
           </div>
@@ -555,25 +691,26 @@ export default async function AdminPage({ searchParams }: PageProps) {
             </div>
           ) : (
             <div style={{ display: "grid", gap: "0.85rem" }}>
-			  {todaysBookings.map((booking) => {
-				const detailsHref = `/bookings/${booking.id}?date=${todayValue}`;
-				const needsUmpire = !!booking.team?.requiresUmpire;
-				const isMissingUmpire = needsUmpire && !booking.umpireRecord;
+              {todaysBookings.map((booking) => {
+                const detailsHref = `/bookings/${booking.id}?date=${todayValue}`;
+                const needsUmpire = !!booking.team?.requiresUmpire;
+                const isMissingUmpire = needsUmpire && !booking.umpireRecord;
                 const badge = getTypeBadge(booking.title);
-                const matchup = booking.opponent && booking.opponent.trim()
-                  ? `${booking.team?.teamName || "—"} vs. ${booking.opponent}`
-                  : booking.team?.teamName || "—";
+                const matchup =
+                  booking.opponent && booking.opponent.trim()
+                    ? `${booking.team?.teamName || "—"} vs. ${booking.opponent}`
+                    : booking.team?.teamName || "—";
 
                 return (
                   <Link
-					key={booking.id}
-					href={detailsHref}
-					className="admin-schedule-item"
-					style={{
-					backgroundColor: isMissingUmpire ? "#fff1f2" : "#f8fafc",
-					borderColor: isMissingUmpire ? "#fca5a5" : "#e2e8f0",
-					}}
-				  >
+                    key={booking.id}
+                    href={detailsHref}
+                    className="admin-schedule-item"
+                    style={{
+                      backgroundColor: isMissingUmpire ? "#fff1f2" : "#f8fafc",
+                      borderColor: isMissingUmpire ? "#fca5a5" : "#e2e8f0",
+                    }}
+                  >
                     <div className="admin-schedule-item-row">
                       <div>
                         <div style={{ color: "#0f172a", fontWeight: 700, lineHeight: 1.35 }}>
@@ -592,18 +729,18 @@ export default async function AdminPage({ searchParams }: PageProps) {
                         </div>
 
                         {needsUmpire && (
-						  <div
-							style={{
-							  color: booking.umpireRecord ? "#475569" : "#991b1b",
-							  marginTop: "0.2rem",
-							  fontSize: "0.88rem",
-							  lineHeight: 1.35,
-							  fontWeight: booking.umpireRecord ? 400 : 700,
-							}}
-						  >
-							Umpire: {booking.umpireRecord?.name || "Unassigned"}
-						  </div>
-						)}
+                          <div
+                            style={{
+                              color: booking.umpireRecord ? "#475569" : "#991b1b",
+                              marginTop: "0.2rem",
+                              fontSize: "0.88rem",
+                              lineHeight: 1.35,
+                              fontWeight: booking.umpireRecord ? 400 : 700,
+                            }}
+                          >
+                            Umpire: {booking.umpireRecord?.name || "Unassigned"}
+                          </div>
+                        )}
 
                         {booking.notes && (
                           <div
@@ -627,7 +764,8 @@ export default async function AdminPage({ searchParams }: PageProps) {
                             lineHeight: 1.35,
                           }}
                         >
-                          {formatTimeLabel(booking.startTimeMinutes)} - {formatTimeLabel(booking.endTimeMinutes)}
+                          {formatTimeLabel(booking.startTimeMinutes)} -{" "}
+                          {formatTimeLabel(booking.endTimeMinutes)}
                         </div>
 
                         <div style={{ marginTop: "0.2rem" }}>
@@ -666,6 +804,89 @@ export default async function AdminPage({ searchParams }: PageProps) {
           )}
         </div>
 
+		{conflictWarnings.length > 0 && (
+		  <div className="admin-warning-card">
+			<h2 style={{ marginTop: 0, marginBottom: "0.5rem", color: "#9a3412" }}>
+			  Team Booking Conflicts
+			</h2>
+			<p style={{ marginTop: 0, color: "#9a3412", lineHeight: 1.5, marginBottom: 0 }}>
+			  The following future bookings show the same team scheduled on multiple fields at the
+			  same time. Please review these conflicts.
+			</p>
+
+			<div className="admin-warning-list">
+			  {conflictWarnings.map((warning) => (
+				<div key={warning.key} className="admin-warning-item">
+				  <div
+					style={{
+					  fontWeight: 800,
+					  color: "#7c2d12",
+					  lineHeight: 1.35,
+					}}
+				  >
+					{warning.teamName} {warning.ageGroup !== "—" ? `(${warning.ageGroup})` : ""}
+				  </div>
+
+				  <div
+					style={{
+					  marginTop: "0.2rem",
+					  color: "#9a3412",
+					  lineHeight: 1.4,
+					  fontWeight: 600,
+					}}
+				  >
+					{warning.dateLabel}
+				  </div>
+
+				  <div
+					  style={{
+						marginTop: "0.35rem",
+						color: "#7c2d12",
+						lineHeight: 1.45,
+					  }}
+					>
+					  {warning.firstField}: {warning.firstStart} - {warning.firstEnd} - {warning.firstTitle}
+					</div>
+
+					<div
+					  style={{
+						marginTop: "0.15rem",
+						color: "#7c2d12",
+						lineHeight: 1.45,
+					  }}
+					>
+					  {warning.secondField}: {warning.secondStart} - {warning.secondEnd} - {warning.secondTitle}
+					</div>
+
+				  <div
+					  style={{
+						display: "flex",
+						gap: "0.75rem",
+						flexWrap: "wrap",
+						marginTop: "0.75rem",
+					  }}
+					>
+					  <Link
+						href={`/bookings/${warning.firstBookingId}?date=${warning.dateValue}&view=day`}
+						style={dashboardLinkStyle("#fff7ed", "#fdba74", "#9a3412")}
+					  >
+						Open {warning.firstField} Booking
+					  </Link>
+
+					  <Link
+						href={`/bookings/${warning.secondBookingId}?date=${warning.dateValue}&view=day`}
+						style={dashboardLinkStyle("#fff7ed", "#fdba74", "#9a3412")}
+					  >
+						Open {warning.secondField} Booking
+					  </Link>
+					</div>
+
+				</div>
+			  ))}
+			</div>
+		  </div>
+		)}
+
         <div className="admin-card">
           <details>
             <summary
@@ -680,7 +901,14 @@ export default async function AdminPage({ searchParams }: PageProps) {
               {recentChangesSummary}
             </summary>
 
-            <div style={{ color: "#64748b", marginTop: "0.65rem", marginBottom: "1rem", lineHeight: 1.5 }}>
+            <div
+              style={{
+                color: "#64748b",
+                marginTop: "0.65rem",
+                marginBottom: "1rem",
+                lineHeight: 1.5,
+              }}
+            >
               Recent edits and deletions for admin review.
             </div>
 
@@ -787,7 +1015,14 @@ export default async function AdminPage({ searchParams }: PageProps) {
                           <div style={{ color: "#334155", marginTop: "0.2rem", lineHeight: 1.35 }}>
                             {itemTitle} · {itemName}
                           </div>
-                          <div style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem", lineHeight: 1.35 }}>
+                          <div
+                            style={{
+                              color: "#64748b",
+                              marginTop: "0.2rem",
+                              fontSize: "0.92rem",
+                              lineHeight: 1.35,
+                            }}
+                          >
                             {itemRoom} · {start} - {end}
                           </div>
                         </div>
@@ -797,7 +1032,14 @@ export default async function AdminPage({ searchParams }: PageProps) {
                         </div>
                       </div>
 
-                      <div style={{ color: "#64748b", fontSize: "0.92rem", marginTop: "0.45rem", lineHeight: 1.35 }}>
+                      <div
+                        style={{
+                          color: "#64748b",
+                          fontSize: "0.92rem",
+                          marginTop: "0.45rem",
+                          lineHeight: 1.35,
+                        }}
+                      >
                         {itemDate}
                       </div>
 

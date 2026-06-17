@@ -18,6 +18,19 @@ function toDateInputValue(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function inferSport(ageGroup: string | null | undefined) {
+  return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
+}
+
+function formatTimeLabel(totalMinutes: number) {
+  const hours24 = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const suffix = hours24 >= 12 ? "PM" : "AM";
+  let hours12 = hours24 % 12;
+  if (hours12 === 0) hours12 = 12;
+  return `${hours12}:${String(minutes).padStart(2, "0")} ${suffix}`;
+}
+
 async function ensureAdminAccess() {
   const cookieStore = await cookies();
   const adminAccess = cookieStore.get("admin_access")?.value;
@@ -49,6 +62,7 @@ export async function PATCH(
       title,
       opponent,
       notes,
+      umpireId,
     } = body;
 
     if (!teamId || !roomId || !date || !startTime || !durationBlocks) {
@@ -87,6 +101,15 @@ export async function PATCH(
         { status: 400 }
       );
     }
+
+    const cleanedTitle =
+      typeof title === "string" && title.trim() ? title.trim() : null;
+
+    const bookingNeedsUmpire =
+      !!team.requiresUmpire &&
+      (cleanedTitle === "Game" ||
+        cleanedTitle === "Scrimmage" ||
+        cleanedTitle === "Tournament");
 
     const startTimeMinutes = timeToMinutes(startTime);
     const endTimeMinutes = startTimeMinutes + Number(durationBlocks) * 30;
@@ -133,6 +156,84 @@ export async function PATCH(
       );
     }
 
+    let validatedUmpireId: string | null = null;
+
+    if (typeof umpireId === "string" && umpireId.trim()) {
+      const selectedUmpireId = umpireId.trim();
+
+      if (!bookingNeedsUmpire) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "An umpire can only be assigned for games, scrimmages, or tournaments that require one.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const umpire = await prisma.umpire.findUnique({
+        where: { id: selectedUmpireId },
+      });
+
+      if (!umpire || !umpire.isActive) {
+        return NextResponse.json(
+          { success: false, message: "That umpire is not available." },
+          { status: 404 }
+        );
+      }
+
+      const sport = inferSport(team.ageGroup);
+
+      if (sport === "softball" && !umpire.doesSoftball) {
+        return NextResponse.json(
+          { success: false, message: "That umpire is not marked for softball." },
+          { status: 409 }
+        );
+      }
+
+      if (sport === "baseball" && !umpire.doesBaseball) {
+        return NextResponse.json(
+          { success: false, message: "That umpire is not marked for baseball." },
+          { status: 409 }
+        );
+      }
+
+      const conflictingAssignment = await prisma.booking.findFirst({
+        where: {
+          id: { not: id },
+          status: "ACTIVE",
+          umpireId: selectedUmpireId,
+          bookingDate: { gte: bookingDate, lt: nextDay },
+          startTimeMinutes: { lt: endTimeMinutes },
+          endTimeMinutes: { gt: startTimeMinutes },
+        },
+        include: {
+          room: true,
+        },
+        orderBy: [{ bookingDate: "asc" }, { startTimeMinutes: "asc" }],
+      });
+
+      if (conflictingAssignment) {
+        const conflictMessage = `${umpire.name} is already assigned to ${
+          conflictingAssignment.title || "another game"
+        } on ${bookingDate.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })} from ${formatTimeLabel(conflictingAssignment.startTimeMinutes)} to ${formatTimeLabel(
+          conflictingAssignment.endTimeMinutes
+        )} at ${conflictingAssignment.room?.name || "another field"}.`;
+
+        return NextResponse.json(
+          { success: false, message: conflictMessage },
+          { status: 409 }
+        );
+      }
+
+      validatedUmpireId = selectedUmpireId;
+    }
+
     const booking = await prisma.booking.update({
       where: { id },
       data: {
@@ -142,12 +243,13 @@ export async function PATCH(
         startTimeMinutes,
         endTimeMinutes,
         durationBlocks: Number(durationBlocks),
-        title: typeof title === "string" && title.trim() ? title.trim() : null,
+        title: cleanedTitle,
         notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
         opponent:
           typeof opponent === "string" && opponent.trim()
             ? opponent.trim()
             : null,
+        umpireId: validatedUmpireId,
       },
       include: {
         room: true,
@@ -217,7 +319,9 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message: "Booking updated successfully.",
+      message: validatedUmpireId
+        ? "Booking updated successfully with umpire assignment."
+        : "Booking updated successfully.",
       booking,
     });
   } catch (error) {

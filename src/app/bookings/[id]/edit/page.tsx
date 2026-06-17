@@ -13,7 +13,6 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
   const { id } = await params;
   const query = await searchParams;
 
-  // ✅ SECURE ACCESS CHECK
   const cookieStore = await cookies();
   const isAdmin = cookieStore.get("admin_access")?.value === "granted";
 
@@ -21,16 +20,15 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
     redirect(`/admin-login?next=/bookings/${id}/edit`);
   }
 
-  // ✅ RETURN STATE
   const returnDate = query.date;
   const returnView = query.view === "week" ? "week" : "day";
 
-  // ✅ LOAD BOOKING
   const booking = await prisma.booking.findUnique({
     where: { id },
     include: {
       room: true,
       team: true,
+      umpireRecord: true,
     },
   });
 
@@ -38,8 +36,7 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
     notFound();
   }
 
-  // ✅ LOAD LOOKUPS
-  const [rooms, teams] = await Promise.all([
+  const [rooms, teams, umpires] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
@@ -52,9 +49,12 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
         { season: "asc" },
       ],
     }),
+    prisma.umpire.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
-  // ✅ BACK LINK
   const detailsHref = returnDate
     ? `/bookings/${id}?date=${returnDate}&view=${returnView}`
     : `/bookings/${id}?view=${returnView}`;
@@ -69,7 +69,6 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
       }}
     >
       <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        {/* HEADER */}
         <div
           style={{
             backgroundColor: "#ffffff",
@@ -129,7 +128,6 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
           </div>
         </div>
 
-        {/* FORM */}
         <div
           style={{
             backgroundColor: "#ffffff",
@@ -142,16 +140,21 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
           <EditBookingForm
             rooms={rooms}
             teams={teams}
+            umpires={umpires}
             booking={{
               id: booking.id,
               roomId: booking.roomId,
               teamId: booking.teamId ?? "",
-              bookingDate: `${booking.bookingDate.getFullYear()}-${String(booking.bookingDate.getMonth() + 1).padStart(2, "0")}-${String(booking.bookingDate.getDate()).padStart(2, "0")}`,
+              bookingDate: `${booking.bookingDate.getFullYear()}-${String(
+                booking.bookingDate.getMonth() + 1
+              ).padStart(2, "0")}-${String(booking.bookingDate.getDate()).padStart(2, "0")}`,
               startTimeMinutes: booking.startTimeMinutes,
               durationBlocks: booking.durationBlocks,
               title: booking.title,
               notes: booking.notes,
               opponent: booking.opponent,
+              umpireId: booking.umpireId ?? "",
+              currentUmpireName: booking.umpireRecord?.name ?? null,
             }}
             returnDate={returnDate}
             returnView={returnView}

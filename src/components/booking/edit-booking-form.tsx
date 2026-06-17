@@ -19,6 +19,15 @@ type Team = {
   season: "SPRING" | "SUMMER" | "FALL";
   year: number;
   isActive: boolean;
+  requiresUmpire: boolean;
+};
+
+type Umpire = {
+  id: string;
+  name: string;
+  doesBaseball: boolean;
+  doesSoftball: boolean;
+  isActive: boolean;
 };
 
 type Booking = {
@@ -31,11 +40,14 @@ type Booking = {
   title: string | null;
   notes: string | null;
   opponent?: string | null;
+  umpireId?: string;
+  currentUmpireName?: string | null;
 };
 
 type Props = {
   rooms: Room[];
   teams: Team[];
+  umpires: Umpire[];
   booking: Booking;
   returnDate?: string;
   returnView?: "day" | "week";
@@ -127,11 +139,16 @@ function teamLabel(team: Team) {
   return `${team.teamName} (${team.ageGroup} • ${formatSeasonLabel(team.season)} ${team.year})`;
 }
 
+function inferSport(ageGroup: string | null | undefined) {
+  return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
+}
+
 const timeOptions = buildTimeOptions();
 
 export default function EditBookingForm({
   rooms,
   teams,
+  umpires,
   booking,
   returnDate,
   returnView = "day",
@@ -146,6 +163,14 @@ export default function EditBookingForm({
     [teams]
   );
 
+  const activeUmpires = useMemo(
+    () =>
+      umpires
+        .filter((umpire) => umpire.isActive)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [umpires]
+  );
+
   const [teamId, setTeamId] = useState(booking.teamId || activeTeams[0]?.id || "");
   const [roomId, setRoomId] = useState(booking.roomId);
   const [date, setDate] = useState(dateToInputValue(booking.bookingDate));
@@ -154,6 +179,7 @@ export default function EditBookingForm({
   const [purpose, setPurpose] = useState(booking.title || "Practice");
   const [opponent, setOpponent] = useState(booking.opponent || "");
   const [notes, setNotes] = useState(booking.notes || "");
+  const [umpireId, setUmpireId] = useState("");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "info" | "">("");
 
@@ -162,7 +188,22 @@ export default function EditBookingForm({
     [activeTeams, teamId]
   );
 
-  const showOpponent = purpose === "Game" || purpose === "Scrimmage";
+  const showOpponent =
+    purpose === "Game" || purpose === "Scrimmage" || purpose === "Tournament";
+
+  const showUmpire =
+    !!selectedTeam?.requiresUmpire &&
+    (purpose === "Game" || purpose === "Scrimmage" || purpose === "Tournament");
+
+  const selectedSport = inferSport(selectedTeam?.ageGroup);
+
+  const eligibleUmpires = useMemo(() => {
+    if (!showUmpire) return [];
+
+    return activeUmpires.filter((umpire) =>
+      selectedSport === "softball" ? umpire.doesSoftball : umpire.doesBaseball
+    );
+  }, [activeUmpires, selectedSport, showUmpire]);
 
   const availableDurations = useMemo(() => {
     const startMinutes = timeToMinutes(startTime);
@@ -189,6 +230,17 @@ export default function EditBookingForm({
     }
   }, [showOpponent, opponent]);
 
+  useEffect(() => {
+    if (!showUmpire) {
+      setUmpireId("");
+      return;
+    }
+
+    if (umpireId && !eligibleUmpires.some((umpire) => umpire.id === umpireId)) {
+      setUmpireId("");
+    }
+  }, [showUmpire, eligibleUmpires, umpireId]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -214,6 +266,7 @@ export default function EditBookingForm({
           title: purpose,
           opponent: showOpponent ? opponent : "",
           notes,
+          umpireId: showUmpire && umpireId ? umpireId : null,
         }),
       });
 
@@ -249,6 +302,22 @@ export default function EditBookingForm({
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: "1.25rem" }}>
+      {booking.currentUmpireName && (
+        <div
+          style={{
+            backgroundColor: "#fef2f2",
+            border: "1px solid #fca5a5",
+            color: "#991b1b",
+            borderRadius: "12px",
+            padding: "0.9rem 1rem",
+            fontWeight: 700,
+            lineHeight: 1.45,
+          }}
+        >
+          Important: Re-select the current umpire before saving, or the umpire assignment will be cleared.
+        </div>
+      )}
+
       <div
         style={{
           display: "grid",
@@ -379,6 +448,48 @@ export default function EditBookingForm({
             />
           </div>
         )}
+
+        {showUmpire && (
+          <div>
+            {showUmpire && (
+  <div>
+    
+    <label htmlFor="umpireId" style={fieldLabelStyle}>
+      Umpire
+    </label>
+	{booking.currentUmpireName && (
+      <div
+        style={{
+          marginBottom: "0.35rem",
+          fontSize: "0.92rem",
+          fontWeight: 700,
+          color: "#334155",
+          lineHeight: 1.35,
+        }}
+      >
+        Scheduled: {booking.currentUmpireName}
+      </div>
+    )}
+    <select
+      id="umpireId"
+      value={umpireId}
+      onChange={(e) => setUmpireId(e.target.value)}
+      style={fieldStyle}
+
+    >
+	
+      <option value="">Leave unassigned</option>
+      {eligibleUmpires.map((umpire) => (
+        <option key={umpire.id} value={umpire.id}>
+          {umpire.name}
+        </option>
+      ))}
+    </select>
+	
+  </div>
+)}
+          </div>
+        )}
       </div>
 
       {selectedTeam && (
@@ -401,6 +512,19 @@ export default function EditBookingForm({
             {selectedTeam.coachName}
             {selectedTeam.coachEmail ? ` • ${selectedTeam.coachEmail}` : ""}
             {selectedTeam.coachPhone?.trim() ? ` • ${selectedTeam.coachPhone}` : ""}
+          </div>
+          <div
+            style={{
+              color: selectedTeam.requiresUmpire ? "#166534" : "#64748b",
+              marginTop: "0.35rem",
+              fontSize: "0.92rem",
+              lineHeight: 1.45,
+              fontWeight: 600,
+            }}
+          >
+            {selectedTeam.requiresUmpire
+              ? "This team requires an umpire."
+              : "This team does not require an umpire."}
           </div>
         </div>
       )}
