@@ -703,7 +703,7 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
           ) : (
             <div style={{ display: "grid", gap: "0.85rem" }}>
               {todaysBookings.map((booking) => {
-                const detailsHref = `/bookings/${booking.id}?date=${todayValue}`;
+                const detailsHref = `/bookings/${booking.id}?date=${todayValue}&view=day&from=admin`;
                 const needsUmpire = !!booking.team?.requiresUmpire;
                 const isMissingUmpire = needsUmpire && !booking.umpireRecord;
                 const badge = getTypeBadge(booking.title);

@@ -1,5 +1,3 @@
-
-
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
@@ -11,7 +9,7 @@ export const revalidate = 0;
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ date?: string; view?: string }>;
+  searchParams: Promise<{ date?: string; view?: string; from?: string }>;
 };
 
 function pad(value: number) {
@@ -96,8 +94,15 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
 
   const view = search.view === "week" ? "week" : "day";
   const calendarDate = search.date || toDateInputValue(booking.bookingDate);
+  const cameFromAdmin = search.from === "admin";
+
   const calendarHref = `/bookings?date=${calendarDate}&view=${view}`;
-  const editHref = `/bookings/${booking.id}/edit?date=${calendarDate}&view=${view}`;
+  const adminHref = "/admin";
+  const backHref = cameFromAdmin ? adminHref : calendarHref;
+
+  const editHref = cameFromAdmin
+    ? `/bookings/${booking.id}/edit?date=${calendarDate}&view=${view}&from=admin`
+    : `/bookings/${booking.id}/edit?date=${calendarDate}&view=${view}`;
 
   const rows = [
     detailRow("Purpose", booking.title),
@@ -241,10 +246,10 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
 
             <div className="booking-detail-actions">
               <Link
-                href={calendarHref}
+                href={backHref}
                 style={buttonStyle("#eef2ff", "#c7d2fe", "#1e3a8a")}
               >
-                Back to Calendar
+                {cameFromAdmin ? "Back to Admin" : "Back to Calendar"}
               </Link>
 
               <Link
@@ -265,7 +270,7 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
 
                   <DeleteBookingButton
                     bookingId={booking.id}
-                    backHref={calendarHref}
+                    backHref={backHref}
                   />
                 </>
               )}

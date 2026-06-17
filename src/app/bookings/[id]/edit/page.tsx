@@ -6,7 +6,7 @@ import EditBookingForm from "@/components/booking/edit-booking-form";
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ date?: string; view?: string }>;
+  searchParams: Promise<{ date?: string; view?: string; from?: string }>;
 };
 
 export default async function EditBookingPage({ params, searchParams }: PageProps) {
@@ -22,6 +22,7 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
 
   const returnDate = query.date;
   const returnView = query.view === "week" ? "week" : "day";
+  const cameFromAdmin = query.from === "admin";
 
   const booking = await prisma.booking.findUnique({
     where: { id },
@@ -56,8 +57,8 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
   ]);
 
   const detailsHref = returnDate
-    ? `/bookings/${id}?date=${returnDate}&view=${returnView}`
-    : `/bookings/${id}?view=${returnView}`;
+    ? `/bookings/${id}?date=${returnDate}&view=${returnView}${cameFromAdmin ? "&from=admin" : ""}`
+    : `/bookings/${id}?view=${returnView}${cameFromAdmin ? "&from=admin" : ""}`;
 
   return (
     <main
