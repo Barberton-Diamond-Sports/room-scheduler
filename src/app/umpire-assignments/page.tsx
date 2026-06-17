@@ -94,7 +94,7 @@ export default async function UmpireAssignmentsPage({ searchParams }: PageProps)
         status: "ACTIVE",
         umpireId: null,
         bookingDate: { gte: today },
-        title: { in: ["Game", "Tournament", "Scrimmage"] },
+        title: { in: ["Game"] },
       },
       include: {
         room: true,

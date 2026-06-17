@@ -94,7 +94,7 @@ export default async function AdminBookWithUmpirePage() {
 
           <p style={{ marginTop: "0.5rem", color: "#4b5563", lineHeight: 1.5 }}>
             <strong>
-              If this is a game, scrimmage, or tournament, you can optionally assign an umpire here.
+              If this is a game, you can optionally assign an umpire here.
             </strong>
           </p>
 

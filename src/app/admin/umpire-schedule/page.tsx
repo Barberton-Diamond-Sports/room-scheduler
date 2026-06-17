@@ -106,7 +106,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
           gte: rangeStart,
           ...(rangeEndExclusive ? { lt: rangeEndExclusive } : {}),
         },
-        title: { in: ["Game", "Tournament", "Scrimmage"] },
+        title: { in: ["Game"] },
       },
       include: {
         room: true,

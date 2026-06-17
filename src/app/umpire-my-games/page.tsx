@@ -73,7 +73,7 @@ export default async function UmpireMyGamesPage({ searchParams }: PageProps) {
         status: "ACTIVE",
         umpireId: { not: null },
         bookingDate: { gte: today },
-        title: { in: ["Game", "Tournament", "Scrimmage"] },
+        title: { in: ["Game"] },
       },
       include: {
         room: true,

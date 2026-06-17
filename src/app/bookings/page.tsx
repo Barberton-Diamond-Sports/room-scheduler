@@ -135,7 +135,7 @@ function buildBlackoutMap(
 }
 
 function bookingBlockColors(title: string | null) {
-  if (title === "Game" || title === "Tournament") {
+  if (title === "Game") {
     return { backgroundColor: "#ede9fe", borderColor: "#a78bfa" };
   }
 

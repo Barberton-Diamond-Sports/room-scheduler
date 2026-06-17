@@ -121,9 +121,7 @@ export async function POST(request: Request) {
 
     const bookingNeedsUmpire =
       !!team.requiresUmpire &&
-      (cleanedTitle === "Game" ||
-        cleanedTitle === "Scrimmage" ||
-        cleanedTitle === "Tournament");
+      (cleanedTitle === "Game");
 
     let validatedUmpireId: string | null = null;
 
@@ -135,7 +133,7 @@ export async function POST(request: Request) {
           {
             success: false,
             message:
-              "An umpire can only be assigned for games, scrimmages, or tournaments that require one.",
+              "An umpire can only be assigned for games.",
           },
           { status: 400 }
         );

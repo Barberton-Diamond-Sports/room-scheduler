@@ -107,9 +107,7 @@ export async function PATCH(
 
     const bookingNeedsUmpire =
       !!team.requiresUmpire &&
-      (cleanedTitle === "Game" ||
-        cleanedTitle === "Scrimmage" ||
-        cleanedTitle === "Tournament");
+      (cleanedTitle === "Game");
 
     const startTimeMinutes = timeToMinutes(startTime);
     const endTimeMinutes = startTimeMinutes + Number(durationBlocks) * 30;
@@ -166,7 +164,7 @@ export async function PATCH(
           {
             success: false,
             message:
-              "An umpire can only be assigned for games, scrimmages, or tournaments that require one.",
+              "An umpire can only be assigned for games that require one.",
           },
           { status: 400 }
         );

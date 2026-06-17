@@ -66,15 +66,6 @@ function getTypeBadge(title?: string | null) {
     };
   }
 
-  if (type === "tournament") {
-    return {
-      label: "Tournament",
-      bg: "#f3e8ff",
-      border: "#d8b4fe",
-      color: "#7c3aed",
-    };
-  }
-
   return {
     label: title || "Other",
     bg: "#f1f5f9",

@@ -197,7 +197,7 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
 
   const showUmpire =
     !!selectedTeam?.requiresUmpire &&
-    (purpose === "Game";
+    (purpose === "Game");
 
   const selectedSport = inferSport(selectedTeam?.ageGroup);
 
