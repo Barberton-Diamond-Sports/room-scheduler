@@ -119,26 +119,35 @@ export default function MyGamesUmpirePicker({
             </label>
 
             <select
-              id="umpireId"
-              name="umpireId"
-              value={localSelectedUmpireId}
-              onChange={(e) => setLocalSelectedUmpireId(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "0.75rem 0.9rem",
-                border: "1px solid #cbd5e1",
-                borderRadius: "10px",
-                backgroundColor: "#f8fafc",
-                fontSize: "0.95rem",
-                boxSizing: "border-box",
-              }}
-            >
-              <option value="">Select an umpire</option>
-              {umpires.map((umpire) => (
-                <option key={umpire.id} value={umpire.id}>
-                  {umpire.name}
-                </option>
-              ))}
+  id="umpireId"
+  name="umpireId"
+  value={localSelectedUmpireId}
+  onChange={(e) => setLocalSelectedUmpireId(e.target.value)}
+  style={{
+    width: "100%",
+    padding: "0.75rem 0.9rem",
+    border: "1px solid #cbd5e1",
+    borderRadius: "10px",
+    backgroundColor: "#ffffff",
+    color: "#0f172a",
+    fontSize: "0.95rem",
+    boxSizing: "border-box",
+    opacity: 1,
+    WebkitTextFillColor: "#0f172a",
+  }}
+>
+              <option value="" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>
+  Select an umpire
+</option>
+{umpires.map((umpire) => (
+  <option
+    key={umpire.id}
+    value={umpire.id}
+    style={{ color: "#0f172a", backgroundColor: "#ffffff" }}
+  >
+    {umpire.name}
+  </option>
+))}
             </select>
           </div>
 

@@ -61,6 +61,19 @@ function inferSport(ageGroup: string | null | undefined) {
   return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
 }
 
+const filterControlStyle = {
+  width: "100%",
+  padding: "0.7rem 0.85rem",
+  border: "1px solid #cbd5e1",
+  borderRadius: "10px",
+  backgroundColor: "#ffffff",
+  color: "#0f172a",
+  fontSize: "0.95rem",
+  boxSizing: "border-box" as const,
+  opacity: 1,
+  WebkitTextFillColor: "#0f172a",
+};
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -79,9 +92,7 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
       ? params.sport
       : "all";
 
-  
   const todayValue = getEasternTodayValue();
-  const defaultStart = fromDateInputValue(todayValue);
 
   const startDateValue =
     typeof params.startDate === "string" && params.startDate
@@ -131,19 +142,19 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
       doesSoftball: umpire.doesSoftball,
     }));
 
-const filteredBookings = bookings.filter((booking) => {
-  if (selectedUmpireId && booking.umpireId !== selectedUmpireId) return false;
-  if (assignmentFilter === "assigned" && !booking.umpireId) return false;
-  if (assignmentFilter === "unassigned" && booking.umpireId) return false;
-  if (!booking.team?.requiresUmpire) return false;
+  const filteredBookings = bookings.filter((booking) => {
+    if (selectedUmpireId && booking.umpireId !== selectedUmpireId) return false;
+    if (assignmentFilter === "assigned" && !booking.umpireId) return false;
+    if (assignmentFilter === "unassigned" && booking.umpireId) return false;
+    if (!booking.team?.requiresUmpire) return false;
 
-  const ageGroup = booking.team?.ageGroup;
-  const sport = inferSport(ageGroup);
+    const ageGroup = booking.team?.ageGroup;
+    const sport = inferSport(ageGroup);
 
-  if (sportFilter !== "all" && sport !== sportFilter) return false;
+    if (sportFilter !== "all" && sport !== sportFilter) return false;
 
-  return true;
-});
+    return true;
+  });
 
   const groupedBookings = filteredBookings.reduce<
     Array<{ key: string; date: Date; items: typeof filteredBookings }>
@@ -290,7 +301,9 @@ const filteredBookings = bookings.filter((booking) => {
           className="umpire-schedule-card"
           style={{ marginBottom: "1.5rem" }}
         >
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Umpire Schedule</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
+            Umpire Schedule
+          </h1>
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
             Assign active umpires and filter the game list by umpire, assignment status, sport, and date range.
           </p>
@@ -363,15 +376,7 @@ const filteredBookings = bookings.filter((booking) => {
                   id="umpireId"
                   name="umpireId"
                   defaultValue={selectedUmpireId}
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem 0.85rem",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "10px",
-                    backgroundColor: "#f8fafc",
-                    fontSize: "0.95rem",
-                    boxSizing: "border-box",
-                  }}
+                  style={filterControlStyle}
                 >
                   <option value="">All games</option>
                   {umpires.map((umpire) => (
@@ -399,15 +404,7 @@ const filteredBookings = bookings.filter((booking) => {
                   id="assignment"
                   name="assignment"
                   defaultValue={assignmentFilter}
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem 0.85rem",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "10px",
-                    backgroundColor: "#f8fafc",
-                    fontSize: "0.95rem",
-                    boxSizing: "border-box",
-                  }}
+                  style={filterControlStyle}
                 >
                   <option value="all">All</option>
                   <option value="assigned">Assigned only</option>
@@ -431,15 +428,7 @@ const filteredBookings = bookings.filter((booking) => {
                   id="sport"
                   name="sport"
                   defaultValue={sportFilter}
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem 0.85rem",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "10px",
-                    backgroundColor: "#f8fafc",
-                    fontSize: "0.95rem",
-                    boxSizing: "border-box",
-                  }}
+                  style={filterControlStyle}
                 >
                   <option value="all">All sports</option>
                   <option value="baseball">Baseball</option>
@@ -464,15 +453,7 @@ const filteredBookings = bookings.filter((booking) => {
                   name="startDate"
                   type="date"
                   defaultValue={startDateValue}
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem 0.85rem",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "10px",
-                    backgroundColor: "#f8fafc",
-                    fontSize: "0.95rem",
-                    boxSizing: "border-box",
-                  }}
+                  style={filterControlStyle}
                 />
               </div>
 
@@ -493,15 +474,7 @@ const filteredBookings = bookings.filter((booking) => {
                   name="endDate"
                   type="date"
                   defaultValue={endDateValue}
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem 0.85rem",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "10px",
-                    backgroundColor: "#f8fafc",
-                    fontSize: "0.95rem",
-                    boxSizing: "border-box",
-                  }}
+                  style={filterControlStyle}
                 />
               </div>
             </div>
@@ -596,13 +569,13 @@ const filteredBookings = bookings.filter((booking) => {
 
                       return (
                         <div
-						  key={booking.id}
-						  className="umpire-schedule-booking-card"
-						  style={{
-							backgroundColor: booking.umpireId ? "#ffffff" : "#fff1f2",
-							borderColor: booking.umpireId ? "#e2e8f0" : "#fca5a5",
-						  }}
-						>
+                          key={booking.id}
+                          className="umpire-schedule-booking-card"
+                          style={{
+                            backgroundColor: booking.umpireId ? "#ffffff" : "#fff1f2",
+                            borderColor: booking.umpireId ? "#e2e8f0" : "#fca5a5",
+                          }}
+                        >
                           <div className="umpire-schedule-booking-grid">
                             <div>
                               <div
@@ -655,17 +628,15 @@ const filteredBookings = bookings.filter((booking) => {
                                 Sport: {sport === "softball" ? "Softball" : "Baseball"}
                               </div>
 
-
-							<div
-							  className="umpire-schedule-wrap"
-							  style={{
-								marginTop: "0.2rem",
-								fontWeight: 700,
-								color: booking.umpireRecord?.name ? "#475569" : "#991b1b",
-								lineHeight: 1.35,
-							  }}
-							>
-
+                              <div
+                                className="umpire-schedule-wrap"
+                                style={{
+                                  marginTop: "0.2rem",
+                                  fontWeight: 700,
+                                  color: booking.umpireRecord?.name ? "#475569" : "#991b1b",
+                                  lineHeight: 1.35,
+                                }}
+                              >
                                 Assigned: {booking.umpireRecord?.name || "Unassigned"}
                               </div>
                             </div>

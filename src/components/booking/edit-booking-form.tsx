@@ -71,10 +71,14 @@ const fieldStyle = {
   padding: "0.75rem 0.9rem",
   border: "1px solid #cbd5e1",
   borderRadius: "12px",
-  backgroundColor: "#f8fafc",
+  backgroundColor: "#ffffff",
+  color: "#0f172a",
   fontSize: "1rem",
   boxSizing: "border-box" as const,
+  opacity: 1,
+  WebkitTextFillColor: "#0f172a",
 };
+
 
 const textareaStyle = {
   ...fieldStyle,
