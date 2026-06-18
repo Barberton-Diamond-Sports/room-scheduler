@@ -170,7 +170,7 @@ export default function RoomBlackoutManager({ rooms, items }: Props) {
       {message && <div style={{ color: "#991b1b", fontWeight: 600 }}>{message}</div>}
 
       <div>
-        <h2 style={{ marginTop: 0, marginBottom: "0.75rem", fontWeight: 600 }}>Existing Blackouts</h2>
+        <h2 style={{ marginTop: 0, marginBottom: "0.75rem", fontWeight: 600 }}>Current & Future Blackouts</h2>
         {groupedItems.length === 0 ? (
           <div style={{ padding: "1rem", border: "1px dashed #cbd5e1", borderRadius: "12px", color: "#64748b" }}>
             No field blackouts have been created yet.
