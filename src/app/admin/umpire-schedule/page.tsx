@@ -82,7 +82,6 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
   
   const todayValue = getEasternTodayValue();
   const defaultStart = fromDateInputValue(todayValue);
-  defaultStart.setHours(0, 0, 0, 0);
 
   const startDateValue =
     typeof params.startDate === "string" && params.startDate
