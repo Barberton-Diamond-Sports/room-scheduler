@@ -334,7 +334,7 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
       const result = await response.json();
 
       if (result.success && result.booking?.id) {
-        router.push(`/bookings/${result.booking.id}?date=${date}`);
+        router.push(`/bookings/${result.booking.id}?date=${date}&view=week`);
         return;
       } else {
         setMessage(result.message || "Booking request failed.");

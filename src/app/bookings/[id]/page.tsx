@@ -91,7 +91,7 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
     bookingPurpose === "game" ||
     bookingPurpose === "scrimmage";
 
-  const view = search.view === "week" ? "week" : "day";
+  const view = search.view === "day" ? "day" : "week";
   const calendarDate = search.date || toDateInputValue(booking.bookingDate);
   const cameFromAdmin = search.from === "admin";
 

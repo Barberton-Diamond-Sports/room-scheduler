@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -51,6 +53,7 @@ type Props = {
   booking: Booking;
   returnDate?: string;
   returnView?: "day" | "week";
+  cameFromAdmin?: boolean;
 };
 
 const START_HOUR = 9;
@@ -152,6 +155,7 @@ export default function EditBookingForm({
   booking,
   returnDate,
   returnView = "day",
+  cameFromAdmin = false,
 }: Props) {
   const router = useRouter();
 
@@ -275,11 +279,11 @@ export default function EditBookingForm({
       if (result.success) {
         setMessage("Booking updated successfully.");
         setMessageType("success");
-
-        const destination = returnDate
-          ? `/bookings/${booking.id}?date=${returnDate}&view=${returnView}`
-          : `/bookings/${booking.id}?view=${returnView}`;
-
+		
+		const destination = returnDate
+		  ? `/bookings/${booking.id}?date=${returnDate}&view=${returnView}${cameFromAdmin ? "&from=admin" : ""}`
+		  : `/bookings/${booking.id}?view=${returnView}${cameFromAdmin ? "&from=admin" : ""}`;
+  
         router.push(destination);
         router.refresh();
       } else {
@@ -449,47 +453,42 @@ export default function EditBookingForm({
           </div>
         )}
 
-        {showUmpire && (
+{showUmpire && (
           <div>
-            {showUmpire && (
-  <div>
-    
-    <label htmlFor="umpireId" style={fieldLabelStyle}>
-      Umpire
-    </label>
-	{booking.currentUmpireName && (
-      <div
-        style={{
-          marginBottom: "0.35rem",
-          fontSize: "0.92rem",
-          fontWeight: 700,
-          color: "#334155",
-          lineHeight: 1.35,
-        }}
-      >
-        Scheduled: {booking.currentUmpireName}
-      </div>
-    )}
-    <select
-      id="umpireId"
-      value={umpireId}
-      onChange={(e) => setUmpireId(e.target.value)}
-      style={fieldStyle}
+            <label htmlFor="umpireId" style={fieldLabelStyle}>
+              Umpire
+            </label>
 
-    >
-	
-      <option value="">Leave unassigned</option>
-      {eligibleUmpires.map((umpire) => (
-        <option key={umpire.id} value={umpire.id}>
-          {umpire.name}
-        </option>
-      ))}
-    </select>
-	
-  </div>
-)}
+            {booking.currentUmpireName && (
+              <div
+                style={{
+                  marginBottom: "0.35rem",
+                  fontSize: "0.92rem",
+                  fontWeight: 700,
+                  color: "#334155",
+                  lineHeight: 1.35,
+                }}
+              >
+                Scheduled: {booking.currentUmpireName}
+              </div>
+            )}
+
+            <select
+              id="umpireId"
+              value={umpireId}
+              onChange={(e) => setUmpireId(e.target.value)}
+              style={fieldStyle}
+            >
+              <option value="">Leave unassigned</option>
+              {eligibleUmpires.map((umpire) => (
+                <option key={umpire.id} value={umpire.id}>
+                  {umpire.name}
+                </option>
+              ))}
+            </select>
           </div>
         )}
+
       </div>
 
       {selectedTeam && (

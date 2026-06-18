@@ -159,6 +159,7 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
             }}
             returnDate={returnDate}
             returnView={returnView}
+			cameFromAdmin={cameFromAdmin}
           />
         </div>
       </div>
