@@ -39,6 +39,13 @@ type DailyBooking = {
   } | null;
 };
 
+type DailyBlackout = {
+  id: string;
+  roomId: string;
+  roomName: string;
+  reason: string | null;
+};
+
 type Props = {
   rooms: Room[];
   teams?: Team[];
@@ -90,8 +97,18 @@ function pad(value: number) {
 }
 
 function getTodayString() {
-  const today = new Date();
-  return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
 }
 
 function timeToMinutes(time: string) {
@@ -163,6 +180,7 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "info" | "">("");
   const [dailyBookings, setDailyBookings] = useState<DailyBooking[]>([]);
+  const [dailyBlackouts, setDailyBlackouts] = useState<DailyBlackout[]>([]);
   const [isLoadingDailyBookings, setIsLoadingDailyBookings] = useState(false);
 
   const selectedTeam = useMemo(
@@ -180,12 +198,21 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
     });
   }, [startTime]);
 
-  const bookingsByRoom = useMemo(() => {
-    return rooms.map((room) => ({
-      room,
-      bookings: dailyBookings.filter((booking) => booking.room.id === room.id),
-    }));
-  }, [rooms, dailyBookings]);
+  const blackoutByRoomId = useMemo(() => {
+  const blackoutMap = new Map<string, DailyBlackout>();
+  for (const blackout of dailyBlackouts) {
+    blackoutMap.set(blackout.roomId, blackout);
+  }
+  return blackoutMap;
+}, [dailyBlackouts]);
+
+const bookingsByRoom = useMemo(() => {
+  return rooms.map((room) => ({
+    room,
+    blackout: blackoutByRoomId.get(room.id) || null,
+    bookings: dailyBookings.filter((booking) => booking.room.id === room.id),
+  }));
+}, [rooms, dailyBookings, blackoutByRoomId]);
 
   useEffect(() => {
     if (activeTeams.length > 0 && !activeTeams.some((team) => team.id === teamId)) {
@@ -209,10 +236,13 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
     let cancelled = false;
 
     async function loadDailyBookings() {
-      if (!date) {
-        setDailyBookings([]);
-        return;
-      }
+      
+		if (!date) {
+		  setDailyBookings([]);
+		  setDailyBlackouts([]);
+		  return;
+		}
+
 
       setIsLoadingDailyBookings(true);
 
@@ -221,17 +251,20 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
         const result = await response.json();
 
         if (!cancelled) {
-          if (result.success) {
-            setDailyBookings(result.bookings || []);
-          } else {
-            setDailyBookings([]);
-          }
-        }
+		  if (result.success) {
+			setDailyBookings(result.bookings || []);
+			setDailyBlackouts(result.blackouts || []);
+		  } else {
+			setDailyBookings([]);
+			setDailyBlackouts([]);
+		  }
+		}
       } catch (error) {
         console.error("Failed to load daily bookings:", error);
-        if (!cancelled) {
-          setDailyBookings([]);
-        }
+		if (!cancelled) {
+		  setDailyBookings([]);
+		  setDailyBlackouts([]);
+		}
       } finally {
         if (!cancelled) {
           setIsLoadingDailyBookings(false);
@@ -388,6 +421,15 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
           padding: 0.75rem 0.85rem;
           min-width: 0;
         }
+		
+		.booking-room-blackout-card {
+		  background-color: #374151;
+		  border: 1px solid #1f2937;
+		  border-radius: 10px;
+		  padding: 0.85rem 0.9rem;
+		  min-width: 0;
+		  color: #ffffff;
+		}
 
         .booking-wrap-text {
           word-break: break-word;
@@ -659,55 +701,82 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
             </div>
           ) : (
             <div className="booking-schedule-grid">
-              {bookingsByRoom.map(({ room, bookings }) => (
-                <div key={room.id} className="booking-room-card">
-                  <div style={{ marginBottom: "0.65rem" }}>
-                    <div
-                      className="booking-wrap-text"
-                      style={{ fontWeight: 800, color: "#0f172a", lineHeight: 1.35 }}
-                    >
-                      {room.name}
-                    </div>
-                    {room.description?.trim() && (
-                      <div
-                        className="booking-wrap-text"
-                        style={{ color: "#64748b", fontSize: "0.9rem", marginTop: "0.15rem", lineHeight: 1.4 }}
-                      >
-                        {room.description}
-                      </div>
-                    )}
-                  </div>
+              {bookingsByRoom.map(({ room, blackout, bookings }) => (
+				  <div key={room.id} className="booking-room-card">
+					<div style={{ marginBottom: "0.65rem" }}>
+					  <div
+						className="booking-wrap-text"
+						style={{ fontWeight: 800, color: "#0f172a", lineHeight: 1.35 }}
+					  >
+						{room.name}
+					  </div>
+					  {room.description?.trim() && (
+						<div
+						  className="booking-wrap-text"
+						  style={{
+							color: "#64748b",
+							fontSize: "0.9rem",
+							marginTop: "0.15rem",
+							lineHeight: 1.4,
+						  }}
+						>
+						  {room.description}
+						</div>
+					  )}
+					</div>
 
-                  {bookings.length === 0 ? (
-                    <div style={{ color: "#94a3b8", lineHeight: 1.4 }}>— No bookings for this field</div>
-                  ) : (
-                    <div className="booking-room-bookings">
-                      {bookings.map((dailyBooking) => (
-                        <div key={dailyBooking.id} className="booking-room-booking-card">
-                          <div
-                            className="booking-wrap-text"
-                            style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
-                          >
-                            {dailyBooking.title || "Booking"}
-                          </div>
-                          <div
-                            className="booking-wrap-text"
-                            style={{ color: "#334155", marginTop: "0.15rem", lineHeight: 1.4 }}
-                          >
-                            {dailyBooking.team?.teamName || "—"}
-                          </div>
-                          <div
-                            style={{ color: "#64748b", marginTop: "0.15rem", fontSize: "0.92rem", lineHeight: 1.4 }}
-                          >
-                            {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
-                            {formatMinutesLabel(dailyBooking.endTimeMinutes)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+					{blackout ? (
+					  <div className="booking-room-blackout-card">
+						<div
+						  className="booking-wrap-text"
+						  style={{ fontWeight: 800, lineHeight: 1.35 }}
+						>
+						  BLACKED OUT
+						</div>
+						<div
+						  className="booking-wrap-text"
+						  style={{ marginTop: "0.25rem", lineHeight: 1.45 }}
+						>
+						  {blackout.reason?.trim() || "This field is unavailable for the full day."}
+						</div>
+					  </div>
+					) : bookings.length === 0 ? (
+					  <div style={{ color: "#94a3b8", lineHeight: 1.4 }}>
+						— No bookings for this field
+					  </div>
+					) : (
+					  <div className="booking-room-bookings">
+						{bookings.map((dailyBooking) => (
+						  <div key={dailyBooking.id} className="booking-room-booking-card">
+							<div
+							  className="booking-wrap-text"
+							  style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
+							>
+							  {dailyBooking.title || "Booking"}
+							</div>
+							<div
+							  className="booking-wrap-text"
+							  style={{ color: "#334155", marginTop: "0.15rem", lineHeight: 1.4 }}
+							>
+							  {dailyBooking.team?.teamName || "—"}
+							</div>
+							<div
+							  style={{
+								color: "#64748b",
+								marginTop: "0.15rem",
+								fontSize: "0.92rem",
+								lineHeight: 1.4,
+							  }}
+							>
+							  {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
+							  {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+							</div>
+						  </div>
+						))}
+					  </div>
+					)}
+				  </div>
+				))}
             </div>
           )}
         </div>

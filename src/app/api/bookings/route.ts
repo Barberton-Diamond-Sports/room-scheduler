@@ -22,22 +22,43 @@ export async function GET(request: Request) {
     const nextDay = new Date(bookingDate);
     nextDay.setDate(nextDay.getDate() + 1);
 
-    const bookings = await prisma.booking.findMany({
-      where: {
-        status: "ACTIVE",
-        bookingDate: {
-          gte: bookingDate,
-          lt: nextDay,
+    const [bookings, blackouts] = await Promise.all([
+      prisma.booking.findMany({
+        where: {
+          status: "ACTIVE",
+          bookingDate: {
+            gte: bookingDate,
+            lt: nextDay,
+          },
         },
-      },
-      include: {
-        room: true,
-        team: true,
-      },
-      orderBy: [{ roomId: "asc" }, { startTimeMinutes: "asc" }],
-    });
+        include: {
+          room: true,
+          team: true,
+        },
+        orderBy: [{ roomId: "asc" }, { startTimeMinutes: "asc" }],
+      }),
+      prisma.roomBlackout.findMany({
+        where: {
+          startDateTime: { lt: nextDay },
+          endDateTime: { gt: bookingDate },
+        },
+        include: {
+          room: true,
+        },
+        orderBy: [{ roomId: "asc" }, { startDateTime: "asc" }],
+      }),
+    ]);
 
-    return NextResponse.json({ success: true, bookings });
+    return NextResponse.json({
+      success: true,
+      bookings,
+      blackouts: blackouts.map((item) => ({
+        id: item.id,
+        roomId: item.roomId,
+        roomName: item.room.name,
+        reason: item.reason,
+      })),
+    });
   } catch (error) {
     console.error("Error loading bookings for date:", error);
     return NextResponse.json(
@@ -135,9 +156,9 @@ export async function POST(request: Request) {
         startTimeMinutes,
         endTimeMinutes,
         durationBlocks: Number(durationBlocks),
-		title: typeof title === "string" && title.trim() ? title.trim() : null,
-		notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
-		opponent: typeof opponent === "string" && opponent.trim() ? opponent.trim() : null,
+        title: typeof title === "string" && title.trim() ? title.trim() : null,
+        notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+        opponent: typeof opponent === "string" && opponent.trim() ? opponent.trim() : null,
       },
       include: {
         room: true,
