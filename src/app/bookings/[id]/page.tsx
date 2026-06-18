@@ -81,11 +81,11 @@ export default async function BookingDetailsPage({ params, searchParams }: PageP
 
   const bookingPurpose = booking.title?.trim().toLowerCase() ?? "";
 
+  
   const showAssignedUmpire =
-    booking.team?.requiresUmpire &&
-    bookingPurpose !== "practice" &&
-    bookingPurpose !== "scrimmage" &&
-    bookingPurpose !== "other";
+	booking.team?.requiresUmpire &&
+	bookingPurpose === "game";
+
 
   const showOpponent =
     bookingPurpose === "game" ||
