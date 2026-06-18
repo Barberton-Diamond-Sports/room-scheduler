@@ -24,9 +24,12 @@ const selectStyle = {
   padding: "0.7rem 0.85rem",
   border: "1px solid #cbd5e1",
   borderRadius: "10px",
-  backgroundColor: "#f8fafc",
+  backgroundColor: "#ffffff",
+  color: "#0f172a",
   fontSize: "0.95rem",
   boxSizing: "border-box" as const,
+  opacity: 1,
+  WebkitTextFillColor: "#0f172a",
 };
 
 export default function UmpireAssignmentActions({

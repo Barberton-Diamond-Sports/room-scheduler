@@ -100,6 +100,7 @@ function formatShortDate(date: Date) {
 
 function formatDateTime(date: Date) {
   return date.toLocaleString("en-US", {
+    timeZone: "America/New_York",
     month: "short",
     day: "numeric",
     year: "numeric",
