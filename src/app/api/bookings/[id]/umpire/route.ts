@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 function inferSport(ageGroup: string | null | undefined) {
@@ -18,11 +19,29 @@ function formatTimeLabel(totalMinutes: number) {
   return `${hours12}:${pad(minutes)} ${suffix}`;
 }
 
+function toDateInputValue(date: Date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+async function ensureAdminAccess() {
+  const cookieStore = await cookies();
+  const adminAccess = cookieStore.get("admin_access")?.value;
+  return adminAccess === "granted";
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isAdmin = await ensureAdminAccess();
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await context.params;
     const body = await request.json();
 
@@ -47,6 +66,7 @@ export async function PATCH(
         data: { umpireId: null },
         include: { umpireRecord: true },
       });
+
       return NextResponse.json({ success: true, booking: updated });
     }
 
@@ -58,7 +78,10 @@ export async function PATCH(
       );
     }
 
-    const umpire = await prisma.umpire.findUnique({ where: { id: umpireId } });
+    const umpire = await prisma.umpire.findUnique({
+      where: { id: umpireId },
+    });
+
     if (!umpire || !umpire.isActive) {
       return NextResponse.json(
         { success: false, message: "That umpire is not available." },
@@ -67,12 +90,14 @@ export async function PATCH(
     }
 
     const sport = inferSport(booking.team?.ageGroup);
+
     if (sport === "softball" && !umpire.doesSoftball) {
       return NextResponse.json(
         { success: false, message: "That umpire is not marked for softball." },
         { status: 409 }
       );
     }
+
     if (sport === "baseball" && !umpire.doesBaseball) {
       return NextResponse.json(
         { success: false, message: "That umpire is not marked for baseball." },
@@ -80,8 +105,8 @@ export async function PATCH(
       );
     }
 
-    const bookingDate = new Date(booking.bookingDate);
-    bookingDate.setHours(0, 0, 0, 0);
+    const bookingDateValue = toDateInputValue(booking.bookingDate);
+    const bookingDate = new Date(`${bookingDateValue}T00:00:00`);
     const nextDay = new Date(bookingDate);
     nextDay.setDate(nextDay.getDate() + 1);
 
@@ -90,11 +115,16 @@ export async function PATCH(
         id: { not: booking.id },
         status: "ACTIVE",
         umpireId,
-        bookingDate: { gte: bookingDate, lt: nextDay },
+        bookingDate: {
+          gte: bookingDate,
+          lt: nextDay,
+        },
         startTimeMinutes: { lt: booking.endTimeMinutes },
         endTimeMinutes: { gt: booking.startTimeMinutes },
       },
-      include: { room: true },
+      include: {
+        room: true,
+      },
       orderBy: [{ bookingDate: "asc" }, { startTimeMinutes: "asc" }],
     });
 

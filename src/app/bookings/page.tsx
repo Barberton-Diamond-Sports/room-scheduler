@@ -665,7 +665,6 @@ const weekBlackoutMap = buildBlackoutMap(
             </div>
 
             <div className="view-controls">
-<div className="view-controls">
   <Link
     href={`/bookings?date=${selectedDate}&view=day`}
     className="pill-link"
@@ -689,7 +688,6 @@ const weekBlackoutMap = buildBlackoutMap(
   >
     Week View
   </Link>
-</div>
 
               <form method="GET" className="date-form">
                 <input type="hidden" name="view" value={view} />

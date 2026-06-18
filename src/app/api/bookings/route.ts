@@ -135,9 +135,9 @@ export async function POST(request: Request) {
         startTimeMinutes,
         endTimeMinutes,
         durationBlocks: Number(durationBlocks),
-        title: title || null,
-        notes: notes || null,
-        opponent: opponent || null,
+		title: typeof title === "string" && title.trim() ? title.trim() : null,
+		notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+		opponent: typeof opponent === "string" && opponent.trim() ? opponent.trim() : null,
       },
       include: {
         room: true,
