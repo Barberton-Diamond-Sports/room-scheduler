@@ -1,11 +1,41 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+
+function getEasternTodayValue() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
+}
+
+async function ensureAdminAccess() {
+  const cookieStore = await cookies();
+  const adminAccess = cookieStore.get("admin_access")?.value;
+  return adminAccess === "granted";
+}
 
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isAdmin = await ensureAdminAccess();
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await context.params;
     const body = await request.json();
 
@@ -21,6 +51,7 @@ export async function PATCH(
 
     if (typeof body.name === "string") {
       const name = body.name.trim();
+
       if (!name) {
         return NextResponse.json(
           { success: false, message: "Field name is required." },
@@ -73,31 +104,48 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isAdmin = await ensureAdminAccess();
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await context.params;
 
-    const activeBookings = await prisma.booking.count({
+    const todayValue = getEasternTodayValue();
+    const todayStart = new Date(`${todayValue}T00:00:00`);
+
+    const futureBookings = await prisma.booking.count({
       where: {
         roomId: id,
         status: "ACTIVE",
+        bookingDate: {
+          gte: todayStart,
+        },
       },
     });
 
-    if (activeBookings > 0) {
+    if (futureBookings > 0) {
       return NextResponse.json(
         {
           success: false,
           message:
-            "This field has active bookings. Deactivate it first or clear the bookings before deleting.",
+            "This field has today or future bookings. Deactivate it or clear those bookings before deleting.",
         },
         { status: 409 }
       );
     }
 
-    await prisma.room.delete({ where: { id } });
+    await prisma.room.delete({
+      where: { id },
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting room:", error);

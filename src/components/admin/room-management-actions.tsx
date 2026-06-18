@@ -374,31 +374,45 @@ export default function RoomManagementActions(props: Props) {
               {displayIsActive ? "Deactivate" : "Activate"}
             </button>
 
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={isSaving}
-              style={{
-                padding: "0.5rem 0.8rem",
-                backgroundColor: "#fee2e2",
-                border: "1px solid #fca5a5",
-                borderRadius: "8px",
-                color: "#991b1b",
-                fontWeight: 700,
-                cursor: isSaving ? "default" : "pointer",
-              }}
-            >
-              Delete
-            </button>
+<button
+  type="button"
+  onClick={handleDelete}
+  disabled={isSaving || props.bookingCount > 0}
+  style={{
+    padding: "0.5rem 0.8rem",
+    backgroundColor: props.bookingCount > 0 ? "#e5e7eb" : "#fee2e2",
+    border: props.bookingCount > 0 ? "1px solid #cbd5e1" : "1px solid #fca5a5",
+    borderRadius: "8px",
+    color: props.bookingCount > 0 ? "#64748b" : "#991b1b",
+    fontWeight: 700,
+    cursor: isSaving || props.bookingCount > 0 ? "not-allowed" : "pointer",
+  }}
+  title={props.bookingCount > 0 ? "This field cannot be deleted because it has future bookings." : undefined}
+>
+  Delete
+</button>
           </div>
         </div>
       </div>
 
-      {message && (
-        <div style={{ marginTop: "0.75rem", color: "#991b1b", fontWeight: 600, fontSize: "0.85rem" }}>
-          {message}
-        </div>
-      )}
+{props.mode === "manage" && props.bookingCount > 0 && !message && (
+  <div
+    style={{
+      marginTop: "0.75rem",
+      color: "#64748b",
+      fontWeight: 600,
+      fontSize: "0.85rem",
+    }}
+  >
+    This field cannot be deleted because it has future bookings.
+  </div>
+)}
+
+{message && (
+  <div style={{ marginTop: "0.75rem", color: "#991b1b", fontWeight: 600, fontSize: "0.85rem" }}>
+    {message}
+  </div>
+)}
     </div>
   );
 }

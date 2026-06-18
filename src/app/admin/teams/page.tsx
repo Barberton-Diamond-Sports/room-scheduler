@@ -447,7 +447,7 @@ export default async function ManageTeamsPage({
               </Link>
 
               <Link
-                href="/book"
+                href="/admin/book-with-umpire"
                 style={{
                   display: "inline-block",
                   padding: "0.65rem 1rem",
@@ -459,7 +459,7 @@ export default async function ManageTeamsPage({
                   fontWeight: 600,
                 }}
               >
-                Book a Field
+                Book a Field w/Umpire
               </Link>
             </div>
           </div>

@@ -94,7 +94,7 @@ export default function UmpireManagementPanel({ items }: Props) {
   const [editForm, setEditForm] = useState<FormState>(emptyForm());
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
   const [sportFilter, setSportFilter] = useState<"all" | "baseball" | "softball">("all");
 
   const filteredItems = useMemo(() => {
@@ -139,9 +139,14 @@ export default function UmpireManagementPanel({ items }: Props) {
     e.preventDefault();
 
     if (!createForm.name.trim()) {
-      setMessage("Umpire name is required.");
-      return;
-    }
+  setMessage("Umpire name is required.");
+  return;
+}
+
+if (!createForm.doesBaseball && !createForm.doesSoftball) {
+  setMessage("Please select Baseball, Softball, or both for this umpire.");
+  return;
+}
 
     setIsSaving(true);
     setMessage("");
@@ -171,9 +176,14 @@ export default function UmpireManagementPanel({ items }: Props) {
 
   async function handleSaveEdit(id: string) {
     if (!editForm.name.trim()) {
-      setMessage("Umpire name is required.");
-      return;
-    }
+  setMessage("Umpire name is required.");
+  return;
+}
+
+if (!editForm.doesBaseball && !editForm.doesSoftball) {
+  setMessage("Please select Baseball, Softball, or both for this umpire.");
+  return;
+}
 
     setIsSaving(true);
     setMessage("");
@@ -435,6 +445,10 @@ export default function UmpireManagementPanel({ items }: Props) {
                 }}
               />
             </div>
+
+			<div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.25rem" }}>
+			  Select at least one sport.
+			</div>
 
             <div className="umpire-checkbox-row">
               <label

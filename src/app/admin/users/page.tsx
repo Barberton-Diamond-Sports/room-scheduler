@@ -4,9 +4,11 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+
 type PageProps = {
   searchParams: Promise<{
     confirmDelete?: string;
+    error?: string;
   }>;
 };
 
@@ -27,11 +29,15 @@ const fieldStyle = {
   boxSizing: "border-box" as const,
 };
 
-function usersHref(extra?: { confirmDelete?: string }) {
+function usersHref(extra?: { confirmDelete?: string; error?: string }) {
   const params = new URLSearchParams();
 
   if (extra?.confirmDelete) {
     params.set("confirmDelete", extra.confirmDelete);
+  }
+
+  if (extra?.error) {
+    params.set("error", extra.error);
   }
 
   const query = params.toString();
@@ -62,17 +68,30 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 
     if (!name || !email || !password) return;
 
-    const passwordHash = await bcrypt.hash(password, 10);
+const passwordHash = await bcrypt.hash(password, 10);
 
-    await prisma.adminUser.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-      },
-    });
+try {
+  await prisma.adminUser.create({
+    data: {
+      name,
+      email,
+      passwordHash,
+    },
+  });
+} catch (error) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
+  ) {
+    redirect(usersHref({ error: "duplicate-email" }));
+  }
 
-    redirect("/admin/users");
+  throw error;
+}
+
+redirect("/admin/users");
   }
 
   async function updateUser(formData: FormData) {
@@ -98,12 +117,25 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
       data.passwordHash = await bcrypt.hash(password, 10);
     }
 
-    await prisma.adminUser.update({
-      where: { id },
-      data,
-    });
+    try {
+  await prisma.adminUser.update({
+    where: { id },
+    data,
+  });
+} catch (error) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
+  ) {
+    redirect(usersHref({ error: "duplicate-email" }));
+  }
 
-    redirect("/admin/users");
+  throw error;
+}
+
+redirect("/admin/users");
   }
 
   async function deleteUser(formData: FormData) {
@@ -141,7 +173,11 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   }
 
   const params = await searchParams;
-  const confirmDeleteUserId = params.confirmDelete || "";
+const confirmDeleteUserId = params.confirmDelete || "";
+const errorMessage =
+  params.error === "duplicate-email"
+    ? "That email address is already being used by another admin user."
+    : "";
 
   const cookieStore = await cookies();
   const currentAdminEmail =
@@ -279,6 +315,29 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             </div>
           </div>
         </div>
+
+
+{errorMessage && (
+  <div
+    className="admin-users-card"
+    style={{
+      marginBottom: "1.5rem",
+      border: "1px solid #fca5a5",
+      backgroundColor: "#fef2f2",
+    }}
+  >
+    <div
+      style={{
+        color: "#991b1b",
+        fontWeight: 700,
+        lineHeight: 1.45,
+      }}
+    >
+      {errorMessage}
+    </div>
+  </div>
+)}
+
 
         {/* ADD USER */}
         <div className="admin-users-card" style={{ marginBottom: "1.5rem" }}>
