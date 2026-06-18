@@ -53,7 +53,7 @@ type Props = {
 
 const START_HOUR = 9;
 const END_HOUR = 21;
-const DEFAULT_TIME = "17:00";
+const DEFAULT_TIME = "18:00";
 
 const fieldLabelStyle = {
   display: "block",
@@ -662,7 +662,7 @@ const bookingsByRoom = useMemo(() => {
           </button>
 
           <span style={{ color: "#64748b", fontSize: "0.95rem", lineHeight: 1.45 }}>
-            Default date is today. Default time is 5:00 PM.
+            Default date is today. Default time is 6:00 PM.
           </span>
         </div>
 
