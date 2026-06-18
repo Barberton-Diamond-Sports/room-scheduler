@@ -74,6 +74,13 @@ function getTypeBadge(title?: string | null) {
   };
 }
 
+
+function blackoutLabel(reason?: string | null) {
+  const trimmed = reason?.trim();
+  return trimmed ? `BLACKED OUT · ${trimmed}` : "BLACKED OUT";
+}
+
+
 function formatPageDate(date: Date) {
   return date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -160,61 +167,91 @@ export default async function AdminPage({ searchParams }: PageProps) {
       ? ["DELETE"]
       : ["UPDATE", "DELETE"];
 
-  const [rooms, todaysBookings, futureBookings, recentAuditLogs, umpireCount] =
-    await Promise.all([
-      prisma.room.findMany({
-        where: { isActive: true },
-        orderBy: { name: "asc" },
-      }),
-      prisma.booking.findMany({
-        where: {
-          status: "ACTIVE",
-          bookingDate: {
-            gte: dayStart,
-            lt: nextDay,
-          },
+  const [rooms, todaysBookings, todaysBlackouts, futureBookings, recentAuditLogs, umpireCount] =
+  await Promise.all([
+    prisma.room.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.booking.findMany({
+  where: {
+    status: "ACTIVE",
+    bookingDate: {
+      gte: dayStart,
+      lt: nextDay,
+    },
+  },
+  include: {
+    room: true,
+    team: true,
+    umpireRecord: true,
+  },
+  orderBy: [{ roomId: "asc" }, { startTimeMinutes: "asc" }],
+}),
+    prisma.roomBlackout.findMany({
+      where: {
+        startDateTime: { lt: nextDay },
+        endDateTime: { gt: dayStart },
+      },
+      include: {
+        room: true,
+      },
+      orderBy: [{ roomId: "asc" }],
+    }),
+    prisma.booking.findMany({
+      where: {
+        status: "ACTIVE",
+        bookingDate: {
+          gte: dayStart,
         },
-        include: {
-          room: true,
-          team: true,
-          umpireRecord: true,
-        },
-        orderBy: [{ startTimeMinutes: "asc" }, { roomId: "asc" }],
-        take: 12,
-      }),
-      prisma.booking.findMany({
-        where: {
-          status: "ACTIVE",
-          bookingDate: {
-            gte: dayStart,
-          },
-          teamId: { not: null },
-        },
-        include: {
-          room: true,
-          team: true,
-        },
-        orderBy: [
-          { bookingDate: "asc" },
-          { teamId: "asc" },
-          { startTimeMinutes: "asc" },
-          { roomId: "asc" },
-        ],
-      }),
-      prisma.auditLog.findMany({
-        where: {
-          entityType: "Booking",
-          action: { in: auditActionFilter },
-          createdAt: { gte: auditSince },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      }),
-      prisma.umpire.count({ where: { isActive: true } }),
-    ]);
+        teamId: { not: null },
+      },
+      include: {
+        room: true,
+        team: true,
+      },
+      orderBy: [
+        { bookingDate: "asc" },
+        { teamId: "asc" },
+        { startTimeMinutes: "asc" },
+        { roomId: "asc" },
+      ],
+    }),
+    prisma.auditLog.findMany({
+      where: {
+        entityType: "Booking",
+        action: { in: auditActionFilter },
+        createdAt: { gte: auditSince },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+    prisma.umpire.count({ where: { isActive: true } }),
+  ]);
 
   const totalFields = rooms.length;
   const bookingCount = todaysBookings.length;
+const todayScheduleItems = [
+  ...todaysBlackouts.map((blackout) => ({
+    kind: "blackout" as const,
+    id: blackout.id,
+    roomName: blackout.room.name,
+    reason: blackout.reason,
+    sortTime: -1,
+  })),
+  ...todaysBookings.map((booking) => ({
+    kind: "booking" as const,
+    id: booking.id,
+    booking,
+    roomName: booking.room.name,
+    sortTime: booking.startTimeMinutes,
+  })),
+].sort((a, b) => {
+  const roomCompare = a.roomName.localeCompare(b.roomName);
+  if (roomCompare !== 0) return roomCompare;
+  return a.sortTime - b.sortTime;
+});
+
 
 const conflictGroups: Array<{
   key: string;
@@ -550,7 +587,7 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
                   href={`/bookings?date=${todayValue}`}
                   style={dashboardLinkStyle("#dbeafe", "#93c5fd", "#1d4ed8")}
                 >
-                  Today&apos;s Calendar
+                  Weekly Calendar
                 </Link>
               </div>
             </div>
@@ -680,132 +717,182 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
             </Link>
           </div>
 
-          {todaysBookings.length === 0 ? (
-            <div
-              style={{
-                padding: "1rem",
-                border: "1px dashed #cbd5e1",
-                borderRadius: "12px",
-                color: "#64748b",
-              }}
-            >
-              No bookings scheduled for today.
+          {todayScheduleItems.length === 0 ? (
+  <div
+    style={{
+      padding: "1rem",
+      border: "1px dashed #cbd5e1",
+      borderRadius: "12px",
+      color: "#64748b",
+    }}
+  >
+    No bookings or blackouts scheduled for today.
+  </div>
+) : (
+  <div style={{ display: "grid", gap: "0.85rem" }}>
+    {todayScheduleItems.map((item) => {
+      if (item.kind === "blackout") {
+        return (
+          <div
+            key={`blackout-${item.id}`}
+            className="admin-schedule-item"
+            style={{
+              backgroundColor: "#374151",
+              borderColor: "#1f2937",
+            }}
+          >
+            <div className="admin-schedule-item-row">
+              <div>
+                <div
+                  style={{
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {item.roomName}
+                </div>
+
+                <div
+                  style={{
+                    color: "#e5e7eb",
+                    marginTop: "0.2rem",
+                    fontWeight: 700,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {blackoutLabel(item.reason)}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  color: "#e5e7eb",
+                  fontWeight: 700,
+                  textAlign: "right",
+                  lineHeight: 1.35,
+                }}
+              >
+                Full Day
+              </div>
             </div>
-          ) : (
-            <div style={{ display: "grid", gap: "0.85rem" }}>
-              {todaysBookings.map((booking) => {                
-				const detailsHref = `/bookings/${booking.id}?date=${todayValue}&view=day&from=admin`;
-				const bookingPurpose = booking.title?.trim().toLowerCase() ?? "";
-				const needsUmpire = !!booking.team?.requiresUmpire && bookingPurpose === "game";
-				const isMissingUmpire = needsUmpire && !booking.umpireRecord;
-				const badge = getTypeBadge(booking.title);
+          </div>
+        );
+      }
 
-                const matchup =
-                  booking.opponent && booking.opponent.trim()
-                    ? `${booking.team?.teamName || "—"} vs. ${booking.opponent}`
-                    : booking.team?.teamName || "—";
+      const booking = item.booking;
+      const detailsHref = `/bookings/${booking.id}?date=${todayValue}&view=day&from=admin`;
+      const bookingPurpose = booking.title?.trim().toLowerCase() ?? "";
+      const needsUmpire = !!booking.team?.requiresUmpire && bookingPurpose === "game";
+      const isMissingUmpire = needsUmpire && !booking.umpireRecord;
+      const badge = getTypeBadge(booking.title);
 
-                return (
-                  <Link
-                    key={booking.id}
-                    href={detailsHref}
-                    className="admin-schedule-item"
-                    style={{
-                      backgroundColor: isMissingUmpire ? "#fff1f2" : "#f8fafc",
-                      borderColor: isMissingUmpire ? "#fca5a5" : "#e2e8f0",
-                    }}
-                  >
-                    <div className="admin-schedule-item-row">
-                      <div>
-                        <div style={{ color: "#0f172a", fontWeight: 700, lineHeight: 1.35 }}>
-                          {booking.room.name}
-                        </div>
+      const matchup =
+        booking.opponent && booking.opponent.trim()
+          ? `${booking.team?.teamName || "—"} vs. ${booking.opponent}`
+          : booking.team?.teamName || "—";
 
-                        <div
-                          style={{
-                            color: "#334155",
-                            marginTop: "0.15rem",
-                            fontWeight: 600,
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {matchup}
-                        </div>
+      return (
+        <Link
+          key={booking.id}
+          href={detailsHref}
+          className="admin-schedule-item"
+          style={{
+            backgroundColor: isMissingUmpire ? "#fff1f2" : "#f8fafc",
+            borderColor: isMissingUmpire ? "#fca5a5" : "#e2e8f0",
+          }}
+        >
+          <div className="admin-schedule-item-row">
+            <div>
+              <div style={{ color: "#0f172a", fontWeight: 700, lineHeight: 1.35 }}>
+                {booking.room.name}
+              </div>
 
-                        {needsUmpire && (
-                          <div
-                            style={{
-                              color: booking.umpireRecord ? "#475569" : "#991b1b",
-                              marginTop: "0.2rem",
-                              fontSize: "0.88rem",
-                              lineHeight: 1.35,
-                              fontWeight: booking.umpireRecord ? 400 : 700,
-                            }}
-                          >
-                            Umpire: {booking.umpireRecord?.name || "Unassigned"}
-                          </div>
-                        )}
+              <div
+                style={{
+                  color: "#334155",
+                  marginTop: "0.15rem",
+                  fontWeight: 600,
+                  lineHeight: 1.35,
+                }}
+              >
+                {matchup}
+              </div>
 
-                        {booking.notes && (
-                          <div
-                            style={{
-                              color: "#475569",
-                              marginTop: "0.2rem",
-                              fontSize: "0.85rem",
-                              lineHeight: 1.35,
-                            }}
-                          >
-                            {booking.notes}
-                          </div>
-                        )}
-                      </div>
+              {needsUmpire && (
+                <div
+                  style={{
+                    color: booking.umpireRecord ? "#475569" : "#991b1b",
+                    marginTop: "0.2rem",
+                    fontSize: "0.88rem",
+                    lineHeight: 1.35,
+                    fontWeight: booking.umpireRecord ? 400 : 700,
+                  }}
+                >
+                  Umpire: {booking.umpireRecord?.name || "Unassigned"}
+                </div>
+              )}
 
-                      <div style={{ textAlign: "right" }}>
-                        <div
-                          style={{
-                            color: "#1d4ed8",
-                            fontWeight: 700,
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {formatTimeLabel(booking.startTimeMinutes)} -{" "}
-                          {formatTimeLabel(booking.endTimeMinutes)}
-                        </div>
-
-                        <div style={{ marginTop: "0.2rem" }}>
-                          <span
-                            style={{
-                              padding: "0.15rem 0.5rem",
-                              borderRadius: "999px",
-                              fontSize: "0.75rem",
-                              fontWeight: 700,
-                              backgroundColor: badge.bg,
-                              border: `1px solid ${badge.border}`,
-                              color: badge.color,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {badge.label}
-                          </span>
-                        </div>
-
-                        <div
-                          style={{
-                            color: "#64748b",
-                            marginTop: "0.3rem",
-                            fontSize: "0.85rem",
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {booking.team?.ageGroup || "—"}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+              {booking.notes && (
+                <div
+                  style={{
+                    color: "#475569",
+                    marginTop: "0.2rem",
+                    fontSize: "0.85rem",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {booking.notes}
+                </div>
+              )}
             </div>
-          )}
+
+            <div style={{ textAlign: "right" }}>
+              <div
+                style={{
+                  color: "#1d4ed8",
+                  fontWeight: 700,
+                  lineHeight: 1.35,
+                }}
+              >
+                {formatTimeLabel(booking.startTimeMinutes)} -{" "}
+                {formatTimeLabel(booking.endTimeMinutes)}
+              </div>
+
+              <div style={{ marginTop: "0.2rem" }}>
+                <span
+                  style={{
+                    padding: "0.15rem 0.5rem",
+                    borderRadius: "999px",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    backgroundColor: badge.bg,
+                    border: `1px solid ${badge.border}`,
+                    color: badge.color,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {badge.label}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  color: "#64748b",
+                  marginTop: "0.3rem",
+                  fontSize: "0.85rem",
+                  lineHeight: 1.35,
+                }}
+              >
+                {booking.team?.ageGroup || "—"}
+              </div>
+            </div>
+          </div>
+        </Link>
+      );
+    })}
+  </div>
+)}
         </div>
 
 {conflictGroups.length > 0 && (

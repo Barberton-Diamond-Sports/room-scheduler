@@ -42,10 +42,13 @@ export default async function AdminBlackoutsPage() {
       where: { isActive: true },
       orderBy: { name: "asc" },
     }),
-    prisma.roomBlackout.findMany({
-      include: { room: true },
-      orderBy: [{ startDateTime: "asc" }, { roomId: "asc" }],
-    }),
+prisma.roomBlackout.findMany({
+  where: {
+    endDateTime: { gt: new Date(`${todayValue}T00:00:00`) },
+  },
+  include: { room: true },
+  orderBy: [{ startDateTime: "asc" }, { roomId: "asc" }],
+}),
   ]);
 
   return (
