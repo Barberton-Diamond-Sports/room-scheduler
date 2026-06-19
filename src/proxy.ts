@@ -23,7 +23,10 @@ export function proxy(request: NextRequest) {
   // -----------------------------
   // 2. EXISTING ADMIN PROTECTION
   // -----------------------------
-  if (pathname.startsWith("/admin")) {
+  const isAdminRoute =
+    pathname === "/admin" || pathname.startsWith("/admin/");
+
+  if (isAdminRoute) {
     const adminAccess = request.cookies.get("admin_access")?.value;
 
     if (adminAccess !== "granted") {
@@ -40,10 +43,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-      Run proxy for application pages/routes,
-      but avoid Next.js internals and static assets.
-    */
     "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
   ],
 };
