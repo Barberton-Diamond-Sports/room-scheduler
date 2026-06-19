@@ -29,6 +29,7 @@ export async function PATCH(
 ) {
   try {
     const isAdmin = await ensureAdminAccess();
+
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
@@ -96,6 +97,7 @@ export async function PATCH(
     return NextResponse.json({ success: true, room });
   } catch (error) {
     console.error("Error updating room:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to update field." },
       { status: 500 }
@@ -109,6 +111,7 @@ export async function DELETE(
 ) {
   try {
     const isAdmin = await ensureAdminAccess();
+
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
@@ -117,6 +120,31 @@ export async function DELETE(
     }
 
     const { id } = await context.params;
+
+    const room = await prisma.room.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    });
+
+    if (!room) {
+      return NextResponse.json(
+        { success: false, message: "Field not found." },
+        { status: 404 }
+      );
+    }
+
+    if (room.isActive) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "This field must be deactivated before it can be deleted.",
+        },
+        { status: 409 }
+      );
+    }
 
     const todayValue = getEasternTodayValue();
     const todayStart = new Date(`${todayValue}T00:00:00`);
@@ -136,7 +164,7 @@ export async function DELETE(
         {
           success: false,
           message:
-            "This field has today or future bookings. Deactivate it or clear those bookings before deleting.",
+            "This field has today or future bookings. Clear those bookings before deleting.",
         },
         { status: 409 }
       );
@@ -149,6 +177,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting room:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to delete field." },
       { status: 500 }

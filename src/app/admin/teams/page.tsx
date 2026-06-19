@@ -47,10 +47,6 @@ const fieldStyle = {
   WebkitTextFillColor: "#0f172a",
 };
 
-function pad(value: number) {
-  return String(value).padStart(2, "0");
-}
-
 function getEasternTodayValue() {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
@@ -425,7 +421,7 @@ redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
   };
 
   const seasonFilterOptions = [
-    { value: "all", label: "All teams" },
+    { value: "all", label: "All seasons" },
     ...recentSeasonTeams
       .sort((a, b) => {
         if (a.year !== b.year) return b.year - a.year;
@@ -441,7 +437,7 @@ redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
   const selectedSeason = validSeasonValues.has(params.season || "") ? (params.season as string) : "all";
 
   const hasActiveFilters =
-	selectedStatus !== "all" || selectedSeason !== "all" || selectedSport !== "all";
+	selectedStatus !== "active" || selectedSeason !== "all" || selectedSport !== "all";
 
   const filterWhere: {
     isActive?: boolean;

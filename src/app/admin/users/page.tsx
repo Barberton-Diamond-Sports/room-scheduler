@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import AdminNav from "@/components/admin/admin-nav";
 import bcrypt from "bcryptjs";
-
 
 type PageProps = {
   searchParams: Promise<{
@@ -28,6 +28,21 @@ const fieldStyle = {
   fontSize: "1rem",
   boxSizing: "border-box" as const,
 };
+
+function getEasternTodayValue() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
+}
 
 function usersHref(extra?: { confirmDelete?: string; error?: string }) {
   const params = new URLSearchParams();
@@ -68,30 +83,30 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 
     if (!name || !email || !password) return;
 
-const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
-try {
-  await prisma.adminUser.create({
-    data: {
-      name,
-      email,
-      passwordHash,
-    },
-  });
-} catch (error) {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "P2002"
-  ) {
-    redirect(usersHref({ error: "duplicate-email" }));
-  }
+    try {
+      await prisma.adminUser.create({
+        data: {
+          name,
+          email,
+          passwordHash,
+        },
+      });
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        redirect(usersHref({ error: "duplicate-email" }));
+      }
 
-  throw error;
-}
+      throw error;
+    }
 
-redirect("/admin/users");
+    redirect("/admin/users");
   }
 
   async function updateUser(formData: FormData) {
@@ -118,24 +133,24 @@ redirect("/admin/users");
     }
 
     try {
-  await prisma.adminUser.update({
-    where: { id },
-    data,
-  });
-} catch (error) {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "P2002"
-  ) {
-    redirect(usersHref({ error: "duplicate-email" }));
-  }
+      await prisma.adminUser.update({
+        where: { id },
+        data,
+      });
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        redirect(usersHref({ error: "duplicate-email" }));
+      }
 
-  throw error;
-}
+      throw error;
+    }
 
-redirect("/admin/users");
+    redirect("/admin/users");
   }
 
   async function deleteUser(formData: FormData) {
@@ -157,7 +172,7 @@ redirect("/admin/users");
       redirect("/admin/users");
     }
 
-    // ✅ Prevent deleting currently logged-in user
+    // Prevent deleting currently logged-in user
     if (
       currentAdminEmail &&
       targetUser.email.trim().toLowerCase() === currentAdminEmail
@@ -173,11 +188,13 @@ redirect("/admin/users");
   }
 
   const params = await searchParams;
-const confirmDeleteUserId = params.confirmDelete || "";
-const errorMessage =
-  params.error === "duplicate-email"
-    ? "That email address is already being used by another admin user."
-    : "";
+  const todayValue = getEasternTodayValue();
+
+  const confirmDeleteUserId = params.confirmDelete || "";
+  const errorMessage =
+    params.error === "duplicate-email"
+      ? "That email address is already being used by another admin user."
+      : "";
 
   const cookieStore = await cookies();
   const currentAdminEmail =
@@ -198,7 +215,7 @@ const errorMessage =
     >
       <style>{`
         .admin-users-shell {
-          max-width: 1000px;
+          max-width: 1200px;
           margin: 0 auto;
         }
 
@@ -208,12 +225,6 @@ const errorMessage =
           border-radius: 16px;
           padding: 1.5rem;
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-        }
-
-        .admin-users-header-actions {
-          display: flex;
-          gap: 0.75rem;
-          flex-wrap: wrap;
         }
 
         .admin-users-form-grid {
@@ -263,13 +274,11 @@ const errorMessage =
             border-radius: 14px;
           }
 
-          .admin-users-header-actions,
           .admin-users-actions {
             flex-direction: column;
             align-items: stretch;
           }
 
-          .admin-users-header-actions a,
           .admin-users-actions a,
           .admin-users-actions button,
           .admin-users-actions form {
@@ -287,57 +296,44 @@ const errorMessage =
       <div className="admin-users-shell">
         {/* HEADER */}
         <div className="admin-users-card" style={{ marginBottom: "1.5rem" }}>
-          <div
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
+            Manage Admin Users
+          </h1>
+
+          <p
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: "1rem",
-              flexWrap: "wrap",
-              alignItems: "flex-start",
+              marginTop: 0,
+              color: "#4b5563",
+              marginBottom: "1rem",
+              lineHeight: 1.5,
             }}
           >
-            <div>
-              <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
-                Manage Admin Users
-              </h1>
-              <p style={{ marginTop: 0, color: "#4b5563", marginBottom: 0 }}>
-                Add, update, and manage administrator accounts.
-              </p>
-            </div>
+            Add, update, and manage administrator accounts.
+          </p>
 
-            <div className="admin-users-header-actions">
-              <Link
-                href="/admin"
-                style={buttonStyle("#eef2ff", "#c7d2fe", "#1e3a8a")}
-              >
-                Back to Admin Dashboard
-              </Link>
-            </div>
-          </div>
+          <AdminNav todayValue={todayValue} />
         </div>
 
-
-{errorMessage && (
-  <div
-    className="admin-users-card"
-    style={{
-      marginBottom: "1.5rem",
-      border: "1px solid #fca5a5",
-      backgroundColor: "#fef2f2",
-    }}
-  >
-    <div
-      style={{
-        color: "#991b1b",
-        fontWeight: 700,
-        lineHeight: 1.45,
-      }}
-    >
-      {errorMessage}
-    </div>
-  </div>
-)}
-
+        {errorMessage && (
+          <div
+            className="admin-users-card"
+            style={{
+              marginBottom: "1.5rem",
+              border: "1px solid #fca5a5",
+              backgroundColor: "#fef2f2",
+            }}
+          >
+            <div
+              style={{
+                color: "#991b1b",
+                fontWeight: 700,
+                lineHeight: 1.45,
+              }}
+            >
+              {errorMessage}
+            </div>
+          </div>
+        )}
 
         {/* ADD USER */}
         <div className="admin-users-card" style={{ marginBottom: "1.5rem" }}>

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import RoomBlackoutManager from "@/components/admin/room-blackout-manager";
+import AdminNav from "@/components/admin/admin-nav";
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -36,19 +36,19 @@ function formatDate(date: Date) {
 
 export default async function AdminBlackoutsPage() {
   const todayValue = getEasternTodayValue();
-  
+
   const [rooms, blackouts] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
     }),
-prisma.roomBlackout.findMany({
-  where: {
-    endDateTime: { gt: new Date(`${todayValue}T00:00:00`) },
-  },
-  include: { room: true },
-  orderBy: [{ startDateTime: "asc" }, { roomId: "asc" }],
-}),
+    prisma.roomBlackout.findMany({
+      where: {
+        endDateTime: { gt: new Date(`${todayValue}T00:00:00`) },
+      },
+      include: { room: true },
+      orderBy: [{ startDateTime: "asc" }, { roomId: "asc" }],
+    }),
   ]);
 
   return (
@@ -74,28 +74,10 @@ prisma.roomBlackout.findMany({
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
 
-        .blackouts-top-links {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-          margin-bottom: 1rem;
-        }
-
         @media (max-width: 768px) {
           .blackouts-card {
             padding: 1rem;
             border-radius: 14px;
-          }
-
-          .blackouts-top-links {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .blackouts-top-links a {
-            width: 100%;
-            box-sizing: border-box;
-            text-align: center;
           }
         }
       `}</style>
@@ -103,7 +85,9 @@ prisma.roomBlackout.findMany({
       <div className="blackouts-shell">
         {/* HEADER */}
         <div className="blackouts-card" style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Blackout Field Dates</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
+            Blackout Field Dates
+          </h1>
 
           <p
             style={{
@@ -113,44 +97,11 @@ prisma.roomBlackout.findMany({
               lineHeight: 1.5,
             }}
           >
-            Black out selected fields for full days. A blackout will only be
-            created if none of the selected fields already have bookings on
-            that day.
+            Black out selected fields for full days. A blackout will only be created if none of the
+            selected fields already have bookings on that day.
           </p>
 
-          <div className="blackouts-top-links">
-            <Link
-              href="/admin"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#eef2ff",
-                border: "1px solid #c7d2fe",
-                borderRadius: "10px",
-                color: "#1e3a8a",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Back to Admin
-            </Link>
-
-            <Link
-              href={`/bookings?date=${todayValue}&view=week`}
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#dbeafe",
-                border: "1px solid #93c5fd",
-                borderRadius: "10px",
-                color: "#1d4ed8",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Open Weekly Calendar
-            </Link>
-          </div>
+          <AdminNav todayValue={todayValue} />
         </div>
 
         {/* MANAGER */}

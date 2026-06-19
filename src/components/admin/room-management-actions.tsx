@@ -236,6 +236,16 @@ export default function RoomManagementActions(props: Props) {
     );
   }
 
+const canDelete =
+  props.mode === "manage" && !displayIsActive && props.bookingCount === 0;
+
+const deleteUnavailableReason =
+  displayIsActive
+    ? "This field must be deactivated before it can be deleted."
+    : props.bookingCount > 0
+      ? "This field cannot be deleted because it has future bookings."
+      : "";
+
   const statusPill = (
     <span
       style={{
@@ -377,17 +387,17 @@ export default function RoomManagementActions(props: Props) {
 <button
   type="button"
   onClick={handleDelete}
-  disabled={isSaving || props.bookingCount > 0}
+  disabled={isSaving || !canDelete}
   style={{
     padding: "0.5rem 0.8rem",
-    backgroundColor: props.bookingCount > 0 ? "#e5e7eb" : "#fee2e2",
-    border: props.bookingCount > 0 ? "1px solid #cbd5e1" : "1px solid #fca5a5",
+    backgroundColor: canDelete ? "#fee2e2" : "#e5e7eb",
+    border: canDelete ? "1px solid #fca5a5" : "1px solid #cbd5e1",
     borderRadius: "8px",
-    color: props.bookingCount > 0 ? "#64748b" : "#991b1b",
+    color: canDelete ? "#991b1b" : "#64748b",
     fontWeight: 700,
-    cursor: isSaving || props.bookingCount > 0 ? "not-allowed" : "pointer",
+    cursor: isSaving || !canDelete ? "not-allowed" : "pointer",
   }}
-  title={props.bookingCount > 0 ? "This field cannot be deleted because it has future bookings." : undefined}
+  title={!canDelete ? deleteUnavailableReason : undefined}
 >
   Delete
 </button>
@@ -395,7 +405,7 @@ export default function RoomManagementActions(props: Props) {
         </div>
       </div>
 
-{props.mode === "manage" && props.bookingCount > 0 && !message && (
+{props.mode === "manage" && !canDelete && deleteUnavailableReason && !message && (
   <div
     style={{
       marginTop: "0.75rem",
@@ -404,9 +414,10 @@ export default function RoomManagementActions(props: Props) {
       fontSize: "0.85rem",
     }}
   >
-    This field cannot be deleted because it has future bookings.
+    {deleteUnavailableReason}
   </div>
 )}
+``
 
 {message && (
   <div style={{ marginTop: "0.75rem", color: "#991b1b", fontWeight: 600, fontSize: "0.85rem" }}>

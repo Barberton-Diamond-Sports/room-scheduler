@@ -1,7 +1,6 @@
-
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import UmpireManagementPanel from "@/components/admin/umpire-management-panel";
+import AdminNav from "@/components/admin/admin-nav";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -24,7 +23,7 @@ function getEasternTodayValue() {
 export default async function AdminUmpiresPage() {
   const todayValue = getEasternTodayValue();
   const todayStart = new Date(`${todayValue}T00:00:00`);
-  
+
   const [umpires, bookingCounts] = await Promise.all([
     prisma.umpire.findMany({
       orderBy: { name: "asc" },
@@ -41,46 +40,59 @@ export default async function AdminUmpiresPage() {
   ]);
 
   const bookingCountMap = new Map<string, number>();
+
   for (const row of bookingCounts) {
-    if (row.umpireId) bookingCountMap.set(row.umpireId, row._count._all);
+    if (row.umpireId) {
+      bookingCountMap.set(row.umpireId, row._count._all);
+    }
   }
 
   return (
-    <main style={{ minHeight: "100vh", backgroundColor: "#f5f7fb", padding: "1rem", fontFamily: "Arial, sans-serif" }}>
-	<style>{`
-	  .umpire-header-actions {
-		display: flex;
-		gap: 1rem;
-		flex-wrap: wrap;
-	  }
+    <main
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f5f7fb",
+        padding: "1rem",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <style>{`
+        .umpires-shell {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
 
-	  @media (max-width: 768px) {
-		.umpire-header-actions {
-		  flex-direction: column;
-		  align-items: stretch;
-		}
+        .umpires-card {
+          background-color: #ffffff;
+          border: 1px solid #dbe3f0;
+          border-radius: 16px;
+          padding: 1.5rem;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        }
 
-		.umpire-header-actions a {
-		  width: 100%;
-		  box-sizing: border-box;
-		  text-align: center;
-		}
-	  }
-	`}</style>	
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.5rem", marginBottom: "1.5rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Umpire Administration</h1>
-          <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem" }}>
-            Add, edit, and inactivate umpires. The list is shown alphabetically, and linked booking counts only include today and future bookings.
+        @media (max-width: 768px) {
+          .umpires-card {
+            padding: 1rem;
+            border-radius: 14px;
+          }
+        }
+      `}</style>
+
+      <div className="umpires-shell">
+        <div className="umpires-card" style={{ marginBottom: "1.5rem" }}>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
+            Umpire Administration
+          </h1>
+
+          <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
+            Add, edit, and inactivate umpires. The list is shown alphabetically, and linked booking
+            counts only include today and future bookings.
           </p>
-          <div className="umpire-header-actions">
-            <Link href="/admin" style={{ display: "inline-block", padding: "0.65rem 1rem", backgroundColor: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: "10px", color: "#1e3a8a", textDecoration: "none", fontWeight: 600 }}>
-              Back to Admin
-            </Link>
-          </div>
+
+          <AdminNav todayValue={todayValue} />
         </div>
 
-        <div style={{ backgroundColor: "#ffffff", border: "1px solid #dbe3f0", borderRadius: "16px", padding: "1.5rem", boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)" }}>
+        <div className="umpires-card">
           <UmpireManagementPanel
             items={umpires.map((umpire) => ({
               id: umpire.id,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import UmpireAssignmentActions from "@/components/admin/umpire-assignment-actions";
+import AdminNav from "@/components/admin/admin-nav";
 
 type PageProps = {
   searchParams: Promise<{
@@ -88,22 +89,19 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
       : "all";
 
   const sportFilter =
-    params.sport === "baseball" || params.sport === "softball"
-      ? params.sport
-      : "all";
+    params.sport === "baseball" || params.sport === "softball" ? params.sport : "all";
 
   const todayValue = getEasternTodayValue();
 
   const startDateValue =
-    typeof params.startDate === "string" && params.startDate
-      ? params.startDate
-      : todayValue;
+    typeof params.startDate === "string" && params.startDate ? params.startDate : todayValue;
 
   const endDateValue = typeof params.endDate === "string" ? params.endDate : "";
 
   const rangeStart = fromDateInputValue(startDateValue);
   const rawRangeEnd = endDateValue ? fromDateInputValue(endDateValue) : null;
   const rangeEndExclusive = rawRangeEnd ? new Date(rawRangeEnd.getTime()) : null;
+
   if (rangeEndExclusive) {
     rangeEndExclusive.setDate(rangeEndExclusive.getDate() + 1);
   }
@@ -130,8 +128,9 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
     }),
   ]);
 
-  const selectedUmpire =
-    selectedUmpireId ? umpires.find((u) => u.id === selectedUmpireId) ?? null : null;
+  const selectedUmpire = selectedUmpireId
+    ? umpires.find((u) => u.id === selectedUmpireId) ?? null
+    : null;
 
   const activeUmpireOptions = umpires
     .filter((umpire) => umpire.isActive)
@@ -204,13 +203,6 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
 
-        .umpire-schedule-top-links {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-          margin-bottom: 1rem;
-        }
-
         .umpire-schedule-filter-grid {
           display: grid;
           gap: 1rem;
@@ -266,13 +258,11 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
             border-radius: 14px;
           }
 
-          .umpire-schedule-top-links,
           .umpire-schedule-filter-actions {
             flex-direction: column;
             align-items: stretch;
           }
 
-          .umpire-schedule-top-links a,
           .umpire-schedule-filter-actions a,
           .umpire-schedule-filter-actions button {
             width: 100%;
@@ -297,221 +287,174 @@ export default async function UmpireSchedulePage({ searchParams }: PageProps) {
       `}</style>
 
       <div className="umpire-schedule-shell">
-        <div
-          className="umpire-schedule-card"
-          style={{ marginBottom: "1.5rem" }}
-        >
+        <div className="umpire-schedule-card" style={{ marginBottom: "1.5rem" }}>
           <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
             Umpire Schedule
           </h1>
+
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
-            Assign active umpires and filter the game list by umpire, assignment status, sport, and date range.
+            Assign active umpires and filter the game list by umpire, assignment status, sport, and
+            date range.
           </p>
 
-          <div className="umpire-schedule-top-links">
-            <Link
-              href="/admin"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#eef2ff",
-                border: "1px solid #c7d2fe",
-                borderRadius: "10px",
-                color: "#1e3a8a",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Back to Admin
-            </Link>
+          <AdminNav todayValue={todayValue} />
 
-            <Link
-              href={`/bookings?date=${todayValue}&view=week`}
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#dbeafe",
-                border: "1px solid #93c5fd",
-                borderRadius: "10px",
-                color: "#1d4ed8",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Open Weekly Calendar
-            </Link>
+          <div style={{ marginTop: "1.25rem" }}>
+            <form method="GET" style={{ display: "grid", gap: "1rem" }}>
+              <div className="umpire-schedule-filter-grid">
+                <div>
+                  <label
+                    htmlFor="umpireId"
+                    style={{
+                      display: "block",
+                      marginBottom: "0.35rem",
+                      fontWeight: 600,
+                      color: "#334155",
+                    }}
+                  >
+                    Filter by Umpire
+                  </label>
+                  <select
+                    id="umpireId"
+                    name="umpireId"
+                    defaultValue={selectedUmpireId}
+                    style={filterControlStyle}
+                  >
+                    <option value="">All games</option>
+                    {umpires.map((umpire) => (
+                      <option key={umpire.id} value={umpire.id}>
+                        {umpire.name}
+                        {umpire.isActive ? "" : " (Inactive)"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <Link
-              href="/admin/umpires"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#fef3c7",
-                border: "1px solid #facc15",
-                borderRadius: "10px",
-                color: "#92400e",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Manage Umpires
-            </Link>
+                <div>
+                  <label
+                    htmlFor="assignment"
+                    style={{
+                      display: "block",
+                      marginBottom: "0.35rem",
+                      fontWeight: 600,
+                      color: "#334155",
+                    }}
+                  >
+                    Assignment Status
+                  </label>
+                  <select
+                    id="assignment"
+                    name="assignment"
+                    defaultValue={assignmentFilter}
+                    style={filterControlStyle}
+                  >
+                    <option value="all">All</option>
+                    <option value="assigned">Assigned only</option>
+                    <option value="unassigned">Unassigned only</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="sport"
+                    style={{
+                      display: "block",
+                      marginBottom: "0.35rem",
+                      fontWeight: 600,
+                      color: "#334155",
+                    }}
+                  >
+                    Sport
+                  </label>
+                  <select
+                    id="sport"
+                    name="sport"
+                    defaultValue={sportFilter}
+                    style={filterControlStyle}
+                  >
+                    <option value="all">All sports</option>
+                    <option value="baseball">Baseball</option>
+                    <option value="softball">Softball</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="startDate"
+                    style={{
+                      display: "block",
+                      marginBottom: "0.35rem",
+                      fontWeight: 600,
+                      color: "#334155",
+                    }}
+                  >
+                    Start Date
+                  </label>
+                  <input
+                    id="startDate"
+                    name="startDate"
+                    type="date"
+                    defaultValue={startDateValue}
+                    style={filterControlStyle}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="endDate"
+                    style={{
+                      display: "block",
+                      marginBottom: "0.35rem",
+                      fontWeight: 600,
+                      color: "#334155",
+                    }}
+                  >
+                    End Date (optional)
+                  </label>
+                  <input
+                    id="endDate"
+                    name="endDate"
+                    type="date"
+                    defaultValue={endDateValue}
+                    style={filterControlStyle}
+                  />
+                </div>
+              </div>
+
+              <div className="umpire-schedule-filter-actions">
+                <button
+                  type="submit"
+                  style={{
+                    padding: "0.7rem 1rem",
+                    backgroundColor: "#2563eb",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "10px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Apply Filters
+                </button>
+
+                <Link
+                  href="/admin/umpire-schedule"
+                  style={{
+                    display: "inline-block",
+                    padding: "0.7rem 1rem",
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #dbe3f0",
+                    borderRadius: "10px",
+                    color: "#475569",
+                    textDecoration: "none",
+                    fontWeight: 700,
+                  }}
+                >
+                  Clear Filters
+                </Link>
+              </div>
+            </form>
           </div>
-
-          <form method="GET" style={{ display: "grid", gap: "1rem" }}>
-            <div className="umpire-schedule-filter-grid">
-              <div>
-                <label
-                  htmlFor="umpireId"
-                  style={{
-                    display: "block",
-                    marginBottom: "0.35rem",
-                    fontWeight: 600,
-                    color: "#334155",
-                  }}
-                >
-                  Filter by Umpire
-                </label>
-                <select
-                  id="umpireId"
-                  name="umpireId"
-                  defaultValue={selectedUmpireId}
-                  style={filterControlStyle}
-                >
-                  <option value="">All games</option>
-                  {umpires.map((umpire) => (
-                    <option key={umpire.id} value={umpire.id}>
-                      {umpire.name}
-                      {umpire.isActive ? "" : " (Inactive)"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="assignment"
-                  style={{
-                    display: "block",
-                    marginBottom: "0.35rem",
-                    fontWeight: 600,
-                    color: "#334155",
-                  }}
-                >
-                  Assignment Status
-                </label>
-                <select
-                  id="assignment"
-                  name="assignment"
-                  defaultValue={assignmentFilter}
-                  style={filterControlStyle}
-                >
-                  <option value="all">All</option>
-                  <option value="assigned">Assigned only</option>
-                  <option value="unassigned">Unassigned only</option>
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="sport"
-                  style={{
-                    display: "block",
-                    marginBottom: "0.35rem",
-                    fontWeight: 600,
-                    color: "#334155",
-                  }}
-                >
-                  Sport
-                </label>
-                <select
-                  id="sport"
-                  name="sport"
-                  defaultValue={sportFilter}
-                  style={filterControlStyle}
-                >
-                  <option value="all">All sports</option>
-                  <option value="baseball">Baseball</option>
-                  <option value="softball">Softball</option>
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="startDate"
-                  style={{
-                    display: "block",
-                    marginBottom: "0.35rem",
-                    fontWeight: 600,
-                    color: "#334155",
-                  }}
-                >
-                  Start Date
-                </label>
-                <input
-                  id="startDate"
-                  name="startDate"
-                  type="date"
-                  defaultValue={startDateValue}
-                  style={filterControlStyle}
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="endDate"
-                  style={{
-                    display: "block",
-                    marginBottom: "0.35rem",
-                    fontWeight: 600,
-                    color: "#334155",
-                  }}
-                >
-                  End Date (optional)
-                </label>
-                <input
-                  id="endDate"
-                  name="endDate"
-                  type="date"
-                  defaultValue={endDateValue}
-                  style={filterControlStyle}
-                />
-              </div>
-            </div>
-
-            <div className="umpire-schedule-filter-actions">
-              <button
-                type="submit"
-                style={{
-                  padding: "0.7rem 1rem",
-                  backgroundColor: "#2563eb",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "10px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Apply Filters
-              </button>
-
-              <Link
-                href="/admin/umpire-schedule"
-                style={{
-                  display: "inline-block",
-                  padding: "0.7rem 1rem",
-                  backgroundColor: "#f8fafc",
-                  border: "1px solid #dbe3f0",
-                  borderRadius: "10px",
-                  color: "#475569",
-                  textDecoration: "none",
-                  fontWeight: 700,
-                }}
-              >
-                Clear Filters
-              </Link>
-            </div>
-          </form>
 
           {hasActiveFilters && (
             <div

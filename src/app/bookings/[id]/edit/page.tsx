@@ -3,11 +3,31 @@ import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import EditBookingForm from "@/components/booking/edit-booking-form";
+import AdminNav from "@/components/admin/admin-nav";
 
 type PageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ date?: string; view?: string; from?: string }>;
 };
+
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function getEasternTodayValue() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
+}
 
 function getTeamSportSortOrder(ageGroup: string) {
   const normalizedAgeGroup = ageGroup.toLowerCase();
@@ -41,6 +61,8 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
   if (!isAdmin) {
     redirect(`/admin-login?next=/bookings/${id}/edit`);
   }
+
+  const todayValue = getEasternTodayValue();
 
   const returnDate = query.date;
   const returnView = query.view === "week" ? "week" : "day";
@@ -123,79 +145,93 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
       style={{
         minHeight: "100vh",
         backgroundColor: "#f5f7fb",
-        padding: "2rem",
+        padding: "1rem",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #dbe3f0",
-            borderRadius: "16px",
-            padding: "1.5rem",
-            marginBottom: "1.5rem",
-            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
-          }}
-        >
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-            Edit Booking
-          </h1>
+      <style>{`
+        .edit-booking-shell {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
 
-          <p
-            style={{
-              marginTop: 0,
-              color: "#4b5563",
-              marginBottom: "1rem",
-            }}
-          >
-            Update the details for this field reservation.
-          </p>
+        .edit-booking-card {
+          background-color: #ffffff;
+          border: 1px solid #dbe3f0;
+          border-radius: 16px;
+          padding: 1.5rem;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        }
 
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            <Link
-              href={detailsHref}
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#eef2ff",
-                border: "1px solid #c7d2fe",
-                borderRadius: "10px",
-                color: "#1e3a8a",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
+        .edit-booking-header-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 1rem;
+          align-items: flex-start;
+          flex-wrap: wrap;
+          margin-bottom: 1rem;
+        }
+
+        .edit-booking-action-link {
+          display: inline-block;
+          padding: 0.65rem 1rem;
+          background-color: #eef2ff;
+          border: 1px solid #c7d2fe;
+          border-radius: 10px;
+          color: #1e3a8a;
+          text-decoration: none;
+          font-weight: 600;
+          text-align: center;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+          .edit-booking-card {
+            padding: 1rem;
+            border-radius: 14px;
+          }
+
+          .edit-booking-header-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .edit-booking-action-link {
+            width: 100%;
+            box-sizing: border-box;
+          }
+        }
+      `}</style>
+
+      <div className="edit-booking-shell">
+        <div className="edit-booking-card" style={{ marginBottom: "1.5rem" }}>
+          <div className="edit-booking-header-row">
+            <div>
+              <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
+                Edit Booking
+              </h1>
+
+              <p
+                style={{
+                  marginTop: 0,
+                  color: "#4b5563",
+                  marginBottom: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                Update the details for this field reservation.
+              </p>
+            </div>
+
+            <Link href={detailsHref} className="edit-booking-action-link">
               Back to Details
             </Link>
-
-            <Link
-              href="/admin"
-              style={{
-                display: "inline-block",
-                padding: "0.65rem 1rem",
-                backgroundColor: "#f8fafc",
-                border: "1px solid #dbe3f0",
-                borderRadius: "10px",
-                color: "#475569",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Admin
-            </Link>
           </div>
+
+          <AdminNav todayValue={todayValue} />
         </div>
 
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #dbe3f0",
-            borderRadius: "16px",
-            padding: "1.5rem",
-            boxShadow: "0 6px 18px rgba(0, 0, 0, 0.06)",
-          }}
-        >
+        <div className="edit-booking-card">
           <EditBookingForm
             rooms={rooms}
             teams={teams}

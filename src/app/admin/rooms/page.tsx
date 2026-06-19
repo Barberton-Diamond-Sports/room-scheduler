@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
 import RoomManagementActions from "@/components/admin/room-management-actions";
+import AdminNav from "@/components/admin/admin-nav";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -21,7 +21,6 @@ function getEasternTodayValue() {
 }
 
 export default async function AdminRoomsPage() {
-  // ✅ Only count today + future bookings
   const todayValue = getEasternTodayValue();
   const todayStart = new Date(`${todayValue}T00:00:00`);
 
@@ -75,13 +74,6 @@ export default async function AdminRoomsPage() {
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
 
-        .rooms-header-actions {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-          margin-bottom: 1rem;
-        }
-
         .rooms-list {
           display: grid;
           gap: 0.85rem;
@@ -100,24 +92,15 @@ export default async function AdminRoomsPage() {
             padding: 1rem;
             border-radius: 14px;
           }
-
-          .rooms-header-actions {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .rooms-header-actions a {
-            width: 100%;
-            box-sizing: border-box;
-            text-align: center;
-          }
         }
       `}</style>
 
       <div className="rooms-shell">
         {/* HEADER */}
         <div className="rooms-card" style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>Manage Fields</h1>
+          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
+            Manage Fields
+          </h1>
 
           <p
             style={{
@@ -130,22 +113,7 @@ export default async function AdminRoomsPage() {
             Add new fields, activate or deactivate existing ones, and delete fields if necessary.
           </p>
 
-          <div className="rooms-header-actions">
-            <Link
-              href="/admin"
-              style={{
-                padding: "0.65rem 1rem",
-                backgroundColor: "#eef2ff",
-                border: "1px solid #c7d2fe",
-                borderRadius: "10px",
-                color: "#1e3a8a",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Back to Admin
-            </Link>
-          </div>
+          <AdminNav todayValue={todayValue} />
         </div>
 
         {/* ADD FIELD */}
@@ -170,17 +138,12 @@ export default async function AdminRoomsPage() {
           ) : (
             <div className="rooms-list">
               {rooms.map((room) => {
-                const bookingCount =
-                  bookingCountMap.get(room.id) || 0;
+                const bookingCount = bookingCountMap.get(room.id) || 0;
 
                 return (
                   <div
                     key={room.id}
-                    className={
-                      bookingCount > 0
-                        ? "room-card-highlight"
-                        : "room-card-none"
-                    }
+                    className={bookingCount > 0 ? "room-card-highlight" : "room-card-none"}
                     style={{
                       border: "1px solid #e2e8f0",
                       borderRadius: "14px",
