@@ -675,7 +675,7 @@ const weekBlackoutMap = buildBlackoutMap(
 					color: "#166534",
 				}}
 			  >
-				Team Schedules
+				Reservations by Team
 			  </Link>
 
               <Link

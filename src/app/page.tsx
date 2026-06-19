@@ -138,7 +138,7 @@ export default function HomePage() {
                 textAlign: "center",
               }}
             >
-              Team Schedule
+              Team Field Reservations
             </Link>
 
             <Link

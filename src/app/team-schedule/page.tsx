@@ -458,7 +458,7 @@ const activeTeams = [...activeTeamsRaw].sort((a, b) => {
       <div className="page-shell">
         <div className="hero-card">
           <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
-            Team Schedule
+            Team Field Reservations
           </h1>
 
           <p style={{ marginTop: 0, color: "#4b5563", marginBottom: 5, lineHeight: 1.5 }}>
