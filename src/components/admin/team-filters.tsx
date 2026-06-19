@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 type StatusFilterValue = "all" | "active" | "inactive";
+type SportFilterValue = "all" | "baseball" | "softball" | "tee-ball";
 
 type SeasonFilterOption = {
   value: string;
@@ -12,6 +13,7 @@ type SeasonFilterOption = {
 type Props = {
   selectedStatus: StatusFilterValue;
   selectedSeason: string;
+  selectedSport: SportFilterValue;
   seasonFilterOptions: SeasonFilterOption[];
   hasActiveFilters: boolean;
 };
@@ -39,6 +41,7 @@ const fieldStyle = {
 export default function TeamFilters({
   selectedStatus,
   selectedSeason,
+  selectedSport,
   seasonFilterOptions,
   hasActiveFilters,
 }: Props) {
@@ -91,6 +94,27 @@ export default function TeamFilters({
               {option.label}
             </option>
           ))}
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="sport" style={fieldLabelStyle}>
+          Sport
+        </label>
+        <select
+          id="sport"
+          name="sport"
+          defaultValue={selectedSport}
+          onChange={(event) => event.currentTarget.form?.requestSubmit()}
+          style={{
+            ...fieldStyle,
+            minWidth: "180px",
+          }}
+        >
+          <option value="all">All sports</option>
+          <option value="baseball">Baseball</option>
+          <option value="softball">Softball</option>
+          <option value="tee-ball">Tee Ball</option>
         </select>
       </div>
 

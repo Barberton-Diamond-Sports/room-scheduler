@@ -9,6 +9,28 @@ type PageProps = {
   searchParams: Promise<{ date?: string; view?: string; from?: string }>;
 };
 
+function getTeamSportSortOrder(ageGroup: string) {
+  const normalizedAgeGroup = ageGroup.toLowerCase();
+
+  if (normalizedAgeGroup.includes("baseball")) {
+    return 1;
+  }
+
+  if (normalizedAgeGroup.includes("softball")) {
+    return 2;
+  }
+
+  if (
+    normalizedAgeGroup.includes("tee ball") ||
+    normalizedAgeGroup.includes("t-ball") ||
+    normalizedAgeGroup.includes("tball")
+  ) {
+    return 3;
+  }
+
+  return 4;
+}
+
 export default async function EditBookingPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const query = await searchParams;
@@ -37,7 +59,7 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
     notFound();
   }
 
-  const [rooms, teams, umpires] = await Promise.all([
+  const [rooms, teamsRaw, umpires] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
@@ -45,9 +67,10 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
     prisma.team.findMany({
       where: { isActive: true },
       orderBy: [
-        { teamName: "asc" },
         { year: "desc" },
         { season: "asc" },
+        { ageGroup: "asc" },
+        { teamName: "asc" },
       ],
     }),
     prisma.umpire.findMany({
@@ -55,6 +78,41 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
       orderBy: { name: "asc" },
     }),
   ]);
+
+  const teams = [...teamsRaw].sort((a, b) => {
+    const sportCompare =
+      getTeamSportSortOrder(a.ageGroup) - getTeamSportSortOrder(b.ageGroup);
+
+    if (sportCompare !== 0) {
+      return sportCompare;
+    }
+
+    const yearCompare = b.year - a.year;
+
+    if (yearCompare !== 0) {
+      return yearCompare;
+    }
+
+    const seasonCompare = a.season.localeCompare(b.season);
+
+    if (seasonCompare !== 0) {
+      return seasonCompare;
+    }
+
+    const ageGroupCompare = a.ageGroup.localeCompare(b.ageGroup, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+
+    if (ageGroupCompare !== 0) {
+      return ageGroupCompare;
+    }
+
+    return a.teamName.localeCompare(b.teamName, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
 
   const detailsHref = returnDate
     ? `/bookings/${id}?date=${returnDate}&view=${returnView}${cameFromAdmin ? "&from=admin" : ""}`
@@ -159,7 +217,7 @@ export default async function EditBookingPage({ params, searchParams }: PageProp
             }}
             returnDate={returnDate}
             returnView={returnView}
-			cameFromAdmin={cameFromAdmin}
+            cameFromAdmin={cameFromAdmin}
           />
         </div>
       </div>

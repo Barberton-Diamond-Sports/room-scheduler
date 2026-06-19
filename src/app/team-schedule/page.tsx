@@ -73,6 +73,21 @@ function bookingTypeLabel(title: string | null) {
   return title?.trim() || "Booking";
 }
 
+function formatUmpireDisplay(booking: {
+  title: string | null;
+  umpireRecord: {
+    name: string;
+  } | null;
+}) {
+  const bookingType = booking.title?.trim().toLowerCase();
+
+  if (bookingType !== "game") {
+    return "";
+  }
+
+  return booking.umpireRecord?.name || "Unassigned";
+}
+
 function bookingTypeColors(title: string | null) {
   if (title === "Game") {
     return {
@@ -615,7 +630,7 @@ const activeTeams = [...activeTeamsRaw].sort((a, b) => {
                               </td>
                               <td>{booking.room.name}</td>
                               <td>{formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}</td>
-                              <td>{booking.umpireRecord?.name || "Unassigned"}</td>
+                              <td>{formatUmpireDisplay(booking)}</td>
                             </tr>
                           );
                         })}
@@ -665,9 +680,11 @@ const activeTeams = [...activeTeamsRaw].sort((a, b) => {
                               <strong>Time:</strong>{" "}
                               {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}
                             </div>
-                            <div>
-                              <strong>Umpire:</strong> {booking.umpireRecord?.name || "Unassigned"}
-                            </div>
+							{booking.title?.trim().toLowerCase() === "game" && (
+							  <div>
+								<strong>Umpire:</strong> {formatUmpireDisplay(booking)}
+							  </div>
+							)}
                           </div>
                         </div>
                       );

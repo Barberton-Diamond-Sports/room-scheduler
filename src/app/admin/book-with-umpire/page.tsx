@@ -1,3 +1,5 @@
+
+
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import AdminBookingForm from "@/components/admin/admin-booking-form";
@@ -5,8 +7,30 @@ import AdminBookingForm from "@/components/admin/admin-booking-form";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+function getTeamSportSortOrder(ageGroup: string) {
+  const normalizedAgeGroup = ageGroup.toLowerCase();
+
+  if (normalizedAgeGroup.includes("baseball")) {
+    return 1;
+  }
+
+  if (normalizedAgeGroup.includes("softball")) {
+    return 2;
+  }
+
+  if (
+    normalizedAgeGroup.includes("tee ball") ||
+    normalizedAgeGroup.includes("t-ball") ||
+    normalizedAgeGroup.includes("tball")
+  ) {
+    return 3;
+  }
+
+  return 4;
+}
+
 export default async function AdminBookWithUmpirePage() {
-  const [rooms, teams, umpires] = await Promise.all([
+  const [rooms, teamsRaw, umpires] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
@@ -14,9 +38,10 @@ export default async function AdminBookWithUmpirePage() {
     prisma.team.findMany({
       where: { isActive: true },
       orderBy: [
-        { teamName: "asc" },
         { year: "desc" },
         { season: "asc" },
+        { ageGroup: "asc" },
+        { teamName: "asc" },
       ],
     }),
     prisma.umpire.findMany({
@@ -24,6 +49,41 @@ export default async function AdminBookWithUmpirePage() {
       orderBy: { name: "asc" },
     }),
   ]);
+
+  const teams = [...teamsRaw].sort((a, b) => {
+    const sportCompare =
+      getTeamSportSortOrder(a.ageGroup) - getTeamSportSortOrder(b.ageGroup);
+
+    if (sportCompare !== 0) {
+      return sportCompare;
+    }
+
+    const yearCompare = b.year - a.year;
+
+    if (yearCompare !== 0) {
+      return yearCompare;
+    }
+
+    const seasonCompare = a.season.localeCompare(b.season);
+
+    if (seasonCompare !== 0) {
+      return seasonCompare;
+    }
+
+    const ageGroupCompare = a.ageGroup.localeCompare(b.ageGroup, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+
+    if (ageGroupCompare !== 0) {
+      return ageGroupCompare;
+    }
+
+    return a.teamName.localeCompare(b.teamName, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
 
   return (
     <main

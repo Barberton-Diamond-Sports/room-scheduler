@@ -146,6 +146,63 @@ function teamLabel(team: Team) {
   return `${team.teamName} (${team.ageGroup} • ${formatSeasonLabel(team.season)} ${team.year})`;
 }
 
+function getTeamSportSortOrder(ageGroup: string) {
+  const normalizedAgeGroup = ageGroup.toLowerCase();
+
+  if (normalizedAgeGroup.includes("baseball")) {
+    return 1;
+  }
+
+  if (normalizedAgeGroup.includes("softball")) {
+    return 2;
+  }
+
+  if (
+    normalizedAgeGroup.includes("tee ball") ||
+    normalizedAgeGroup.includes("t-ball") ||
+    normalizedAgeGroup.includes("tball")
+  ) {
+    return 3;
+  }
+
+  return 4;
+}
+
+function sortTeamsForDropdown(a: Team, b: Team) {
+  const sportCompare =
+    getTeamSportSortOrder(a.ageGroup) - getTeamSportSortOrder(b.ageGroup);
+
+  if (sportCompare !== 0) {
+    return sportCompare;
+  }
+
+  const yearCompare = b.year - a.year;
+
+  if (yearCompare !== 0) {
+    return yearCompare;
+  }
+
+  const seasonCompare = a.season.localeCompare(b.season);
+
+  if (seasonCompare !== 0) {
+    return seasonCompare;
+  }
+
+  const ageGroupCompare = a.ageGroup.localeCompare(b.ageGroup, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+
+  if (ageGroupCompare !== 0) {
+    return ageGroupCompare;
+  }
+
+  return a.teamName.localeCompare(b.teamName, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
 function inferSport(ageGroup: string | null | undefined) {
   return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
 }
@@ -164,12 +221,9 @@ export default function EditBookingForm({
   const router = useRouter();
 
   const activeTeams = useMemo(
-    () =>
-      teams
-        .filter((team) => team.isActive)
-        .sort((a, b) => a.teamName.localeCompare(b.teamName)),
-    [teams]
-  );
+  () => teams.filter((team) => team.isActive).sort(sortTeamsForDropdown),
+  [teams]
+);
 
   const activeUmpires = useMemo(
     () =>

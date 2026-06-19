@@ -2,8 +2,30 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import BookingForm from "@/components/booking/booking-form";
 
+function getTeamSportSortOrder(ageGroup: string) {
+  const normalizedAgeGroup = ageGroup.toLowerCase();
+
+  if (normalizedAgeGroup.includes("baseball")) {
+    return 1;
+  }
+
+  if (normalizedAgeGroup.includes("softball")) {
+    return 2;
+  }
+
+  if (
+    normalizedAgeGroup.includes("tee ball") ||
+    normalizedAgeGroup.includes("t-ball") ||
+    normalizedAgeGroup.includes("tball")
+  ) {
+    return 3;
+  }
+
+  return 4;
+}
+
 export default async function BookPage() {
-  const [rooms, teams] = await Promise.all([
+  const [rooms, teamsRaw] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
@@ -11,23 +33,58 @@ export default async function BookPage() {
     prisma.team.findMany({
       where: { isActive: true },
       orderBy: [
-        { teamName: "asc" },
         { year: "desc" },
         { season: "asc" },
+        { ageGroup: "asc" },
+        { teamName: "asc" },
       ],
     }),
   ]);
+
+  const teams = [...teamsRaw].sort((a, b) => {
+    const sportCompare =
+      getTeamSportSortOrder(a.ageGroup) - getTeamSportSortOrder(b.ageGroup);
+
+    if (sportCompare !== 0) {
+      return sportCompare;
+    }
+
+    const yearCompare = b.year - a.year;
+
+    if (yearCompare !== 0) {
+      return yearCompare;
+    }
+
+    const seasonCompare = a.season.localeCompare(b.season);
+
+    if (seasonCompare !== 0) {
+      return seasonCompare;
+    }
+
+    const ageGroupCompare = a.ageGroup.localeCompare(b.ageGroup, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+
+    if (ageGroupCompare !== 0) {
+      return ageGroupCompare;
+    }
+
+    return a.teamName.localeCompare(b.teamName, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
 
   return (
     <main
       style={{
         minHeight: "100vh",
         backgroundColor: "#f5f7fb",
-        padding: "1rem", // ✅ smaller padding for mobile
+        padding: "1rem",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      {/* ✅ responsive helper styles (server-safe) */}
       <style>{`
         .page-container {
           max-width: 900px;
@@ -60,16 +117,16 @@ export default async function BookPage() {
 
         @media (max-width: 768px) {
           .nav-row {
-            flex-direction: column;   /* ✅ stack buttons on phone */
+            flex-direction: column;
           }
 
           .nav-row a {
-            width: 100%;              /* ✅ full-width buttons */
+            width: 100%;
             box-sizing: border-box;
           }
 
           .card {
-            padding: 1rem;            /* ✅ tighter spacing */
+            padding: 1rem;
             border-radius: 14px;
           }
         }

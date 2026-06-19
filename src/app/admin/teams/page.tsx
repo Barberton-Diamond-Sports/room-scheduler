@@ -1,3 +1,5 @@
+
+
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -5,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 import TeamFilters from "@/components/admin/team-filters";
 
 const ageGroupOptions = [
-  "Tee Ball",
   "8U Baseball",
   "10U Baseball",
   "12U Baseball",
@@ -14,6 +15,7 @@ const ageGroupOptions = [
   "10U Softball",
   "12U Softball",
   "14U Softball",
+  "Tee Ball",
 ] as const;
 
 const seasonOptions = [
@@ -24,6 +26,7 @@ const seasonOptions = [
 
 type TeamSeasonValue = "SPRING" | "SUMMER" | "FALL";
 type StatusFilterValue = "all" | "active" | "inactive";
+type SportFilterValue = "all" | "baseball" | "softball" | "tee-ball";
 
 const fieldLabelStyle = {
   display: "block",
@@ -66,9 +69,101 @@ function statusBadge(isActive: boolean) {
   } as const;
 }
 
+function getTeamSportSortOrder(ageGroup: string) {
+  const normalizedAgeGroup = ageGroup.toLowerCase();
+
+  if (normalizedAgeGroup.includes("baseball")) {
+    return 1;
+  }
+
+  if (normalizedAgeGroup.includes("softball")) {
+    return 2;
+  }
+
+  if (
+    normalizedAgeGroup.includes("tee ball") ||
+    normalizedAgeGroup.includes("t-ball") ||
+    normalizedAgeGroup.includes("tball")
+  ) {
+    return 3;
+  }
+
+  return 4;
+}
+
+function getTeamSportFilterValue(ageGroup: string): SportFilterValue {
+  const normalizedAgeGroup = ageGroup.toLowerCase();
+
+  if (normalizedAgeGroup.includes("baseball")) {
+    return "baseball";
+  }
+
+  if (normalizedAgeGroup.includes("softball")) {
+    return "softball";
+  }
+
+  if (
+    normalizedAgeGroup.includes("tee ball") ||
+    normalizedAgeGroup.includes("t-ball") ||
+    normalizedAgeGroup.includes("tball")
+  ) {
+    return "tee-ball";
+  }
+
+  return "all";
+}
+
+function sortTeamsForDisplay<
+  T extends {
+    isActive: boolean;
+    year: number;
+    season: TeamSeasonValue;
+    ageGroup: string;
+    teamName: string;
+  }
+>(a: T, b: T) {
+  if (a.isActive !== b.isActive) {
+    return a.isActive ? -1 : 1;
+  }
+
+  const sportCompare =
+    getTeamSportSortOrder(a.ageGroup) - getTeamSportSortOrder(b.ageGroup);
+
+  if (sportCompare !== 0) {
+    return sportCompare;
+  }
+
+  const yearCompare = b.year - a.year;
+
+  if (yearCompare !== 0) {
+    return yearCompare;
+  }
+
+  const seasonCompare = a.season.localeCompare(b.season);
+
+  if (seasonCompare !== 0) {
+    return seasonCompare;
+  }
+
+  const ageGroupCompare = a.ageGroup.localeCompare(b.ageGroup, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+
+  if (ageGroupCompare !== 0) {
+    return ageGroupCompare;
+  }
+
+  return a.teamName.localeCompare(b.teamName, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
 function buildTeamsHref(
   status: StatusFilterValue,
   season: string,
+  sport: SportFilterValue,
   extra?: { edit?: string; confirmDelete?: string }
 ) {
   const params = new URLSearchParams();
@@ -79,6 +174,10 @@ function buildTeamsHref(
 
   if (season !== "all") {
     params.set("season", season);
+  }
+  
+  if (sport !== "all") {
+	params.set("sport", sport);
   }
 
   if (extra?.edit) {
@@ -101,6 +200,7 @@ export default async function ManageTeamsPage({
     confirmDelete?: string;
     status?: string;
     season?: string;
+	sport?: string;
   }>;
 }) {
   async function addTeam(formData: FormData) {
@@ -146,7 +246,9 @@ export default async function ManageTeamsPage({
 
     revalidatePath("/admin/teams");
     revalidatePath("/admin");
-    redirect(buildTeamsHref(returnStatus, returnSeason));
+    const returnSport = String(formData.get("returnSport") || "all").trim() as SportFilterValue;
+
+redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
   }
 
   async function updateTeam(formData: FormData) {
@@ -194,7 +296,9 @@ export default async function ManageTeamsPage({
 
     revalidatePath("/admin/teams");
     revalidatePath("/admin");
-    redirect(buildTeamsHref(returnStatus, returnSeason));
+const returnSport = String(formData.get("returnSport") || "all").trim() as SportFilterValue;
+
+redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
   }
 
   async function deactivateTeam(formData: FormData) {
@@ -213,7 +317,9 @@ export default async function ManageTeamsPage({
 
     revalidatePath("/admin/teams");
     revalidatePath("/admin");
-    redirect(buildTeamsHref(returnStatus, returnSeason));
+const returnSport = String(formData.get("returnSport") || "all").trim() as SportFilterValue;
+
+redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
   }
 
   async function activateTeam(formData: FormData) {
@@ -232,7 +338,9 @@ export default async function ManageTeamsPage({
 
     revalidatePath("/admin/teams");
     revalidatePath("/admin");
-    redirect(buildTeamsHref(returnStatus, returnSeason));
+    const returnSport = String(formData.get("returnSport") || "all").trim() as SportFilterValue;
+
+redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
   }
 
   async function deleteTeam(formData: FormData) {
@@ -259,7 +367,9 @@ export default async function ManageTeamsPage({
 
     revalidatePath("/admin/teams");
     revalidatePath("/admin");
-    redirect(buildTeamsHref(returnStatus, returnSeason));
+    const returnSport = String(formData.get("returnSport") || "all").trim() as SportFilterValue;
+
+redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
   }
 
   const params = await searchParams;
@@ -270,6 +380,13 @@ export default async function ManageTeamsPage({
 
   const selectedStatus: StatusFilterValue =
     params.status === "active" || params.status === "inactive" ? params.status : "all";
+
+	const selectedSport: SportFilterValue =
+	  params.sport === "baseball" ||
+	  params.sport === "softball" ||
+	  params.sport === "tee-ball"
+		? params.sport
+		: "all";
 
   const recentSeasonTeams = await prisma.team.findMany({
     where: {
@@ -306,7 +423,8 @@ export default async function ManageTeamsPage({
   const validSeasonValues = new Set(seasonFilterOptions.map((option) => option.value));
   const selectedSeason = validSeasonValues.has(params.season || "") ? (params.season as string) : "all";
 
-  const hasActiveFilters = selectedStatus !== "all" || selectedSeason !== "all";
+  const hasActiveFilters =
+	selectedStatus !== "all" || selectedSeason !== "all" || selectedSport !== "all";
 
   const filterWhere: {
     isActive?: boolean;
@@ -333,21 +451,31 @@ export default async function ManageTeamsPage({
     }
   }
 
-  const [teams, totalTeams, activeCount, inactiveCount] = await Promise.all([
-    prisma.team.findMany({
-      where: filterWhere,
-      orderBy: [
-        { isActive: "desc" },
-        { year: "desc" },
-        { season: "asc" },
-        { ageGroup: "asc" },
-        { teamName: "asc" },
-      ],
-    }),
+	const [teamsRaw, totalTeams, activeCount, inactiveCount] = await Promise.all([
+	  prisma.team.findMany({
+		where: filterWhere,
+		orderBy: [
+		  { isActive: "desc" },
+		  { year: "desc" },
+		  { season: "asc" },
+		  { ageGroup: "asc" },
+		  { teamName: "asc" },
+		],
+	  }),
     prisma.team.count(),
     prisma.team.count({ where: { isActive: true } }),
     prisma.team.count({ where: { isActive: false } }),
   ]);
+
+	const teams = teamsRaw
+	  .filter((team) => {
+		if (selectedSport === "all") {
+		  return true;
+		}
+
+		return getTeamSportFilterValue(team.ageGroup) === selectedSport;
+	  })
+	  .sort(sortTeamsForDisplay);
 
   return (
     <main
@@ -483,6 +611,7 @@ export default async function ManageTeamsPage({
           <form action={addTeam} style={{ display: "grid", gap: "1rem" }}>
             <input type="hidden" name="returnStatus" value={selectedStatus} />
             <input type="hidden" name="returnSeason" value={selectedSeason} />
+			<input type="hidden" name="returnSport" value={selectedSport} />
 
             <div
               style={{
@@ -710,11 +839,12 @@ export default async function ManageTeamsPage({
             </div>
 
             <TeamFilters
-              selectedStatus={selectedStatus}
-              selectedSeason={selectedSeason}
-              seasonFilterOptions={seasonFilterOptions}
-              hasActiveFilters={hasActiveFilters}
-            />
+			  selectedStatus={selectedStatus}
+			  selectedSeason={selectedSeason}
+			  selectedSport={selectedSport}
+			  seasonFilterOptions={seasonFilterOptions}
+			  hasActiveFilters={hasActiveFilters}
+			/>
           </div>
 
           {teams.length === 0 ? (
@@ -750,6 +880,7 @@ export default async function ManageTeamsPage({
                         <input type="hidden" name="teamId" value={team.id} />
                         <input type="hidden" name="returnStatus" value={selectedStatus} />
                         <input type="hidden" name="returnSeason" value={selectedSeason} />
+						<input type="hidden" name="returnSport" value={selectedSport} />
 
                         <div
                           style={{
@@ -905,7 +1036,7 @@ export default async function ManageTeamsPage({
                           </button>
 
                           <Link
-                            href={buildTeamsHref(selectedStatus, selectedSeason)}
+                            href={buildTeamsHref(selectedStatus, selectedSeason, selectedSport)}
                             style={{
                               display: "inline-block",
                               padding: "0.8rem 1.2rem",
@@ -963,7 +1094,8 @@ export default async function ManageTeamsPage({
                           <div className="team-actions">
                             
 <Link
-  href={`${buildTeamsHref(selectedStatus, selectedSeason, { edit: team.id })}#team-${team.id}`}
+  href={`${buildTeamsHref(selectedStatus, selectedSeason, selectedSport, { edit: team.id })}#team-${team.id}`}
+
 
                               style={{
                                 display: "block",
@@ -986,6 +1118,7 @@ export default async function ManageTeamsPage({
                                 <input type="hidden" name="teamId" value={team.id} />
                                 <input type="hidden" name="returnStatus" value={selectedStatus} />
                                 <input type="hidden" name="returnSeason" value={selectedSeason} />
+								<input type="hidden" name="returnSport" value={selectedSport} />
                                 <button
                                   type="submit"
                                   style={{
@@ -1008,6 +1141,7 @@ export default async function ManageTeamsPage({
                                   <input type="hidden" name="teamId" value={team.id} />
                                   <input type="hidden" name="returnStatus" value={selectedStatus} />
                                   <input type="hidden" name="returnSeason" value={selectedSeason} />
+								  <input type="hidden" name="returnSport" value={selectedSport} />
                                   <button
                                     type="submit"
                                     style={{
@@ -1026,7 +1160,7 @@ export default async function ManageTeamsPage({
                                 </form>
 
                                 <Link
-                                  href={buildTeamsHref(selectedStatus, selectedSeason, {
+                                  href={buildTeamsHref(selectedStatus, selectedSeason, selectedSport, {
                                     confirmDelete: team.id,
                                   })}
                                   style={{
@@ -1071,6 +1205,7 @@ export default async function ManageTeamsPage({
                                 <input type="hidden" name="teamId" value={team.id} />
                                 <input type="hidden" name="returnStatus" value={selectedStatus} />
                                 <input type="hidden" name="returnSeason" value={selectedSeason} />
+								<input type="hidden" name="returnSport" value={selectedSport} />
                                 <button
                                   type="submit"
                                   style={{
@@ -1088,7 +1223,7 @@ export default async function ManageTeamsPage({
                               </form>
 
                               <Link
-                                href={buildTeamsHref(selectedStatus, selectedSeason)}
+                                href={buildTeamsHref(selectedStatus, selectedSeason, selectedSport)}
                                 style={{
                                   display: "inline-block",
                                   padding: "0.75rem 1rem",
