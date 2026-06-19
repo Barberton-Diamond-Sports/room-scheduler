@@ -582,16 +582,23 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
             </div>
 
             <div className="admin-section-group">
-              <div className="admin-section-title">Calendar</div>
-              <div className="admin-link-row">
-                <Link
-                  href={`/bookings?date=${todayValue}`}
-                  style={dashboardLinkStyle("#dbeafe", "#93c5fd", "#1d4ed8")}
-                >
-                  Weekly Calendar
-                </Link>
-              </div>
-            </div>
+			  <div className="admin-section-title">Calendar</div>
+			  <div className="admin-link-row">
+				<Link
+				  href={`/bookings?date=${todayValue}&view=week`}
+				  style={dashboardLinkStyle("#dbeafe", "#93c5fd", "#1d4ed8")}
+				>
+				  Weekly Calendar
+				</Link>
+
+				<Link
+				  href="/team-schedule"
+				  style={dashboardLinkStyle("#f0fdf4", "#86efac", "#166534")}
+				>
+				  Team Schedule
+				</Link>
+			  </div>
+			</div>
 
             <div className="admin-section-group">
               <div className="admin-section-title">Umpires</div>

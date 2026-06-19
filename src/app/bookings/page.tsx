@@ -146,6 +146,35 @@ function bookingBlockColors(title: string | null) {
   return { backgroundColor: "#fee2e2", borderColor: "#fca5a5" };
 }
 
+function getBookingDisplayTitle(booking: {
+  title: string | null;
+  team: {
+    ageGroup: string | null;
+  } | null;
+}) {
+  const bookingType = booking.title?.trim() || "Booking";
+  const ageGroup = booking.team?.ageGroup?.trim() || "";
+  const normalizedAgeGroup = ageGroup.toLowerCase();
+
+  let groupLabel = "";
+
+  if (normalizedAgeGroup.includes("softball")) {
+    groupLabel = "Softball";
+  } else if (
+    normalizedAgeGroup.includes("tee ball") ||
+    normalizedAgeGroup.includes("t-ball") ||
+    normalizedAgeGroup.includes("tball")
+  ) {
+    groupLabel = "Tee Ball";
+  } else if (normalizedAgeGroup.includes("baseball")) {
+    groupLabel = "Baseball";
+  } else {
+    groupLabel = ageGroup;
+  }
+
+  return groupLabel ? `${groupLabel} ${bookingType}` : bookingType;
+}
+
 type PageProps = {
   searchParams: Promise<{
     date?: string;
@@ -637,6 +666,18 @@ const weekBlackoutMap = buildBlackoutMap(
                 Home
               </Link>
 
+			  <Link
+				href="/team-schedule"
+				className="nav-link"
+				style={{
+					backgroundColor: "#f0fdf4",
+					border: "1px solid #bbf7d0",
+					color: "#166534",
+				}}
+			  >
+				Team Schedules
+			  </Link>
+
               <Link
                 href="/book"
                 className="nav-link"
@@ -772,7 +813,7 @@ const weekBlackoutMap = buildBlackoutMap(
               {roomBookings.map((booking) => {
                 const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
                 const hoverText = [
-                  booking.title || "Booking",
+                  getBookingDisplayTitle(booking),
                   booking.team?.teamName,
                   booking.team?.coachEmail || "",
                   formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
@@ -800,7 +841,7 @@ const weekBlackoutMap = buildBlackoutMap(
                         lineHeight: 1.35,
                       }}
                     >
-                      {booking.title || "Booking"}
+                      {getBookingDisplayTitle(booking)}
                     </div>
                     <div
                       style={{
@@ -952,7 +993,7 @@ const weekBlackoutMap = buildBlackoutMap(
                       const height = booking.durationBlocks * SLOT_HEIGHT - 4;
                       const showNotes = booking.durationBlocks >= 4 && Boolean(booking.notes);
                       const hoverText = [
-                        booking.title || "Booking",
+                        getBookingDisplayTitle(booking),
                         booking.team?.teamName,
                         booking.team?.coachEmail || "",
                         formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
@@ -995,7 +1036,7 @@ const weekBlackoutMap = buildBlackoutMap(
                               textOverflow: "ellipsis",
                             }}
                           >
-                            {booking.title || "Booking"}
+                            {getBookingDisplayTitle(booking)}
                           </div>
                           <div
                             style={{
@@ -1156,7 +1197,7 @@ const weekBlackoutMap = buildBlackoutMap(
                         {cellBookings.map((booking) => {
                           const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
                           const hoverText = [
-                            booking.title || "Booking",
+                            getBookingDisplayTitle(booking),
                             booking.team?.teamName,
                             booking.team?.coachEmail || "",
                             formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
@@ -1190,7 +1231,7 @@ const weekBlackoutMap = buildBlackoutMap(
                                   textOverflow: "ellipsis",
                                 }}
                               >
-                                {booking.title || "Booking"}
+                                {getBookingDisplayTitle(booking)}
                               </div>
                               <div
                                 style={{

@@ -38,7 +38,7 @@ export default function HomePage() {
         style={{
           maxWidth: "1200px",
           margin: "0 auto",
-          padding: "2rem 1rem", // reduced side padding for mobile
+          padding: "2rem 1rem",
         }}
       >
         <div
@@ -50,11 +50,9 @@ export default function HomePage() {
             boxShadow: "0 14px 40px rgba(15, 23, 42, 0.08)",
           }}
         >
-          
-
           <h1
             style={{
-              fontSize: "2rem", // smaller for mobile
+              fontSize: "2rem",
               lineHeight: 1.2,
               marginTop: 0,
               marginBottom: "0.75rem",
@@ -65,7 +63,6 @@ export default function HomePage() {
             Barberton Diamond Sports
           </h1>
 
-          {/* FIXED: no nested <p> tags */}
           <div
             style={{
               fontSize: "1rem",
@@ -83,11 +80,10 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* ✅ Responsive button layout */}
           <div
             style={{
               display: "flex",
-              flexDirection: "column", // stack on mobile
+              flexDirection: "column",
               gap: "0.75rem",
               marginBottom: "1.5rem",
             }}
@@ -96,7 +92,7 @@ export default function HomePage() {
               href="/book"
               style={{
                 display: "block",
-                width: "100%", // full width on mobile
+                width: "100%",
                 padding: "0.9rem 1.25rem",
                 backgroundColor: "#2563eb",
                 color: "#ffffff",
@@ -125,6 +121,24 @@ export default function HomePage() {
               }}
             >
               View Calendar
+            </Link>
+
+            <Link
+              href="/team-schedule"
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "0.9rem 1.25rem",
+                backgroundColor: "#f0fdf4",
+                color: "#166534",
+                borderRadius: "12px",
+                textDecoration: "none",
+                fontWeight: 700,
+                border: "1px solid #bbf7d0",
+                textAlign: "center",
+              }}
+            >
+              Team Schedule
             </Link>
 
             <Link
@@ -163,7 +177,6 @@ export default function HomePage() {
               Administration
             </Link>
           </div>
-
         </div>
       </section>
     </main>
