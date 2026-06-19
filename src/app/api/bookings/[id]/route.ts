@@ -43,6 +43,7 @@ export async function PATCH(
 ) {
   try {
     const isAdmin = await ensureAdminAccess();
+
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
@@ -65,9 +66,29 @@ export async function PATCH(
       umpireId,
     } = body;
 
-    if (!teamId || !roomId || !date || !startTime || !durationBlocks) {
+    const cleanedTitle =
+      typeof title === "string" && title.trim() ? title.trim() : null;
+
+    const cleanedTeamId =
+      typeof teamId === "string" && teamId.trim() ? teamId.trim() : null;
+
+    const isTeamlessReservedBooking =
+      !cleanedTeamId && cleanedTitle === "Other";
+
+    if (!roomId || !date || !startTime || !durationBlocks) {
       return NextResponse.json(
         { success: false, message: "Missing required booking fields." },
+        { status: 400 }
+      );
+    }
+
+    if (!cleanedTeamId && !isTeamlessReservedBooking) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Please select a team, or choose Other to reserve a field without a team.",
+        },
         { status: 400 }
       );
     }
@@ -88,33 +109,51 @@ export async function PATCH(
       );
     }
 
-    const team = await prisma.team.findFirst({
-      where: {
-        id: teamId,
-        isActive: true,
-      },
-    });
+    let team: {
+      id: string;
+      ageGroup: string;
+      requiresUmpire: boolean;
+    } | null = null;
 
-    if (!team) {
+    if (cleanedTeamId) {
+      team = await prisma.team.findFirst({
+        where: {
+          id: cleanedTeamId,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          ageGroup: true,
+          requiresUmpire: true,
+        },
+      });
+
+      if (!team) {
+        return NextResponse.json(
+          { success: false, message: "Please select a valid active team." },
+          { status: 400 }
+        );
+      }
+    }
+
+    const normalizedDurationBlocks = Number(durationBlocks);
+
+    if (
+      !Number.isInteger(normalizedDurationBlocks) ||
+      normalizedDurationBlocks <= 0
+    ) {
       return NextResponse.json(
-        { success: false, message: "Please select a valid active team." },
+        { success: false, message: "Please select a valid duration." },
         { status: 400 }
       );
     }
 
-    const cleanedTitle =
-      typeof title === "string" && title.trim() ? title.trim() : null;
-
-    const bookingNeedsUmpire =
-      !!team.requiresUmpire &&
-      (cleanedTitle === "Game");
-
-    const startTimeMinutes = timeToMinutes(startTime);
-    const endTimeMinutes = startTimeMinutes + Number(durationBlocks) * 30;
-
     const bookingDate = isoDay(date);
     const nextDay = new Date(bookingDate);
     nextDay.setDate(nextDay.getDate() + 1);
+
+    const startTimeMinutes = timeToMinutes(startTime);
+    const endTimeMinutes = startTimeMinutes + normalizedDurationBlocks * 30;
 
     const blackout = await prisma.roomBlackout.findFirst({
       where: {
@@ -130,7 +169,7 @@ export async function PATCH(
           success: false,
           message: blackout.reason?.trim()
             ? `That field is unavailable on that date: ${blackout.reason}.`
-            : "That field is blacked out and unavailable on that date.",
+            : "That field is unavailable on that date.",
         },
         { status: 409 }
       );
@@ -154,17 +193,29 @@ export async function PATCH(
       );
     }
 
+    const bookingNeedsUmpire =
+      !!team?.requiresUmpire && cleanedTitle === "Game";
+
     let validatedUmpireId: string | null = null;
 
     if (typeof umpireId === "string" && umpireId.trim()) {
       const selectedUmpireId = umpireId.trim();
 
+      if (!team) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "An umpire can only be assigned to a team game.",
+          },
+          { status: 400 }
+        );
+      }
+
       if (!bookingNeedsUmpire) {
         return NextResponse.json(
           {
             success: false,
-            message:
-              "An umpire can only be assigned for games that require one.",
+            message: "An umpire can only be assigned for games that require one.",
           },
           { status: 400 }
         );
@@ -219,7 +270,9 @@ export async function PATCH(
           month: "short",
           day: "numeric",
           year: "numeric",
-        })} from ${formatTimeLabel(conflictingAssignment.startTimeMinutes)} to ${formatTimeLabel(
+        })} from ${formatTimeLabel(
+          conflictingAssignment.startTimeMinutes
+        )} to ${formatTimeLabel(
           conflictingAssignment.endTimeMinutes
         )} at ${conflictingAssignment.room?.name || "another field"}.`;
 
@@ -236,13 +289,16 @@ export async function PATCH(
       where: { id },
       data: {
         roomId,
-        teamId: team.id,
+        teamId: team?.id ?? null,
         bookingDate,
         startTimeMinutes,
         endTimeMinutes,
-        durationBlocks: Number(durationBlocks),
+        durationBlocks: normalizedDurationBlocks,
         title: cleanedTitle,
-        notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+        notes:
+          typeof notes === "string" && notes.trim()
+            ? notes.trim()
+            : null,
         opponent:
           typeof opponent === "string" && opponent.trim()
             ? opponent.trim()
@@ -317,13 +373,16 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message: validatedUmpireId
-        ? "Booking updated successfully with umpire assignment."
-        : "Booking updated successfully.",
+      message: isTeamlessReservedBooking
+        ? "Reserved field booking updated successfully."
+        : validatedUmpireId
+          ? "Booking updated successfully with umpire assignment."
+          : "Booking updated successfully.",
       booking,
     });
   } catch (error) {
     console.error("Error updating booking:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to update booking." },
       { status: 500 }
@@ -337,6 +396,7 @@ export async function DELETE(
 ) {
   try {
     const isAdmin = await ensureAdminAccess();
+
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
@@ -421,6 +481,7 @@ export async function DELETE(
     });
   } catch (error) {
     console.error("Error deleting booking:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to delete booking." },
       { status: 500 }

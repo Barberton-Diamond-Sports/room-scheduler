@@ -92,7 +92,6 @@ const purposeOptions = [
   "Practice",
   "Scrimmage",
   "Game",
-  "Other",
 ];
 
 function pad(value: number) {
@@ -137,6 +136,13 @@ function formatMinutesLabel(totalMinutes: number) {
   if (hours12 === 0) hours12 = 12;
   return `${hours12}:${pad(minutes)} ${suffix}`;
 }
+
+
+function formatUnavailableLabel(reason: string | null | undefined) {
+  const trimmed = reason?.trim();
+  return trimmed ? `Field Unavailable · ${trimmed}` : "Field Unavailable";
+}
+
 
 function buildTimeOptions() {
   const options: string[] = [];
@@ -480,12 +486,12 @@ const bookingsByRoom = useMemo(() => {
         }
 		
 		.booking-room-blackout-card {
-		  background-color: #374151;
-		  border: 1px solid #1f2937;
+		  background-color: #e5e7eb;
+		  border: 1px solid #cbd5e1;
 		  border-radius: 10px;
 		  padding: 0.85rem 0.9rem;
 		  min-width: 0;
-		  color: #ffffff;
+		  color: #374151;
 		}
 
         .booking-wrap-text {
@@ -784,19 +790,19 @@ const bookingsByRoom = useMemo(() => {
 
 					{blackout ? (
 					  <div className="booking-room-blackout-card">
-						<div
-						  className="booking-wrap-text"
-						  style={{ fontWeight: 800, lineHeight: 1.35 }}
-						>
-						  BLACKED OUT
+						  <div
+							className="booking-wrap-text"
+							style={{ fontWeight: 800, lineHeight: 1.35 }}
+						  >
+							Field Unavailable
+						  </div>
+						  <div
+							className="booking-wrap-text"
+							style={{ marginTop: "0.25rem", lineHeight: 1.45 }}
+						  >
+							{blackout.reason?.trim() || "This field is unavailable for the full day."}
+						  </div>
 						</div>
-						<div
-						  className="booking-wrap-text"
-						  style={{ marginTop: "0.25rem", lineHeight: 1.45 }}
-						>
-						  {blackout.reason?.trim() || "This field is unavailable for the full day."}
-						</div>
-					  </div>
 					) : bookings.length === 0 ? (
 					  <div style={{ color: "#94a3b8", lineHeight: 1.4 }}>
 						— No bookings for this field
@@ -809,13 +815,17 @@ const bookingsByRoom = useMemo(() => {
 							  className="booking-wrap-text"
 							  style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
 							>
-							  {dailyBooking.title || "Booking"}
+							  {!dailyBooking.team && dailyBooking.title === "Other"
+  ? "Reserved"
+  : dailyBooking.title || "Booking"}
 							</div>
 							<div
 							  className="booking-wrap-text"
 							  style={{ color: "#334155", marginTop: "0.15rem", lineHeight: 1.4 }}
 							>
-							  {dailyBooking.team?.teamName || "—"}
+							  {!dailyBooking.team && dailyBooking.title === "Other"
+  ? "Reserved"
+  : dailyBooking.team?.teamName || "—"}
 							</div>
 							<div
 							  style={{

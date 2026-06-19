@@ -106,7 +106,7 @@ function toDateKey(date: Date) {
 
 function formatBlackoutLabel(reason: string | null | undefined) {
   const trimmed = reason?.trim();
-  return trimmed ? `BLACKED OUT · ${trimmed}` : "BLACKED OUT";
+  return trimmed ? `Field Unavailable ${trimmed}` : "Field Unavailable";
 }
 
 function buildBlackoutMap(
@@ -153,6 +153,11 @@ function getBookingDisplayTitle(booking: {
   } | null;
 }) {
   const bookingType = booking.title?.trim() || "Booking";
+
+  if (!booking.team && bookingType === "Other") {
+    return "Reserved";
+  }
+
   const ageGroup = booking.team?.ageGroup?.trim() || "";
   const normalizedAgeGroup = ageGroup.toLowerCase();
 
@@ -173,6 +178,21 @@ function getBookingDisplayTitle(booking: {
   }
 
   return groupLabel ? `${groupLabel} ${bookingType}` : bookingType;
+}
+
+function getBookingTeamDisplay(booking: {
+  title: string | null;
+  team: {
+    teamName: string | null;
+  } | null;
+}) {
+  const bookingType = booking.title?.trim() || "";
+
+  if (!booking.team && bookingType === "Other") {
+    return "Admin reserved field";
+  }
+
+  return booking.team?.teamName || "No team";
 }
 
 type PageProps = {
@@ -270,15 +290,15 @@ const weekBlackoutMap = buildBlackoutMap(
 );
 
 
-  const blackoutCellStyle = {
-    backgroundColor: "#374151",
-    color: "#ffffff",
-    border: "1px solid #1f2937",
-    borderRadius: "10px",
-    padding: "0.65rem 0.75rem",
-    fontWeight: 700,
-    textAlign: "center" as const,
-  };
+const blackoutCellStyle = {
+  backgroundColor: "#e5e7eb",
+  color: "#374151",
+  border: "1px solid #cbd5e1",
+  borderRadius: "10px",
+  padding: "0.65rem 0.75rem",
+  fontWeight: 700,
+  textAlign: "center" as const,
+};
 
   return (
     <main
@@ -768,16 +788,16 @@ const weekBlackoutMap = buildBlackoutMap(
 
 <div className="legend-row">
   <div
-    style={{
-      width: "18px",
-      height: "18px",
-      borderRadius: "4px",
-      backgroundColor: "#374151",
-      border: "1px solid #1f2937",
-      flexShrink: 0,
-    }}
-  />
-  <div style={{ color: "#475569", fontWeight: 600 }}>Blackout date</div>
+  style={{
+    width: "18px",
+    height: "18px",
+    borderRadius: "4px",
+    backgroundColor: "#e5e7eb",
+    border: "1px solid #cbd5e1",
+    flexShrink: 0,
+  }}
+/>
+  <div style={{ color: "#475569", fontWeight: 600 }}>Field unavailable</div>
 </div>
 
 {/* MOBILE DAY VIEW - ALWAYS */}
@@ -814,7 +834,7 @@ const weekBlackoutMap = buildBlackoutMap(
                 const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
                 const hoverText = [
                   getBookingDisplayTitle(booking),
-                  booking.team?.teamName,
+                  getBookingTeamDisplay(booking),
                   booking.team?.coachEmail || "",
                   formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
                   booking.notes || "",
@@ -850,7 +870,7 @@ const weekBlackoutMap = buildBlackoutMap(
                         lineHeight: 1.35,
                       }}
                     >
-                      {booking.team?.teamName || "No team"}
+                      {getBookingTeamDisplay(booking)}
                     </div>
                     <div
                       style={{
@@ -950,7 +970,7 @@ const weekBlackoutMap = buildBlackoutMap(
                   height: `${totalHeight}px`,
                   border: "1px solid #dbe3f0",
                   borderTop: "none",
-                  backgroundColor: roomBlackout ? "#374151" : "#ffffff",
+                  backgroundColor: roomBlackout ? "#f3f4f6" : "#ffffff",
                   borderRadius: "0 0 12px 12px",
                 }}
               >
@@ -964,7 +984,7 @@ const weekBlackoutMap = buildBlackoutMap(
                       justifyContent: "center",
                       padding: "1rem",
                       textAlign: "center",
-                      color: "#ffffff",
+                      color: "#374151",
                       fontWeight: 800,
                       lineHeight: 1.4,
                     }}
@@ -994,7 +1014,7 @@ const weekBlackoutMap = buildBlackoutMap(
                       const showNotes = booking.durationBlocks >= 4 && Boolean(booking.notes);
                       const hoverText = [
                         getBookingDisplayTitle(booking),
-                        booking.team?.teamName,
+                        getBookingTeamDisplay(booking),
                         booking.team?.coachEmail || "",
                         formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
                         booking.notes || "",
@@ -1047,7 +1067,7 @@ const weekBlackoutMap = buildBlackoutMap(
                               textOverflow: "ellipsis",
                             }}
                           >
-                            {booking.team?.teamName}
+                            {getBookingTeamDisplay(booking)}
                           </div>
                           <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.8rem" }}>
                             {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}
@@ -1162,8 +1182,8 @@ const weekBlackoutMap = buildBlackoutMap(
                   <div
                     key={day.value}
                     style={{
-                      backgroundColor: cellBlackout ? "#374151" : "#ffffff",
-                      border: cellBlackout ? "1px solid #1f2937" : "1px solid #dbe3f0",
+                      backgroundColor: cellBlackout ? "#f3f4f6" : "#ffffff",
+					  border: cellBlackout ? "1px solid #cbd5e1" : "1px solid #dbe3f0",
                       borderRadius: "12px",
                       padding: "0.55rem",
                       minHeight: "88px",
@@ -1198,7 +1218,7 @@ const weekBlackoutMap = buildBlackoutMap(
                           const { backgroundColor, borderColor } = bookingBlockColors(booking.title);
                           const hoverText = [
                             getBookingDisplayTitle(booking),
-                            booking.team?.teamName,
+                            getBookingTeamDisplay(booking),
                             booking.team?.coachEmail || "",
                             formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes),
                             booking.notes || "",
@@ -1243,7 +1263,7 @@ const weekBlackoutMap = buildBlackoutMap(
                                   textOverflow: "ellipsis",
                                 }}
                               >
-                                {booking.team?.teamName}
+                                {getBookingTeamDisplay(booking)}
                               </div>
                               <div style={{ color: "#475569", marginTop: "0.15rem", fontSize: "0.77rem" }}>
                                 {formatTimeRange(booking.startTimeMinutes, booking.endTimeMinutes)}

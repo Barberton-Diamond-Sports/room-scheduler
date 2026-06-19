@@ -51,25 +51,58 @@ export async function POST(request: Request) {
       umpireId,
     } = body;
 
-    if (!teamId || !roomId || !date || !startTime || !durationBlocks) {
+    const cleanedTitle =
+      typeof title === "string" && title.trim() ? title.trim() : null;
+
+    const cleanedTeamId =
+      typeof teamId === "string" && teamId.trim() ? teamId.trim() : null;
+
+    const isTeamlessReservedBooking =
+      !cleanedTeamId && cleanedTitle === "Other";
+
+    if (!roomId || !date || !startTime || !durationBlocks) {
       return NextResponse.json(
         { success: false, message: "Missing required booking fields." },
         { status: 400 }
       );
     }
 
-    const team = await prisma.team.findFirst({
-      where: {
-        id: teamId,
-        isActive: true,
-      },
-    });
-
-    if (!team) {
+    if (!cleanedTeamId && !isTeamlessReservedBooking) {
       return NextResponse.json(
-        { success: false, message: "Please select a valid active team." },
+        {
+          success: false,
+          message:
+            "Please select a team, or choose Other to reserve a field without a team.",
+        },
         { status: 400 }
       );
+    }
+
+    let team: {
+      id: string;
+      ageGroup: string;
+      requiresUmpire: boolean;
+    } | null = null;
+
+    if (cleanedTeamId) {
+      team = await prisma.team.findFirst({
+        where: {
+          id: cleanedTeamId,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          ageGroup: true,
+          requiresUmpire: true,
+        },
+      });
+
+      if (!team) {
+        return NextResponse.json(
+          { success: false, message: "Please select a valid active team." },
+          { status: 400 }
+        );
+      }
     }
 
     const bookingDate = new Date(`${date}T00:00:00`);
@@ -97,7 +130,18 @@ export async function POST(request: Request) {
     }
 
     const startTimeMinutes = timeToMinutes(startTime);
-    const endTimeMinutes = startTimeMinutes + Number(durationBlocks) * 30;
+    const normalizedDurationBlocks = Number(durationBlocks);
+    const endTimeMinutes = startTimeMinutes + normalizedDurationBlocks * 30;
+
+    if (
+      !Number.isInteger(normalizedDurationBlocks) ||
+      normalizedDurationBlocks <= 0
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Please select a valid duration." },
+        { status: 400 }
+      );
+    }
 
     const existingBooking = await prisma.booking.findFirst({
       where: {
@@ -116,17 +160,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const cleanedTitle =
-      typeof title === "string" && title.trim() ? title.trim() : null;
-
     const bookingNeedsUmpire =
-      !!team.requiresUmpire &&
-      (cleanedTitle === "Game");
+      !!team?.requiresUmpire &&
+      cleanedTitle === "Game";
 
     let validatedUmpireId: string | null = null;
 
     if (typeof umpireId === "string" && umpireId.trim()) {
       const selectedUmpireId = umpireId.trim();
+
+      if (!team) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "An umpire can only be assigned to a team game.",
+          },
+          { status: 400 }
+        );
+      }
 
       if (!bookingNeedsUmpire) {
         return NextResponse.json(
@@ -187,7 +239,9 @@ export async function POST(request: Request) {
           month: "short",
           day: "numeric",
           year: "numeric",
-        })} from ${formatTimeLabel(conflictingAssignment.startTimeMinutes)} to ${formatTimeLabel(
+        })} from ${formatTimeLabel(
+          conflictingAssignment.startTimeMinutes
+        )} to ${formatTimeLabel(
           conflictingAssignment.endTimeMinutes
         )} at ${conflictingAssignment.room?.name || "another field"}.`;
 
@@ -203,13 +257,16 @@ export async function POST(request: Request) {
     const booking = await prisma.booking.create({
       data: {
         roomId,
-        teamId: team.id,
+        teamId: team?.id ?? null,
         bookingDate,
         startTimeMinutes,
         endTimeMinutes,
-        durationBlocks: Number(durationBlocks),
+        durationBlocks: normalizedDurationBlocks,
         title: cleanedTitle,
-        notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+        notes:
+          typeof notes === "string" && notes.trim()
+            ? notes.trim()
+            : null,
         opponent:
           typeof opponent === "string" && opponent.trim()
             ? opponent.trim()
@@ -223,15 +280,20 @@ export async function POST(request: Request) {
       },
     });
 
+    const message = isTeamlessReservedBooking
+      ? "Reserved field booking saved successfully."
+      : validatedUmpireId
+      ? "Booking saved successfully with umpire assignment."
+      : "Booking saved successfully.";
+
     return NextResponse.json({
       success: true,
-      message: validatedUmpireId
-        ? "Booking saved successfully with umpire assignment."
-        : "Booking saved successfully.",
+      message,
       booking,
     });
   } catch (error) {
     console.error("Error creating admin booking:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to save booking." },
       { status: 500 }

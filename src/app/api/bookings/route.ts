@@ -83,6 +83,18 @@ export async function POST(request: Request) {
       notes,
     } = body;
 
+	
+	if (title === "Other") {
+	  return NextResponse.json(
+		{
+		  success: false,
+		  message: "Reserved field bookings are restricted to administrators.",
+		},
+		{ status: 403 }
+	  );
+	}
+
+
     if (!teamId || !roomId || !date || !startTime || !durationBlocks) {
       return NextResponse.json(
         { success: false, message: "Missing required booking fields." },

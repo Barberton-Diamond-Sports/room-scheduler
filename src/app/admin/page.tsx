@@ -81,7 +81,7 @@ function getTypeBadge(title?: string | null) {
 
 function blackoutLabel(reason?: string | null) {
   const trimmed = reason?.trim();
-  return trimmed ? `BLACKED OUT · ${trimmed}` : "BLACKED OUT";
+  return trimmed ? `Field Unavailable · ${trimmed}` : "Field Unavailable";
 }
 
 
@@ -622,16 +622,18 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
           <div
             key={`blackout-${item.id}`}
             className="admin-schedule-item"
-            style={{
-              backgroundColor: "#374151",
-              borderColor: "#1f2937",
-            }}
+            
+			style={{
+			  backgroundColor: "#e5e7eb",
+			  borderColor: "#cbd5e1",
+			}}
+
           >
             <div className="admin-schedule-item-row">
               <div>
                 <div
                   style={{
-                    color: "#ffffff",
+                    color: "#374151",
                     fontWeight: 700,
                     lineHeight: 1.35,
                   }}
@@ -641,7 +643,7 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
 
                 <div
                   style={{
-                    color: "#e5e7eb",
+                    color: "#475569",
                     marginTop: "0.2rem",
                     fontWeight: 700,
                     lineHeight: 1.35,
@@ -653,7 +655,7 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
 
               <div
                 style={{
-                  color: "#e5e7eb",
+                  color: "#475569",
                   fontWeight: 700,
                   textAlign: "right",
                   lineHeight: 1.35,

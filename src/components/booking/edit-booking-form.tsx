@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -79,7 +77,6 @@ const fieldStyle = {
   WebkitTextFillColor: "#0f172a",
 };
 
-
 const textareaStyle = {
   ...fieldStyle,
   minHeight: "110px",
@@ -90,7 +87,14 @@ const durationOptions = [
   { value: "2", label: "60 min" },
   { value: "3", label: "90 min" },
   { value: "4", label: "2 hours" },
+  { value: "5", label: "2.5 hours" },
   { value: "6", label: "3 hours" },
+  { value: "8", label: "4 hours" },
+  { value: "10", label: "5 hours" },
+  { value: "12", label: "6 hours" },
+  { value: "16", label: "8 hours" },
+  { value: "20", label: "10 hours" },
+  { value: "24", label: "12 hours" },
 ];
 
 const purposeOptions = ["Practice", "Scrimmage", "Game", "Other"];
@@ -125,10 +129,12 @@ function dateToInputValue(dateString: string) {
 
 function buildTimeOptions() {
   const options: string[] = [];
+
   for (let hour = START_HOUR; hour < END_HOUR; hour++) {
     options.push(`${pad(hour)}:00`);
     options.push(`${pad(hour)}:30`);
   }
+
   return options;
 }
 
@@ -221,9 +227,9 @@ export default function EditBookingForm({
   const router = useRouter();
 
   const activeTeams = useMemo(
-  () => teams.filter((team) => team.isActive).sort(sortTeamsForDropdown),
-  [teams]
-);
+    () => teams.filter((team) => team.isActive).sort(sortTeamsForDropdown),
+    [teams]
+  );
 
   const activeUmpires = useMemo(
     () =>
@@ -233,7 +239,7 @@ export default function EditBookingForm({
     [umpires]
   );
 
-  const [teamId, setTeamId] = useState(booking.teamId || activeTeams[0]?.id || "");
+  const [teamId, setTeamId] = useState(booking.teamId || "");
   const [roomId, setRoomId] = useState(booking.roomId);
   const [date, setDate] = useState(dateToInputValue(booking.bookingDate));
   const [startTime, setStartTime] = useState(minutesToTime(booking.startTimeMinutes));
@@ -250,12 +256,14 @@ export default function EditBookingForm({
     [activeTeams, teamId]
   );
 
-  const showOpponent =
-    purpose === "Game" || purpose === "Scrimmage";
+  const isTeamlessReservedBooking = purpose === "Other" && !teamId;
+  const requiresTeamSelection = purpose !== "Other";
+
+  const showOpponent = purpose === "Game" || purpose === "Scrimmage";
 
   const showUmpire =
     !!selectedTeam?.requiresUmpire &&
-    (purpose === "Game");
+    purpose === "Game";
 
   const selectedSport = inferSport(selectedTeam?.ageGroup);
 
@@ -269,14 +277,15 @@ export default function EditBookingForm({
 
   const availableDurations = useMemo(() => {
     const startMinutes = timeToMinutes(startTime);
+
     return durationOptions.filter(
       (option) => startMinutes + Number(option.value) * 30 <= END_HOUR * 60
     );
   }, [startTime]);
 
   useEffect(() => {
-    if (activeTeams.length > 0 && !activeTeams.some((team) => team.id === teamId)) {
-      setTeamId(activeTeams[0].id);
+    if (teamId && activeTeams.length > 0 && !activeTeams.some((team) => team.id === teamId)) {
+      setTeamId("");
     }
   }, [activeTeams, teamId]);
 
@@ -306,8 +315,8 @@ export default function EditBookingForm({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!teamId || !selectedTeam) {
-      setMessage("Please select a team.");
+    if (requiresTeamSelection && (!teamId || !selectedTeam)) {
+      setMessage("Please select a team, or choose Other to reserve a field without a team.");
       setMessageType("error");
       return;
     }
@@ -320,7 +329,7 @@ export default function EditBookingForm({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          teamId,
+          teamId: teamId || null,
           roomId,
           date,
           startTime,
@@ -337,11 +346,13 @@ export default function EditBookingForm({
       if (result.success) {
         setMessage("Booking updated successfully.");
         setMessageType("success");
-		
-		const destination = returnDate
-		  ? `/bookings/${booking.id}?date=${returnDate}&view=${returnView}${cameFromAdmin ? "&from=admin" : ""}`
-		  : `/bookings/${booking.id}?view=${returnView}${cameFromAdmin ? "&from=admin" : ""}`;
-  
+
+        const destination = returnDate
+          ? `/bookings/${booking.id}?date=${returnDate}&view=${returnView}${
+              cameFromAdmin ? "&from=admin" : ""
+            }`
+          : `/bookings/${booking.id}?view=${returnView}${cameFromAdmin ? "&from=admin" : ""}`;
+
         router.push(destination);
         router.refresh();
       } else {
@@ -355,6 +366,8 @@ export default function EditBookingForm({
     }
   }
 
+  const submitDisabled = activeTeams.length === 0 && requiresTeamSelection;
+
   const messageStyles =
     messageType === "success"
       ? { backgroundColor: "#ecfdf5", border: "1px solid #86efac", color: "#166534" }
@@ -364,7 +377,7 @@ export default function EditBookingForm({
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: "1.25rem" }}>
-      {booking.currentUmpireName && (
+      {booking.currentUmpireName && showUmpire && (
         <div
           style={{
             backgroundColor: "#fef2f2",
@@ -376,7 +389,8 @@ export default function EditBookingForm({
             lineHeight: 1.45,
           }}
         >
-          Important: Re-select the current umpire before saving, or the umpire assignment will be cleared.
+          Important: Re-select the current umpire before saving, or the umpire assignment will be
+          cleared.
         </div>
       )}
 
@@ -396,19 +410,41 @@ export default function EditBookingForm({
             value={teamId}
             onChange={(e) => setTeamId(e.target.value)}
             style={fieldStyle}
-            required
-            disabled={activeTeams.length === 0}
+            required={requiresTeamSelection}
+            disabled={activeTeams.length === 0 && requiresTeamSelection}
           >
             {activeTeams.length === 0 ? (
-              <option value="">No active teams available</option>
+              <option value="">
+                {requiresTeamSelection
+                  ? "No active teams available"
+                  : "No team — Reserved field"}
+              </option>
             ) : (
-              activeTeams.map((team) => (
-                <option key={team.id} value={team.id}>
-                  {teamLabel(team)}
+              <>
+                <option value="">
+                  {purpose === "Other" ? "No team — Reserved field" : "Select a team"}
                 </option>
-              ))
+                {activeTeams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {teamLabel(team)}
+                  </option>
+                ))}
+              </>
             )}
           </select>
+
+          {purpose === "Other" && (
+            <div
+              style={{
+                marginTop: "0.4rem",
+                color: "#64748b",
+                fontSize: "0.86rem",
+                lineHeight: 1.35,
+              }}
+            >
+              Leave team blank to make this a general reserved field booking.
+            </div>
+          )}
         </div>
 
         <div>
@@ -511,7 +547,7 @@ export default function EditBookingForm({
           </div>
         )}
 
-{showUmpire && (
+        {showUmpire && (
           <div>
             <label htmlFor="umpireId" style={fieldLabelStyle}>
               Umpire
@@ -546,7 +582,6 @@ export default function EditBookingForm({
             </select>
           </div>
         )}
-
       </div>
 
       {selectedTeam && (
@@ -586,6 +621,23 @@ export default function EditBookingForm({
         </div>
       )}
 
+      {isTeamlessReservedBooking && (
+        <div
+          style={{
+            border: "1px solid #fca5a5",
+            borderRadius: "14px",
+            padding: "1rem",
+            backgroundColor: "#fef2f2",
+            color: "#991b1b",
+            fontWeight: 700,
+            lineHeight: 1.45,
+          }}
+        >
+          Reserved field booking selected. This booking is not tied to a team and will display as
+          Reserved on the calendar.
+        </div>
+      )}
+
       <div>
         <label htmlFor="notes" style={fieldLabelStyle}>
           Notes
@@ -602,16 +654,16 @@ export default function EditBookingForm({
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
         <button
           type="submit"
-          disabled={activeTeams.length === 0}
+          disabled={submitDisabled}
           style={{
             padding: "0.85rem 1.25rem",
-            backgroundColor: activeTeams.length === 0 ? "#94a3b8" : "#2563eb",
+            backgroundColor: submitDisabled ? "#94a3b8" : "#2563eb",
             color: "#ffffff",
             border: "none",
             borderRadius: "12px",
             fontWeight: 600,
-            cursor: activeTeams.length === 0 ? "not-allowed" : "pointer",
-            boxShadow: activeTeams.length === 0 ? "none" : "0 4px 12px rgba(37, 99, 235, 0.22)",
+            cursor: submitDisabled ? "not-allowed" : "pointer",
+            boxShadow: submitDisabled ? "none" : "0 4px 12px rgba(37, 99, 235, 0.22)",
           }}
         >
           Save Changes
