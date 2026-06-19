@@ -1,11 +1,28 @@
-
-
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import AdminBookingForm from "@/components/admin/admin-booking-form";
+import AdminNav from "@/components/admin/admin-nav";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function getEasternTodayValue() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
+}
 
 function getTeamSportSortOrder(ageGroup: string) {
   const normalizedAgeGroup = ageGroup.toLowerCase();
@@ -30,6 +47,8 @@ function getTeamSportSortOrder(ageGroup: string) {
 }
 
 export default async function AdminBookWithUmpirePage() {
+  const todayValue = getEasternTodayValue();
+
   const [rooms, teamsRaw, umpires] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
@@ -96,7 +115,7 @@ export default async function AdminBookWithUmpirePage() {
     >
       <style>{`
         .page-container {
-          max-width: 900px;
+          max-width: 1100px;
           margin: 0 auto;
         }
 
@@ -108,32 +127,7 @@ export default async function AdminBookWithUmpirePage() {
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
 
-        .nav-row {
-          display: flex;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-          margin-top: 1rem;
-        }
-
-        .nav-link {
-          display: inline-block;
-          padding: 0.65rem 1rem;
-          border-radius: 10px;
-          text-decoration: none;
-          font-weight: 600;
-          text-align: center;
-        }
-
         @media (max-width: 768px) {
-          .nav-row {
-            flex-direction: column;
-          }
-
-          .nav-row a {
-            width: 100%;
-            box-sizing: border-box;
-          }
-
           .card {
             padding: 1rem;
             border-radius: 14px;
@@ -158,42 +152,8 @@ export default async function AdminBookWithUmpirePage() {
             </strong>
           </p>
 
-          <div className="nav-row">
-            <Link
-              href="/admin"
-              className="nav-link"
-              style={{
-                backgroundColor: "#eef2ff",
-                border: "1px solid #c7d2fe",
-                color: "#1e3a8a",
-              }}
-            >
-              Back to Admin
-            </Link>
-
-            <Link
-              href="/bookings"
-              className="nav-link"
-              style={{
-                backgroundColor: "#ecfeff",
-                border: "1px solid #a5f3fc",
-                color: "#155e75",
-              }}
-            >
-              Calendar
-            </Link>
-
-            <Link
-              href="/admin/umpire-schedule"
-              className="nav-link"
-              style={{
-                backgroundColor: "#ede9fe",
-                border: "1px solid #c4b5fd",
-                color: "#6d28d9",
-              }}
-            >
-              Umpire Schedule
-            </Link>
+          <div style={{ marginTop: "1rem" }}>
+            <AdminNav todayValue={todayValue} />
           </div>
         </div>
 

@@ -1,10 +1,9 @@
-
-
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import TeamFilters from "@/components/admin/team-filters";
+import AdminNav from "@/components/admin/admin-nav";
 
 const ageGroupOptions = [
   "8U Baseball",
@@ -47,6 +46,25 @@ const fieldStyle = {
   opacity: 1,
   WebkitTextFillColor: "#0f172a",
 };
+
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function getEasternTodayValue() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
+}
 
 function formatSeason(season: TeamSeasonValue) {
   return season.charAt(0) + season.slice(1).toLowerCase();
@@ -375,18 +393,17 @@ redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
   const params = await searchParams;
   const editingTeamId = params.edit || "";
   const confirmDeleteTeamId = params.confirmDelete || "";
-
   const currentYear = new Date().getFullYear();
-
+  const todayValue = getEasternTodayValue();
   const selectedStatus: StatusFilterValue =
-    params.status === "active" || params.status === "inactive" ? params.status : "all";
+    params.status === "all" || params.status === "inactive" ? params.status : "active";
 
-	const selectedSport: SportFilterValue =
-	  params.sport === "baseball" ||
-	  params.sport === "softball" ||
-	  params.sport === "tee-ball"
-		? params.sport
-		: "all";
+  const selectedSport: SportFilterValue =
+	params.sport === "baseball" ||
+	params.sport === "softball" ||
+	params.sport === "tee-ball"
+	  ? params.sport
+	  : "all";
 
   const recentSeasonTeams = await prisma.team.findMany({
     where: {
@@ -487,12 +504,6 @@ redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
       }}
     >
 	<style>{`
-	  .teams-header-actions {
-		display: flex;
-		gap: 0.75rem;
-		flex-wrap: wrap;
-	  }
-
 	  .team-card-grid {
 		display: grid;
 		gap: 1rem;
@@ -506,18 +517,7 @@ redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
 		gap: 0.6rem;
 	  }
 
-	  @media (max-width: 768px) {
-		.teams-header-actions {
-		  flex-direction: column;
-		  align-items: stretch;
-		}
-
-		.teams-header-actions a {
-		  width: 100%;
-		  box-sizing: border-box;
-		  text-align: center;
-		}
-
+	  @media (max-width: 768px) {		
 		.team-card-grid {
 		  grid-template-columns: 1fr; /* ✅ stacks everything */
 		  gap: 0.75rem;
@@ -560,42 +560,12 @@ redirect(buildTeamsHref(returnStatus, returnSeason, returnSport));
               </p>
             </div>
 
-            <div className="teams-header-actions">
-              <Link
-                href="/admin"
-                style={{
-                  display: "inline-block",
-                  padding: "0.65rem 1rem",
-                  backgroundColor: "#eef2ff",
-                  border: "1px solid #c7d2fe",
-                  borderRadius: "10px",
-                  color: "#1e3a8a",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Admin Dashboard
-              </Link>
-
-              <Link
-                href="/admin/book-with-umpire"
-                style={{
-                  display: "inline-block",
-                  padding: "0.65rem 1rem",
-                  backgroundColor: "#ecfeff",
-                  border: "1px solid #a5f3fc",
-                  borderRadius: "10px",
-                  color: "#155e75",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Book a Field w/Umpire
-              </Link>
-            </div>
+            
           </div>
+		  <div style={{ marginTop: "1rem" }}>
+			<AdminNav todayValue={todayValue} />
+		  </div>
         </div>
-
         <div
           style={{
             backgroundColor: "#ffffff",

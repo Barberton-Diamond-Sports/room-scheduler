@@ -69,9 +69,9 @@ export default function TeamFilters({
             minWidth: "180px",
           }}
         >
-          <option value="all">All teams</option>
           <option value="active">Active only</option>
           <option value="inactive">Inactive only</option>
+		  <option value="all">All teams</option>
         </select>
       </div>
 

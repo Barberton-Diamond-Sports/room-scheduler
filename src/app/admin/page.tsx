@@ -1,5 +1,9 @@
+
+
+
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import AdminNav from "@/components/admin/admin-nav";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -124,20 +128,6 @@ type PageProps = {
     changeType?: string;
   }>;
 };
-
-function dashboardLinkStyle(bg: string, border: string, color: string) {
-  return {
-    display: "inline-block",
-    padding: "0.65rem 1rem",
-    backgroundColor: bg,
-    border: `1px solid ${border}`,
-    borderRadius: "10px",
-    color,
-    textDecoration: "none",
-    fontWeight: 600,
-    textAlign: "center" as const,
-  };
-}
 
 export default async function AdminPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -404,30 +394,6 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
 
-        .admin-nav-stack {
-          display: grid;
-          gap: 0.5rem;
-        }
-
-        .admin-section-group {
-          display: grid;
-          gap: 0.2rem;
-        }
-
-        .admin-section-title {
-          font-weight: 700;
-          margin-top: 0.6rem;
-          margin-bottom: 0.2rem;
-          font-size: 0.9rem;
-          color: #334155;
-        }
-
-        .admin-link-row {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-
         .admin-summary-grid {
           display: grid;
           gap: 1rem;
@@ -513,16 +479,6 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
             border-radius: 14px;
           }
 
-          .admin-link-row {
-            flex-direction: column;
-          }
-
-          .admin-link-row a,
-          .admin-link-row button {
-            width: 100%;
-            box-sizing: border-box;
-          }
-
           .admin-schedule-item-row,
           .admin-audit-top,
           .admin-audit-item-row,
@@ -541,126 +497,48 @@ for (const [, teamBookings] of bookingsByTeamAndDate) {
 
       <div className="admin-shell">
         <div className="admin-card" style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
-            BDS Admin Page
-          </h1>
-          <p style={{ marginTop: 0, color: "#4b5563", marginBottom: "1rem", lineHeight: 1.5 }}>
-            Quick access to field bookings, blackout controls, umpire scheduling, team management,
-            and recent booking changes.
-          </p>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      gap: "1rem",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      marginBottom: "0.5rem",
+    }}
+  >
+    <div>
+      <h1 style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.9rem" }}>
+        Barberton Diamond Sports Admin Dashboard
+      </h1>
 
-          <div className="admin-nav-stack">
-            <div className="admin-section-group">
-              <div className="admin-section-title">Home</div>
-              <div className="admin-link-row">
-                <Link
-                  href="/"
-                  style={dashboardLinkStyle("#eef2ff", "#c7d2fe", "#1e3a8a")}
-                >
-                  Home
-                </Link>
-              </div>
-            </div>
+      <p style={{ marginTop: 0, color: "#4b5563", marginBottom: 5, lineHeight: 1.5 }}>
+        Quick access to field bookings, blackout controls, umpire scheduling, team management,
+        and recent booking changes.
+      </p>
+    </div>
 
-            <div className="admin-section-group">
-              <div className="admin-section-title">Fields</div>
-              <div className="admin-link-row">
-                <Link
-                  href="/admin/book-with-umpire"
-                  style={dashboardLinkStyle("#ecfeff", "#a5f3fc", "#155e75")}
-                >
-                  Book a Field (Admin)
-                </Link>
+    <a
+      href="/api/admin/logout"
+      style={{
+        display: "inline-block",
+        padding: "0.65rem 1rem",
+        backgroundColor: "#fee2e2",
+        border: "1px solid #fca5a5",
+        borderRadius: "10px",
+        color: "#991b1b",
+        textDecoration: "none",
+        fontWeight: 700,
+        textAlign: "center",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Logout
+    </a>
+  </div>
 
-                <Link
-                  href="/admin/blackouts"
-                  style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
-                >
-                  Field Blackouts
-                </Link>
-              </div>
-            </div>
-
-            <div className="admin-section-group">
-			  <div className="admin-section-title">Calendar</div>
-			  <div className="admin-link-row">
-				<Link
-				  href={`/bookings?date=${todayValue}&view=week`}
-				  style={dashboardLinkStyle("#dbeafe", "#93c5fd", "#1d4ed8")}
-				>
-				  Weekly Calendar
-				</Link>
-
-				<Link
-				  href="/team-schedule"
-				  style={dashboardLinkStyle("#f0fdf4", "#86efac", "#166534")}
-				>
-				  Team Schedule
-				</Link>
-			  </div>
-			</div>
-
-            <div className="admin-section-group">
-              <div className="admin-section-title">Umpires</div>
-              <div className="admin-link-row">
-                <Link
-                  href="/admin/umpire-schedule"
-                  style={dashboardLinkStyle("#ede9fe", "#c4b5fd", "#6d28d9")}
-                >
-                  Umpire Schedule
-                </Link>
-
-                <Link
-                  href="/umpire-assignments"
-                  style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
-                >
-                  Assign Umpires
-                </Link>
-              </div>
-            </div>
-
-            <div className="admin-section-group">
-              <div className="admin-section-title">Administration</div>
-              <div className="admin-link-row">
-                <Link
-                  href="/admin/rooms"
-                  style={dashboardLinkStyle("#ecfccb", "#bef264", "#3f6212")}
-                >
-                  Manage Fields
-                </Link>
-
-                <Link
-                  href="/admin/teams"
-                  style={dashboardLinkStyle("#f3e8ff", "#d8b4fe", "#7c3aed")}
-                >
-                  Manage Teams
-                </Link>
-
-                <Link
-                  href="/admin/umpires"
-                  style={dashboardLinkStyle("#fef3c7", "#facc15", "#92400e")}
-                >
-                  Manage Umpires
-                </Link>
-
-                <Link
-                  href="/admin/users"
-                  style={dashboardLinkStyle("#e0f2fe", "#7dd3fc", "#0369a1")}
-                >
-                  Manage Admin Users
-                </Link>
-
-                <a
-                  href="/api/admin/logout"
-                  style={dashboardLinkStyle("#fee2e2", "#fca5a5", "#991b1b")}
-                >
-                  Logout
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
+  <AdminNav todayValue={todayValue} />
+</div>
         <div className="admin-summary-grid">
           <div className="admin-card">
             <div style={{ color: "#64748b", fontSize: "0.9rem", marginBottom: "0.4rem" }}>
