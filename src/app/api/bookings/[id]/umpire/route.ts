@@ -34,22 +34,17 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const isAdmin = await ensureAdminAccess();
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
     const { id } = await context.params;
     const body = await request.json();
+
+    const isAdmin = await ensureAdminAccess();
 
     const booking = await prisma.booking.findUnique({
       where: { id },
       include: {
         room: true,
         team: true,
+        umpireRecord: true,
       },
     });
 
@@ -60,7 +55,48 @@ export async function PATCH(
       );
     }
 
+    if (booking.status !== "ACTIVE") {
+      return NextResponse.json(
+        { success: false, message: "This booking is no longer active." },
+        { status: 409 }
+      );
+    }
+
+    const bookingTitle = booking.title?.trim() || "";
+
+    if (bookingTitle !== "Game") {
+      return NextResponse.json(
+        { success: false, message: "Umpires can only be assigned to games." },
+        { status: 400 }
+      );
+    }
+
+    if (!booking.team) {
+      return NextResponse.json(
+        { success: false, message: "This booking is not tied to a team." },
+        { status: 400 }
+      );
+    }
+
+    if (!booking.team.requiresUmpire) {
+      return NextResponse.json(
+        { success: false, message: "This team does not require an umpire." },
+        { status: 400 }
+      );
+    }
+
+    /**
+     * Clearing/removing an umpire assignment should stay admin-only.
+     * Public umpires can claim an open game, but should not be able to clear assignments.
+     */
     if (body.umpireId === null) {
+      if (!isAdmin) {
+        return NextResponse.json(
+          { success: false, message: "Unauthorized" },
+          { status: 401 }
+        );
+      }
+
       const updated = await prisma.booking.update({
         where: { id },
         data: { umpireId: null },
@@ -71,10 +107,22 @@ export async function PATCH(
     }
 
     const umpireId = typeof body.umpireId === "string" ? body.umpireId.trim() : "";
+
     if (!umpireId) {
       return NextResponse.json(
         { success: false, message: "Choose an umpire." },
         { status: 400 }
+      );
+    }
+
+    /**
+     * Non-admin users should only be able to claim unassigned games.
+     * Admins can change an existing assignment from the admin schedule.
+     */
+    if (!isAdmin && booking.umpireId) {
+      return NextResponse.json(
+        { success: false, message: "This game already has an umpire assigned." },
+        { status: 409 }
       );
     }
 
@@ -89,7 +137,7 @@ export async function PATCH(
       );
     }
 
-    const sport = inferSport(booking.team?.ageGroup);
+    const sport = inferSport(booking.team.ageGroup);
 
     if (sport === "softball" && !umpire.doesSoftball) {
       return NextResponse.json(
@@ -154,6 +202,7 @@ export async function PATCH(
     return NextResponse.json({ success: true, booking: updated });
   } catch (error) {
     console.error("Error updating umpire assignment:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to update umpire assignment." },
       { status: 500 }
