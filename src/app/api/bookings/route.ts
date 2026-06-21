@@ -6,6 +6,63 @@ function timeToMinutes(time: string) {
   return hours * 60 + minutes;
 }
 
+function getTimeZoneOffsetMinutes(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    timeZoneName: "shortOffset",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const offsetPart =
+    parts.find((part) => part.type === "timeZoneName")?.value ?? "GMT";
+
+  const match = offsetPart.match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
+
+  if (!match) {
+    return 0;
+  }
+
+  const sign = match[1] === "-" ? -1 : 1;
+  const hours = Number(match[2]);
+  const minutes = Number(match[3] ?? "0");
+
+  return sign * (hours * 60 + minutes);
+}
+
+function easternDateTimeToUtc(dateText: string, hour = 0, minute = 0) {
+  const [year, month, day] = dateText.split("-").map(Number);
+
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+  const offsetMinutes = getTimeZoneOffsetMinutes(utcGuess, "America/New_York");
+
+  return new Date(utcGuess.getTime() - offsetMinutes * 60 * 1000);
+}
+
+function addDaysToDateText(dateText: string, days: number) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  date.setUTCDate(date.getUTCDate() + days);
+
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(date.getUTCDate()).padStart(2, "0")}`;
+}
+
+function dayBounds(dateText: string) {
+  const start = easternDateTimeToUtc(dateText);
+  const end = easternDateTimeToUtc(addDaysToDateText(dateText, 1));
+
+  return { start, end };
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -18,9 +75,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const bookingDate = new Date(`${date}T00:00:00`);
-    const nextDay = new Date(bookingDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const { start: bookingDate, end: nextDay } = dayBounds(date);
 
     const [bookings, blackouts] = await Promise.all([
       prisma.booking.findMany({
@@ -61,6 +116,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Error loading bookings for date:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to load bookings." },
       { status: 500 }
@@ -83,17 +139,15 @@ export async function POST(request: Request) {
       notes,
     } = body;
 
-	
-	if (title === "Other") {
-	  return NextResponse.json(
-		{
-		  success: false,
-		  message: "Reserved field bookings are restricted to administrators.",
-		},
-		{ status: 403 }
-	  );
-	}
-
+    if (title === "Other") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Reserved field bookings are restricted to administrators.",
+        },
+        { status: 403 }
+      );
+    }
 
     if (!teamId || !roomId || !date || !startTime || !durationBlocks) {
       return NextResponse.json(
@@ -116,9 +170,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const bookingDate = new Date(`${date}T00:00:00`);
-    const nextDay = new Date(bookingDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const { start: bookingDate, end: nextDay } = dayBounds(date);
 
     const blackout = await prisma.roomBlackout.findFirst({
       where: {
@@ -134,14 +186,26 @@ export async function POST(request: Request) {
           success: false,
           message: blackout.reason?.trim()
             ? `That field is unavailable on that date: ${blackout.reason}.`
-            : "That field is blacked out and unavailable on that date.",
+            : "That field is unavailable on that date.",
         },
         { status: 409 }
       );
     }
 
+    const normalizedDurationBlocks = Number(durationBlocks);
+
+    if (
+      !Number.isInteger(normalizedDurationBlocks) ||
+      normalizedDurationBlocks <= 0
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Please select a valid duration." },
+        { status: 400 }
+      );
+    }
+
     const startTimeMinutes = timeToMinutes(startTime);
-    const endTimeMinutes = startTimeMinutes + Number(durationBlocks) * 30;
+    const endTimeMinutes = startTimeMinutes + normalizedDurationBlocks * 30;
 
     const existingBooking = await prisma.booking.findFirst({
       where: {
@@ -167,10 +231,13 @@ export async function POST(request: Request) {
         bookingDate,
         startTimeMinutes,
         endTimeMinutes,
-        durationBlocks: Number(durationBlocks),
+        durationBlocks: normalizedDurationBlocks,
         title: typeof title === "string" && title.trim() ? title.trim() : null,
         notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
-        opponent: typeof opponent === "string" && opponent.trim() ? opponent.trim() : null,
+        opponent:
+          typeof opponent === "string" && opponent.trim()
+            ? opponent.trim()
+            : null,
       },
       include: {
         room: true,
@@ -185,6 +252,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error creating booking:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to save booking." },
       { status: 500 }
