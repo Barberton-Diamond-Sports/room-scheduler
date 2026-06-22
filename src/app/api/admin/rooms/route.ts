@@ -8,6 +8,10 @@ async function ensureAdminAccess() {
   return adminAccess === "granted";
 }
 
+function parseBoolean(value: unknown, fallback = true) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
 export async function POST(request: Request) {
   try {
     const isAdmin = await ensureAdminAccess();
@@ -19,9 +23,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const description =
       typeof body.description === "string" ? body.description.trim() : "";
+
+    const allowGames = parseBoolean(body.allowGames, true);
+    const allowPractices = parseBoolean(body.allowPractices, true);
+    const allowScrimmages = parseBoolean(body.allowScrimmages, true);
+    const allowOther = parseBoolean(body.allowOther, true);
 
     if (!name) {
       return NextResponse.json(
@@ -46,6 +56,10 @@ export async function POST(request: Request) {
         name,
         description: description || null,
         isActive: true,
+        allowGames,
+        allowPractices,
+        allowScrimmages,
+        allowOther,
       },
     });
 

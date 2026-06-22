@@ -12,6 +12,10 @@ model Room {
   name        String
   description String?
   isActive    Boolean        @default(true)
+  allowGames        Boolean        @default(true)
+  allowPractices    Boolean        @default(true)
+  allowScrimmages   Boolean        @default(true)
+  allowOther        Boolean        @default(true)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   bookings    Booking[]

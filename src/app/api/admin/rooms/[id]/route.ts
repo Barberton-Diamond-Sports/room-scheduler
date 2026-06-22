@@ -44,6 +44,10 @@ export async function PATCH(
       isActive?: boolean;
       name?: string;
       description?: string | null;
+      allowGames?: boolean;
+      allowPractices?: boolean;
+      allowScrimmages?: boolean;
+      allowOther?: boolean;
     } = {};
 
     if (typeof body.isActive === "boolean") {
@@ -80,6 +84,22 @@ export async function PATCH(
     if (typeof body.description === "string") {
       const description = body.description.trim();
       data.description = description || null;
+    }
+
+    if (typeof body.allowGames === "boolean") {
+      data.allowGames = body.allowGames;
+    }
+
+    if (typeof body.allowPractices === "boolean") {
+      data.allowPractices = body.allowPractices;
+    }
+
+    if (typeof body.allowScrimmages === "boolean") {
+      data.allowScrimmages = body.allowScrimmages;
+    }
+
+    if (typeof body.allowOther === "boolean") {
+      data.allowOther = body.allowOther;
     }
 
     if (Object.keys(data).length === 0) {

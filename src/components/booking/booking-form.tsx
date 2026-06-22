@@ -7,6 +7,10 @@ type Room = {
   id: string;
   name: string;
   description?: string | null;
+  allowGames: boolean;
+  allowPractices: boolean;
+  allowScrimmages: boolean;
+  allowOther: boolean;
 };
 
 type Team = {
@@ -88,11 +92,7 @@ const durationOptions = [
   { value: "6", label: "3 hours" },
 ];
 
-const purposeOptions = [
-  "Practice",
-  "Scrimmage",
-  "Game",
-];
+const purposeOptions = ["Practice", "Scrimmage", "Game"];
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -137,13 +137,6 @@ function formatMinutesLabel(totalMinutes: number) {
   return `${hours12}:${pad(minutes)} ${suffix}`;
 }
 
-
-function formatUnavailableLabel(reason: string | null | undefined) {
-  const trimmed = reason?.trim();
-  return trimmed ? `Field Unavailable · ${trimmed}` : "Field Unavailable";
-}
-
-
 function buildTimeOptions() {
   const options: string[] = [];
   for (let hour = START_HOUR; hour < END_HOUR; hour++) {
@@ -155,6 +148,15 @@ function buildTimeOptions() {
 
 function roomLabel(room: Room) {
   return room.description?.trim() ? `${room.name} (${room.description})` : room.name;
+}
+
+function roomAllowsPurpose(room: Room, purpose: string) {
+  if (purpose === "Game") return room.allowGames;
+  if (purpose === "Practice") return room.allowPractices;
+  if (purpose === "Scrimmage") return room.allowScrimmages;
+  if (purpose === "Other") return room.allowOther;
+
+  return true;
 }
 
 function formatSeasonLabel(season: Team["season"]) {
@@ -228,9 +230,9 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
   const router = useRouter();
 
   const activeTeams = useMemo(
-  () => teams.filter((team) => team.isActive).sort(sortTeamsForDropdown),
-  [teams]
-);
+    () => teams.filter((team) => team.isActive).sort(sortTeamsForDropdown),
+    [teams]
+  );
 
   const [teamId, setTeamId] = useState("");
   const [roomId, setRoomId] = useState("");
@@ -253,6 +255,10 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
 
   const showOpponent = purpose === "Game" || purpose === "Scrimmage";
 
+  const availableRooms = useMemo(() => {
+    return rooms.filter((room) => roomAllowsPurpose(room, purpose));
+  }, [rooms, purpose]);
+
   const availableDurations = useMemo(() => {
     const startMinutes = timeToMinutes(startTime);
     return durationOptions.filter((option) => {
@@ -262,26 +268,32 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
   }, [startTime]);
 
   const blackoutByRoomId = useMemo(() => {
-  const blackoutMap = new Map<string, DailyBlackout>();
-  for (const blackout of dailyBlackouts) {
-    blackoutMap.set(blackout.roomId, blackout);
-  }
-  return blackoutMap;
-}, [dailyBlackouts]);
+    const blackoutMap = new Map<string, DailyBlackout>();
+    for (const blackout of dailyBlackouts) {
+      blackoutMap.set(blackout.roomId, blackout);
+    }
+    return blackoutMap;
+  }, [dailyBlackouts]);
 
-const bookingsByRoom = useMemo(() => {
-  return rooms.map((room) => ({
-    room,
-    blackout: blackoutByRoomId.get(room.id) || null,
-    bookings: dailyBookings.filter((booking) => booking.room.id === room.id),
-  }));
-}, [rooms, dailyBookings, blackoutByRoomId]);
+  const bookingsByRoom = useMemo(() => {
+    return rooms.map((room) => ({
+      room,
+      blackout: blackoutByRoomId.get(room.id) || null,
+      bookings: dailyBookings.filter((booking) => booking.room.id === room.id),
+    }));
+  }, [rooms, dailyBookings, blackoutByRoomId]);
 
   useEffect(() => {
     if (activeTeams.length > 0 && !activeTeams.some((team) => team.id === teamId)) {
       setTeamId("");
     }
   }, [activeTeams, teamId]);
+
+  useEffect(() => {
+    if (roomId && !availableRooms.some((room) => room.id === roomId)) {
+      setRoomId("");
+    }
+  }, [availableRooms, roomId]);
 
   useEffect(() => {
     if (!availableDurations.some((option) => option.value === duration)) {
@@ -299,13 +311,11 @@ const bookingsByRoom = useMemo(() => {
     let cancelled = false;
 
     async function loadDailyBookings() {
-      
-		if (!date) {
-		  setDailyBookings([]);
-		  setDailyBlackouts([]);
-		  return;
-		}
-
+      if (!date) {
+        setDailyBookings([]);
+        setDailyBlackouts([]);
+        return;
+      }
 
       setIsLoadingDailyBookings(true);
 
@@ -314,20 +324,20 @@ const bookingsByRoom = useMemo(() => {
         const result = await response.json();
 
         if (!cancelled) {
-		  if (result.success) {
-			setDailyBookings(result.bookings || []);
-			setDailyBlackouts(result.blackouts || []);
-		  } else {
-			setDailyBookings([]);
-			setDailyBlackouts([]);
-		  }
-		}
+          if (result.success) {
+            setDailyBookings(result.bookings || []);
+            setDailyBlackouts(result.blackouts || []);
+          } else {
+            setDailyBookings([]);
+            setDailyBlackouts([]);
+          }
+        }
       } catch (error) {
         console.error("Failed to load daily bookings:", error);
-		if (!cancelled) {
-		  setDailyBookings([]);
-		  setDailyBlackouts([]);
-		}
+        if (!cancelled) {
+          setDailyBookings([]);
+          setDailyBlackouts([]);
+        }
       } finally {
         if (!cancelled) {
           setIsLoadingDailyBookings(false);
@@ -352,7 +362,11 @@ const bookingsByRoom = useMemo(() => {
     }
 
     if (!roomId) {
-      setMessage("Please select a field.");
+      setMessage(
+        availableRooms.length === 0
+          ? "No fields are available for the selected purpose."
+          : "Please select a field."
+      );
       setMessageType("error");
       return;
     }
@@ -484,15 +498,15 @@ const bookingsByRoom = useMemo(() => {
           padding: 0.75rem 0.85rem;
           min-width: 0;
         }
-		
-		.booking-room-blackout-card {
-		  background-color: #e5e7eb;
-		  border: 1px solid #cbd5e1;
-		  border-radius: 10px;
-		  padding: 0.85rem 0.9rem;
-		  min-width: 0;
-		  color: #374151;
-		}
+
+        .booking-room-blackout-card {
+          background-color: #e5e7eb;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          padding: 0.85rem 0.9rem;
+          min-width: 0;
+          color: #374151;
+        }
 
         .booking-wrap-text {
           word-break: break-word;
@@ -578,9 +592,14 @@ const bookingsByRoom = useMemo(() => {
               onChange={(e) => setRoomId(e.target.value)}
               style={fieldStyle}
               required
+              disabled={availableRooms.length === 0}
             >
-              <option value="">Select a field</option>
-              {rooms.map((room) => (
+              <option value="">
+                {availableRooms.length === 0
+                  ? "No fields available for this purpose"
+                  : "Select a field"}
+              </option>
+              {availableRooms.map((room) => (
                 <option key={room.id} value={room.id}>
                   {roomLabel(room)}
                 </option>
@@ -681,13 +700,23 @@ const bookingsByRoom = useMemo(() => {
             </div>
             <div
               className="booking-wrap-text"
-              style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem", lineHeight: 1.45 }}
+              style={{
+                color: "#64748b",
+                marginTop: "0.2rem",
+                fontSize: "0.92rem",
+                lineHeight: 1.45,
+              }}
             >
               {selectedTeam.ageGroup} • {formatSeasonLabel(selectedTeam.season)} {selectedTeam.year}
             </div>
             <div
               className="booking-wrap-text"
-              style={{ color: "#64748b", marginTop: "0.2rem", fontSize: "0.92rem", lineHeight: 1.45 }}
+              style={{
+                color: "#64748b",
+                marginTop: "0.2rem",
+                fontSize: "0.92rem",
+                lineHeight: 1.45,
+              }}
             >
               {selectedTeam.coachName}
               {selectedTeam.coachEmail ? ` • ${selectedTeam.coachEmail}` : ""}
@@ -748,7 +777,7 @@ const bookingsByRoom = useMemo(() => {
             Field Schedule for {date}
           </h2>
           <p style={{ marginTop: 0, color: "#64748b", marginBottom: "1rem", lineHeight: 1.5 }}>
-            This updates automatically when you choose a different date above.
+            This updates automatically when you choose a different date or purpose above.
           </p>
 
           {isLoadingDailyBookings ? (
@@ -765,85 +794,85 @@ const bookingsByRoom = useMemo(() => {
           ) : (
             <div className="booking-schedule-grid">
               {bookingsByRoom.map(({ room, blackout, bookings }) => (
-				  <div key={room.id} className="booking-room-card">
-					<div style={{ marginBottom: "0.65rem" }}>
-					  <div
-						className="booking-wrap-text"
-						style={{ fontWeight: 800, color: "#0f172a", lineHeight: 1.35 }}
-					  >
-						{room.name}
-					  </div>
-					  {room.description?.trim() && (
-						<div
-						  className="booking-wrap-text"
-						  style={{
-							color: "#64748b",
-							fontSize: "0.9rem",
-							marginTop: "0.15rem",
-							lineHeight: 1.4,
-						  }}
-						>
-						  {room.description}
-						</div>
-					  )}
-					</div>
+                <div key={room.id} className="booking-room-card">
+                  <div style={{ marginBottom: "0.65rem" }}>
+                    <div
+                      className="booking-wrap-text"
+                      style={{ fontWeight: 800, color: "#0f172a", lineHeight: 1.35 }}
+                    >
+                      {room.name}
+                    </div>
+                    {room.description?.trim() && (
+                      <div
+                        className="booking-wrap-text"
+                        style={{
+                          color: "#64748b",
+                          fontSize: "0.9rem",
+                          marginTop: "0.15rem",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {room.description}
+                      </div>
+                    )}
+                  </div>
 
-					{blackout ? (
-					  <div className="booking-room-blackout-card">
-						  <div
-							className="booking-wrap-text"
-							style={{ fontWeight: 800, lineHeight: 1.35 }}
-						  >
-							Field Unavailable
-						  </div>
-						  <div
-							className="booking-wrap-text"
-							style={{ marginTop: "0.25rem", lineHeight: 1.45 }}
-						  >
-							{blackout.reason?.trim() || "This field is unavailable for the full day."}
-						  </div>
-						</div>
-					) : bookings.length === 0 ? (
-					  <div style={{ color: "#94a3b8", lineHeight: 1.4 }}>
-						— No bookings for this field
-					  </div>
-					) : (
-					  <div className="booking-room-bookings">
-						{bookings.map((dailyBooking) => (
-						  <div key={dailyBooking.id} className="booking-room-booking-card">
-							<div
-							  className="booking-wrap-text"
-							  style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
-							>
-							  {!dailyBooking.team && dailyBooking.title === "Other"
-  ? "Reserved"
-  : dailyBooking.title || "Booking"}
-							</div>
-							<div
-							  className="booking-wrap-text"
-							  style={{ color: "#334155", marginTop: "0.15rem", lineHeight: 1.4 }}
-							>
-							  {!dailyBooking.team && dailyBooking.title === "Other"
-  ? "Reserved"
-  : dailyBooking.team?.teamName || "—"}
-							</div>
-							<div
-							  style={{
-								color: "#64748b",
-								marginTop: "0.15rem",
-								fontSize: "0.92rem",
-								lineHeight: 1.4,
-							  }}
-							>
-							  {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
-							  {formatMinutesLabel(dailyBooking.endTimeMinutes)}
-							</div>
-						  </div>
-						))}
-					  </div>
-					)}
-				  </div>
-				))}
+                  {blackout ? (
+                    <div className="booking-room-blackout-card">
+                      <div
+                        className="booking-wrap-text"
+                        style={{ fontWeight: 800, lineHeight: 1.35 }}
+                      >
+                        Field Unavailable
+                      </div>
+                      <div
+                        className="booking-wrap-text"
+                        style={{ marginTop: "0.25rem", lineHeight: 1.45 }}
+                      >
+                        {blackout.reason?.trim() || "This field is unavailable for the full day."}
+                      </div>
+                    </div>
+                  ) : bookings.length === 0 ? (
+                    <div style={{ color: "#94a3b8", lineHeight: 1.4 }}>
+                      — No bookings for this field
+                    </div>
+                  ) : (
+                    <div className="booking-room-bookings">
+                      {bookings.map((dailyBooking) => (
+                        <div key={dailyBooking.id} className="booking-room-booking-card">
+                          <div
+                            className="booking-wrap-text"
+                            style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
+                          >
+                            {!dailyBooking.team && dailyBooking.title === "Other"
+                              ? "Reserved"
+                              : dailyBooking.title || "Booking"}
+                          </div>
+                          <div
+                            className="booking-wrap-text"
+                            style={{ color: "#334155", marginTop: "0.15rem", lineHeight: 1.4 }}
+                          >
+                            {!dailyBooking.team && dailyBooking.title === "Other"
+                              ? "Reserved"
+                              : dailyBooking.team?.teamName || "—"}
+                          </div>
+                          <div
+                            style={{
+                              color: "#64748b",
+                              marginTop: "0.15rem",
+                              fontSize: "0.92rem",
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
+                            {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>

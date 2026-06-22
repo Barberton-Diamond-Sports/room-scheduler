@@ -152,15 +152,20 @@ export default async function AdminRoomsPage() {
                     }}
                   >
                     <RoomManagementActions
-                      mode="manage"
-                      room={{
-                        id: room.id,
-                        name: room.name,
-                        description: room.description,
-                        isActive: room.isActive,
-                      }}
-                      bookingCount={bookingCount}
-                    />
+					  mode="manage"
+					  room={{
+						id: room.id,
+						name: room.name,
+						description: room.description,
+						isActive: room.isActive,
+						allowGames: room.allowGames,
+						allowPractices: room.allowPractices,
+						allowScrimmages: room.allowScrimmages,
+						allowOther: room.allowOther,
+					  }}
+					  bookingCount={bookingCount}
+					/>
+
                   </div>
                 );
               })}

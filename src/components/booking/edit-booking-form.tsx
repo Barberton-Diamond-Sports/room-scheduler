@@ -7,6 +7,10 @@ type Room = {
   id: string;
   name: string;
   description?: string | null;
+  allowGames: boolean;
+  allowPractices: boolean;
+  allowScrimmages: boolean;
+  allowOther: boolean;
 };
 
 type Team = {
@@ -144,6 +148,15 @@ function roomLabel(room: Room) {
     : room.name;
 }
 
+function roomAllowsPurpose(room: Room, purpose: string) {
+  if (purpose === "Game") return room.allowGames;
+  if (purpose === "Practice") return room.allowPractices;
+  if (purpose === "Scrimmage") return room.allowScrimmages;
+  if (purpose === "Other") return room.allowOther;
+
+  return true;
+}
+
 function formatSeasonLabel(season: Team["season"]) {
   return season.charAt(0) + season.slice(1).toLowerCase();
 }
@@ -261,6 +274,10 @@ export default function EditBookingForm({
 
   const showOpponent = purpose === "Game" || purpose === "Scrimmage";
 
+  const availableRooms = useMemo(() => {
+    return rooms.filter((room) => roomAllowsPurpose(room, purpose));
+  }, [rooms, purpose]);
+
   const showUmpire =
     !!selectedTeam?.requiresUmpire &&
     purpose === "Game";
@@ -288,6 +305,12 @@ export default function EditBookingForm({
       setTeamId("");
     }
   }, [activeTeams, teamId]);
+  
+  useEffect(() => {
+	  if (roomId && !availableRooms.some((room) => room.id === roomId)) {
+		setRoomId("");
+	  }
+	}, [availableRooms, roomId]);
 
   useEffect(() => {
     if (!availableDurations.some((option) => option.value === duration)) {
@@ -315,11 +338,15 @@ export default function EditBookingForm({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (requiresTeamSelection && (!teamId || !selectedTeam)) {
-      setMessage("Please select a team, or choose Other to reserve a field without a team.");
-      setMessageType("error");
-      return;
-    }
+    if (!roomId) {
+	  setMessage(
+		availableRooms.length === 0
+		  ? "No fields are available for the selected purpose."
+		  : "Please select a field."
+	  );
+	  setMessageType("error");
+	  return;
+	}
 
     setMessage("Saving changes...");
     setMessageType("info");
@@ -452,17 +479,24 @@ export default function EditBookingForm({
             Field
           </label>
           <select
-            id="room"
-            value={roomId}
-            onChange={(e) => setRoomId(e.target.value)}
-            style={fieldStyle}
-          >
-            {rooms.map((room) => (
-              <option key={room.id} value={room.id}>
-                {roomLabel(room)}
-              </option>
-            ))}
-          </select>
+			  id="room"
+			  value={roomId}
+			  onChange={(e) => setRoomId(e.target.value)}
+			  style={fieldStyle}
+			  required
+			  disabled={availableRooms.length === 0}
+			>
+			  <option value="">
+				{availableRooms.length === 0
+				  ? "No fields available for this purpose"
+				  : "Select a field"}
+			  </option>
+			  {availableRooms.map((room) => (
+				<option key={room.id} value={room.id}>
+				  {roomLabel(room)}
+				</option>
+			  ))}
+			</select>
         </div>
 
         <div>

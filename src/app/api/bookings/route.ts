@@ -6,6 +6,25 @@ function timeToMinutes(time: string) {
   return hours * 60 + minutes;
 }
 
+function roomAllowsPurpose(
+  room: {
+    allowGames: boolean;
+    allowPractices: boolean;
+    allowScrimmages: boolean;
+    allowOther: boolean;
+  },
+  purpose: string | null | undefined
+) {
+  const normalizedPurpose = typeof purpose === "string" ? purpose.trim() : "";
+
+  if (normalizedPurpose === "Game") return room.allowGames;
+  if (normalizedPurpose === "Practice") return room.allowPractices;
+  if (normalizedPurpose === "Scrimmage") return room.allowScrimmages;
+  if (normalizedPurpose === "Other") return room.allowOther;
+
+  return true;
+}
+
 function getTimeZoneOffsetMinutes(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -139,7 +158,10 @@ export async function POST(request: Request) {
       notes,
     } = body;
 
-    if (title === "Other") {
+    const normalizedTitle =
+      typeof title === "string" && title.trim() ? title.trim() : null;
+
+    if (normalizedTitle === "Other") {
       return NextResponse.json(
         {
           success: false,
@@ -167,6 +189,32 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, message: "Please select a valid active team." },
         { status: 400 }
+      );
+    }
+
+    const room = await prisma.room.findFirst({
+      where: {
+        id: roomId,
+        isActive: true,
+      },
+    });
+
+    if (!room) {
+      return NextResponse.json(
+        { success: false, message: "Please select a valid active field." },
+        { status: 400 }
+      );
+    }
+
+    if (!roomAllowsPurpose(room, normalizedTitle)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: normalizedTitle
+            ? `That field is not available for ${normalizedTitle.toLowerCase()} bookings.`
+            : "That field is not available for this booking type.",
+        },
+        { status: 409 }
       );
     }
 
@@ -232,7 +280,7 @@ export async function POST(request: Request) {
         startTimeMinutes,
         endTimeMinutes,
         durationBlocks: normalizedDurationBlocks,
-        title: typeof title === "string" && title.trim() ? title.trim() : null,
+        title: normalizedTitle,
         notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
         opponent:
           typeof opponent === "string" && opponent.trim()
