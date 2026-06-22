@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+
 function pad(value: number) {
   return String(value).padStart(2, "0");
 }

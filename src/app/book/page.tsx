@@ -2,6 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import BookingForm from "@/components/booking/booking-form";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function getTeamSportSortOrder(ageGroup: string) {
   const normalizedAgeGroup = ageGroup.toLowerCase();
 
