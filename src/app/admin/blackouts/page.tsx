@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import RoomBlackoutManager from "@/components/admin/room-blackout-manager";
 import AdminNav from "@/components/admin/admin-nav";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function pad(value: number) {
   return String(value).padStart(2, "0");
 }
