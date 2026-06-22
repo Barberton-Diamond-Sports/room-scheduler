@@ -23,15 +23,20 @@ type Props = {
   items: Item[];
 };
 
+
 const inputStyle = {
   width: "100%",
   padding: "0.75rem 0.9rem",
   border: "1px solid #cbd5e1",
   borderRadius: "12px",
-  backgroundColor: "#f8fafc",
+  backgroundColor: "#ffffff",
+  color: "#0f172a",
   fontSize: "1rem",
   boxSizing: "border-box" as const,
+  opacity: 1,
+  WebkitTextFillColor: "#0f172a",
 };
+
 
 export default function RoomBlackoutManager({ rooms, items }: Props) {
   const router = useRouter();
@@ -169,8 +174,10 @@ export default function RoomBlackoutManager({ rooms, items }: Props) {
 
       {message && <div style={{ color: "#991b1b", fontWeight: 600 }}>{message}</div>}
 
-      <div>
-        <h2 style={{ marginTop: 0, marginBottom: "0.75rem", fontWeight: 600 }}>Current & Future Blackouts</h2>
+      <div>        
+		<h2 style={{ marginTop: 0, marginBottom: "0.75rem", fontWeight: 800 }}>
+		  Current & Future Blackouts
+		</h2>
         {groupedItems.length === 0 ? (
           <div style={{ padding: "1rem", border: "1px dashed #cbd5e1", borderRadius: "12px", color: "#64748b" }}>
             No field blackouts have been created yet.

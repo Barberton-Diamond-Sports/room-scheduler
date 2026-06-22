@@ -35,9 +35,10 @@ function formatDate(date: Date) {
 }
 
 export default async function AdminBlackoutsPage() {
-  const todayValue = getEasternTodayValue();
+	const todayValue = getEasternTodayValue();
+	const todayStart = new Date(`${todayValue}T00:00:00`);
 
-  const [rooms, blackouts] = await Promise.all([
+	const [rooms, blackouts] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
