@@ -98,7 +98,7 @@ export default async function AdminBlackoutsPage() {
               lineHeight: 1.5,
             }}
           >
-            Black out selected fields for full days. A blackout will only be created if none of the
+            Blackout selected fields for full days. A blackout will only be created if none of the
             selected fields already have bookings on that day.
           </p>
 
