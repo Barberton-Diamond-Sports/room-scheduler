@@ -53,6 +53,8 @@ type DailyBlackout = {
 type Props = {
   rooms: Room[];
   teams?: Team[];
+  initialDate?: string;
+  initialRoomId?: string;
 };
 
 const START_HOUR = 9;
@@ -405,7 +407,12 @@ function getDailyBookingTeamDisplay(booking: DailyBooking) {
 
 const timeOptions = buildTimeOptions();
 
-export default function BookingForm({ rooms, teams = [] }: Props) {
+export default function BookingForm({
+  rooms,
+  teams = [],
+  initialDate,
+  initialRoomId,
+}: Props) {
   const router = useRouter();
 
   const activeTeams = useMemo(
@@ -413,9 +420,10 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
     [teams]
   );
 
+  
   const [teamId, setTeamId] = useState("");
-  const [roomId, setRoomId] = useState("");
-  const [date, setDate] = useState(getTodayString());
+  const [roomId, setRoomId] = useState(initialRoomId || "");
+  const [date, setDate] = useState(initialDate || getTodayString());
   const [startTime, setStartTime] = useState(DEFAULT_TIME);
   const [duration, setDuration] = useState("2");
   const [purpose, setPurpose] = useState("Practice");

@@ -5,6 +5,13 @@ import BookingForm from "@/components/booking/booking-form";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+type PageProps = {
+  searchParams: Promise<{
+    date?: string;
+    roomId?: string;
+  }>;
+};
+
 function getTeamSportSortOrder(ageGroup: string) {
   const normalizedAgeGroup = ageGroup.toLowerCase();
 
@@ -27,7 +34,20 @@ function getTeamSportSortOrder(ageGroup: string) {
   return 4;
 }
 
-export default async function BookPage() {
+function isValidDateInputValue(value: string | undefined) {
+  if (!value) return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+export default async function BookPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+
+  const requestedDate = isValidDateInputValue(params.date) ? params.date : undefined;
+  const requestedRoomId =
+    typeof params.roomId === "string" && params.roomId.trim()
+      ? params.roomId.trim()
+      : undefined;
+
   const [rooms, teamsRaw] = await Promise.all([
     prisma.room.findMany({
       where: { isActive: true },
@@ -43,6 +63,12 @@ export default async function BookPage() {
       ],
     }),
   ]);
+
+  const validInitialRoomId = requestedRoomId
+    ? rooms.some((room) => room.id === requestedRoomId)
+      ? requestedRoomId
+      : undefined
+    : undefined;
 
   const teams = [...teamsRaw].sort((a, b) => {
     const sportCompare =
@@ -165,7 +191,7 @@ export default async function BookPage() {
             </Link>
 
             <Link
-              href="/bookings"
+              href={requestedDate ? `/bookings?date=${requestedDate}&view=week` : "/bookings"}
               className="nav-link"
               style={{
                 backgroundColor: "#ecfeff",
@@ -192,7 +218,12 @@ export default async function BookPage() {
 
         {/* FORM CARD */}
         <div className="card">
-          <BookingForm rooms={rooms} teams={teams} />
+          <BookingForm
+            rooms={rooms}
+            teams={teams}
+            initialDate={requestedDate}
+            initialRoomId={validInitialRoomId}
+          />
         </div>
       </div>
     </main>
