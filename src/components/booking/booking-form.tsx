@@ -224,6 +224,185 @@ function sortTeamsForDropdown(a: Team, b: Team) {
   });
 }
 
+function inferBookingSport(booking: DailyBooking) {
+  const ageGroup = booking.team?.ageGroup?.toLowerCase() || "";
+
+  if (ageGroup.includes("softball")) {
+    return "Softball";
+  }
+
+  if (
+    ageGroup.includes("tee ball") ||
+    ageGroup.includes("t-ball") ||
+    ageGroup.includes("tball")
+  ) {
+    return "Tee Ball";
+  }
+
+  if (ageGroup.includes("baseball")) {
+    return "Baseball";
+  }
+
+  return "Baseball";
+}
+
+function normalizeBookingPurpose(title: string | null | undefined) {
+  const normalizedTitle = title?.trim();
+
+  if (normalizedTitle === "Game") return "Game";
+  if (normalizedTitle === "Practice") return "Practice";
+  if (normalizedTitle === "Scrimmage") return "Scrimmage";
+  if (normalizedTitle === "Other") return "Other";
+
+  return normalizedTitle || "Booking";
+}
+
+function getCalendarStyleForBooking(booking: DailyBooking) {
+  const sport = inferBookingSport(booking);
+  const purpose = normalizeBookingPurpose(booking.title);
+
+  if (!booking.team && purpose === "Other") {
+    return {
+      label: "Reserved",
+      backgroundColor: "#ffffff",
+      borderColor: "#dbe3f0",
+      labelBackground: "#f8fafc",
+      labelBorder: "#cbd5e1",
+      labelColor: "#475569",
+    };
+  }
+
+  if (sport === "Softball") {
+    if (purpose === "Game") {
+      return {
+        label: "Softball Game",
+        backgroundColor: "#fdf2f8",
+        borderColor: "#f9a8d4",
+        labelBackground: "#fce7f3",
+        labelBorder: "#f9a8d4",
+        labelColor: "#9d174d",
+      };
+    }
+
+    if (purpose === "Practice") {
+      return {
+        label: "Softball Practice",
+        backgroundColor: "#f5f3ff",
+        borderColor: "#c4b5fd",
+        labelBackground: "#ede9fe",
+        labelBorder: "#c4b5fd",
+        labelColor: "#5b21b6",
+      };
+    }
+
+    if (purpose === "Scrimmage") {
+      return {
+        label: "Softball Scrimmage",
+        backgroundColor: "#faf5ff",
+        borderColor: "#d8b4fe",
+        labelBackground: "#f3e8ff",
+        labelBorder: "#d8b4fe",
+        labelColor: "#7e22ce",
+      };
+    }
+  }
+
+  if (sport === "Tee Ball") {
+    if (purpose === "Game") {
+      return {
+        label: "Tee Ball Game",
+        backgroundColor: "#f0fdf4",
+        borderColor: "#86efac",
+        labelBackground: "#dcfce7",
+        labelBorder: "#86efac",
+        labelColor: "#166534",
+      };
+    }
+
+    if (purpose === "Practice") {
+      return {
+        label: "Tee Ball Practice",
+        backgroundColor: "#f7fee7",
+        borderColor: "#bef264",
+        labelBackground: "#ecfccb",
+        labelBorder: "#bef264",
+        labelColor: "#3f6212",
+      };
+    }
+
+    if (purpose === "Scrimmage") {
+      return {
+        label: "Tee Ball Scrimmage",
+        backgroundColor: "#fefce8",
+        borderColor: "#fde047",
+        labelBackground: "#fef9c3",
+        labelBorder: "#fde047",
+        labelColor: "#854d0e",
+      };
+    }
+  }
+
+  if (purpose === "Game") {
+    return {
+      label: "Baseball Game",
+      backgroundColor: "#eff6ff",
+      borderColor: "#93c5fd",
+      labelBackground: "#dbeafe",
+      labelBorder: "#93c5fd",
+      labelColor: "#1d4ed8",
+    };
+  }
+
+  if (purpose === "Practice") {
+    return {
+      label: "Baseball Practice",
+      backgroundColor: "#ecfeff",
+      borderColor: "#67e8f9",
+      labelBackground: "#cffafe",
+      labelBorder: "#67e8f9",
+      labelColor: "#155e75",
+    };
+  }
+
+  if (purpose === "Scrimmage") {
+    return {
+      label: "Baseball Scrimmage",
+      backgroundColor: "#fff7ed",
+      borderColor: "#fdba74",
+      labelBackground: "#ffedd5",
+      labelBorder: "#fdba74",
+      labelColor: "#9a3412",
+    };
+  }
+
+  return {
+    label: purpose,
+    backgroundColor: "#ffffff",
+    borderColor: "#dbe3f0",
+    labelBackground: "#f8fafc",
+    labelBorder: "#cbd5e1",
+    labelColor: "#475569",
+  };
+}
+
+function getDailyBookingDisplayTitle(booking: DailyBooking) {
+  const bookingTitle = booking.title?.trim();
+
+  if (!booking.team && bookingTitle === "Other") {
+    return "Reserved";
+  }
+
+  return bookingTitle || "Booking";
+}
+
+function getDailyBookingTeamDisplay(booking: DailyBooking) {
+  if (!booking.team && booking.title?.trim() === "Other") {
+    return "Reserved";
+  }
+
+  return booking.team?.teamName || "—";
+}
+
 const timeOptions = buildTimeOptions();
 
 export default function BookingForm({ rooms, teams = [] }: Props) {
@@ -488,12 +667,10 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
 
         .booking-room-bookings {
           display: grid;
-          gap: 0.5rem;
+          gap: 0.55rem;
         }
 
         .booking-room-booking-card {
-          background-color: #ffffff;
-          border: 1px solid #dbe3f0;
           border-radius: 10px;
           padding: 0.75rem 0.85rem;
           min-width: 0;
@@ -838,37 +1015,98 @@ export default function BookingForm({ rooms, teams = [] }: Props) {
                     </div>
                   ) : (
                     <div className="booking-room-bookings">
-                      {bookings.map((dailyBooking) => (
-                        <div key={dailyBooking.id} className="booking-room-booking-card">
+                      {bookings.map((dailyBooking) => {
+                        const isReservedOther =
+                          !dailyBooking.team && dailyBooking.title?.trim() === "Other";
+
+                        if (isReservedOther) {
+                          return (
+                            <div
+                              key={dailyBooking.id}
+                              className="booking-room-booking-card"
+                              style={{
+                                backgroundColor: "#ffffff",
+                                border: "1px solid #dbe3f0",
+                              }}
+                            >
+                              <div
+                                className="booking-wrap-text"
+                                style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
+                              >
+                                Reserved
+                              </div>
+                              <div
+                                className="booking-wrap-text"
+                                style={{
+                                  color: "#334155",
+                                  marginTop: "0.15rem",
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                Reserved
+                              </div>
+                              <div
+                                style={{
+                                  color: "#64748b",
+                                  marginTop: "0.15rem",
+                                  fontSize: "0.92rem",
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
+                                {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        const calendarStyle = getCalendarStyleForBooking(dailyBooking);
+
+                        return (
                           <div
-                            className="booking-wrap-text"
-                            style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
-                          >
-                            {!dailyBooking.team && dailyBooking.title === "Other"
-                              ? "Reserved"
-                              : dailyBooking.title || "Booking"}
-                          </div>
-                          <div
-                            className="booking-wrap-text"
-                            style={{ color: "#334155", marginTop: "0.15rem", lineHeight: 1.4 }}
-                          >
-                            {!dailyBooking.team && dailyBooking.title === "Other"
-                              ? "Reserved"
-                              : dailyBooking.team?.teamName || "—"}
-                          </div>
-                          <div
+                            key={dailyBooking.id}
+                            className="booking-room-booking-card"
                             style={{
-                              color: "#64748b",
-                              marginTop: "0.15rem",
-                              fontSize: "0.92rem",
-                              lineHeight: 1.4,
+                              backgroundColor: calendarStyle.backgroundColor,
+                              border: `1px solid ${calendarStyle.borderColor}`,
                             }}
                           >
-                            {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
-                            {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+                            <div
+							  className="booking-wrap-text"
+							  style={{
+								fontWeight: 600,
+								lineHeight: 1.35,
+							  }}
+							>
+							  {calendarStyle.label}
+							</div>
+
+							<div
+							  className="booking-wrap-text"
+							  style={{
+								color: "#334155",
+								marginTop: "0.15rem",
+								lineHeight: 1.4,
+								fontWeight: 700,
+							  }}
+							>
+							  {getDailyBookingTeamDisplay(dailyBooking)}
+							</div>
+
+                            <div
+                              style={{
+                                color: "#64748b",
+                                marginTop: "0.15rem",
+                                fontSize: "0.92rem",
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
+                              {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

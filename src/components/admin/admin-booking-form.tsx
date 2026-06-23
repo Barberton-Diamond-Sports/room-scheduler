@@ -169,11 +169,6 @@ function buildTimeOptions() {
   return options;
 }
 
-function formatUnavailableLabel(reason: string | null | undefined) {
-  const trimmed = reason?.trim();
-  return trimmed ? `Field Unavailable · ${trimmed}` : "Field Unavailable";
-}
-
 function roomLabel(room: Room) {
   return room.description?.trim() ? `${room.name} (${room.description})` : room.name;
 }
@@ -256,14 +251,143 @@ function inferSport(ageGroup: string | null | undefined) {
   return ageGroup?.toLowerCase().includes("softball") ? "softball" : "baseball";
 }
 
-function getDailyBookingDisplayTitle(booking: DailyBooking) {
-  const bookingTitle = booking.title?.trim();
+function inferBookingSport(booking: DailyBooking) {
+  const ageGroup = booking.team?.ageGroup?.toLowerCase() || "";
 
-  if (!booking.team && bookingTitle === "Other") {
-    return "Reserved";
+  if (ageGroup.includes("softball")) {
+    return "Softball";
   }
 
-  return bookingTitle || "Booking";
+  if (
+    ageGroup.includes("tee ball") ||
+    ageGroup.includes("t-ball") ||
+    ageGroup.includes("tball")
+  ) {
+    return "Tee Ball";
+  }
+
+  if (ageGroup.includes("baseball")) {
+    return "Baseball";
+  }
+
+  return "Baseball";
+}
+
+function normalizeBookingPurpose(title: string | null | undefined) {
+  const normalizedTitle = title?.trim();
+
+  if (normalizedTitle === "Game") return "Game";
+  if (normalizedTitle === "Practice") return "Practice";
+  if (normalizedTitle === "Scrimmage") return "Scrimmage";
+  if (normalizedTitle === "Other") return "Other";
+
+  return normalizedTitle || "Booking";
+}
+
+function getCalendarStyleForBooking(booking: DailyBooking) {
+  const sport = inferBookingSport(booking);
+  const purpose = normalizeBookingPurpose(booking.title);
+
+  if (!booking.team && purpose === "Other") {
+    return {
+      label: "Reserved",
+      backgroundColor: "#ffffff",
+      borderColor: "#dbe3f0",
+      labelColor: "#475569",
+    };
+  }
+
+  if (sport === "Softball") {
+    if (purpose === "Game") {
+      return {
+        label: "Softball Game",
+        backgroundColor: "#fdf2f8",
+        borderColor: "#f9a8d4",
+        labelColor: "#9d174d",
+      };
+    }
+
+    if (purpose === "Practice") {
+      return {
+        label: "Softball Practice",
+        backgroundColor: "#f5f3ff",
+        borderColor: "#c4b5fd",
+        labelColor: "#5b21b6",
+      };
+    }
+
+    if (purpose === "Scrimmage") {
+      return {
+        label: "Softball Scrimmage",
+        backgroundColor: "#faf5ff",
+        borderColor: "#d8b4fe",
+        labelColor: "#7e22ce",
+      };
+    }
+  }
+
+  if (sport === "Tee Ball") {
+    if (purpose === "Game") {
+      return {
+        label: "Tee Ball Game",
+        backgroundColor: "#f0fdf4",
+        borderColor: "#86efac",
+        labelColor: "#166534",
+      };
+    }
+
+    if (purpose === "Practice") {
+      return {
+        label: "Tee Ball Practice",
+        backgroundColor: "#f7fee7",
+        borderColor: "#bef264",
+        labelColor: "#3f6212",
+      };
+    }
+
+    if (purpose === "Scrimmage") {
+      return {
+        label: "Tee Ball Scrimmage",
+        backgroundColor: "#fefce8",
+        borderColor: "#fde047",
+        labelColor: "#854d0e",
+      };
+    }
+  }
+
+  if (purpose === "Game") {
+    return {
+      label: "Baseball Game",
+      backgroundColor: "#eff6ff",
+      borderColor: "#93c5fd",
+      labelColor: "#1d4ed8",
+    };
+  }
+
+  if (purpose === "Practice") {
+    return {
+      label: "Baseball Practice",
+      backgroundColor: "#ecfeff",
+      borderColor: "#67e8f9",
+      labelColor: "#155e75",
+    };
+  }
+
+  if (purpose === "Scrimmage") {
+    return {
+      label: "Baseball Scrimmage",
+      backgroundColor: "#fff7ed",
+      borderColor: "#fdba74",
+      labelColor: "#9a3412",
+    };
+  }
+
+  return {
+    label: purpose,
+    backgroundColor: "#ffffff",
+    borderColor: "#dbe3f0",
+    labelColor: "#475569",
+  };
 }
 
 function getDailyBookingTeamDisplay(booking: DailyBooking) {
@@ -312,14 +436,14 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
     [activeTeams, teamId]
   );
 
-	const isTeamlessReservedBooking = purpose === "Other" && !teamId;
-	const requiresTeamSelection = purpose !== "Other";
+  const isTeamlessReservedBooking = purpose === "Other" && !teamId;
+  const requiresTeamSelection = purpose !== "Other";
 
-	const showOpponent = purpose === "Game" || purpose === "Scrimmage";
+  const showOpponent = purpose === "Game" || purpose === "Scrimmage";
 
-	const availableRooms = useMemo(() => {
-	  return rooms.filter((room) => roomAllowsPurpose(room, purpose));
-	}, [rooms, purpose]);
+  const availableRooms = useMemo(() => {
+    return rooms.filter((room) => roomAllowsPurpose(room, purpose));
+  }, [rooms, purpose]);
 
   const showUmpire =
     !!selectedTeam?.requiresUmpire &&
@@ -367,7 +491,7 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
       setTeamId("");
     }
   }, [activeTeams, teamId]);
-  
+
   useEffect(() => {
     if (roomId && !availableRooms.some((room) => room.id === roomId)) {
       setRoomId("");
@@ -453,14 +577,14 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
     }
 
     if (!roomId) {
-	  setMessage(
-		availableRooms.length === 0
-		  ? "No fields are available for the selected purpose."
-		  : "Please select a field."
-	  );
-	  setMessageType("error");
-	  return;
-	}
+      setMessage(
+        availableRooms.length === 0
+          ? "No fields are available for the selected purpose."
+          : "Please select a field."
+      );
+      setMessageType("error");
+      return;
+    }
 
     setMessage("Submitting booking...");
     setMessageType("info");
@@ -592,25 +716,23 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
 
         .booking-room-bookings {
           display: grid;
-          gap: 0.5rem;
+          gap: 0.55rem;
         }
 
         .booking-room-booking-card {
-          background-color: #ffffff;
-          border: 1px solid #dbe3f0;
           border-radius: 10px;
           padding: 0.75rem 0.85rem;
           min-width: 0;
         }
 
         .booking-room-blackout-card {
-		  background-color: #e5e7eb;
-		  border: 1px solid #cbd5e1;
-		  border-radius: 10px;
-		  padding: 0.85rem 0.9rem;
-		  min-width: 0;
-		  color: #374151;
-		}
+          background-color: #e5e7eb;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          padding: 0.85rem 0.9rem;
+          min-width: 0;
+          color: #374151;
+        }
         
         .booking-wrap-text {
           word-break: break-word;
@@ -727,24 +849,24 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
               Field
             </label>
             <select
-			  id="room"
-			  value={roomId}
-			  onChange={(e) => setRoomId(e.target.value)}
-			  style={fieldStyle}
-			  required
-			  disabled={availableRooms.length === 0}
-			>
-			  <option value="">
-				{availableRooms.length === 0
-				  ? "No fields available for this purpose"
-				  : "Select a field"}
-			  </option>
-			  {availableRooms.map((room) => (
-				<option key={room.id} value={room.id}>
-				  {roomLabel(room)}
-				</option>
-			  ))}
-			</select>
+              id="room"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              style={fieldStyle}
+              required
+              disabled={availableRooms.length === 0}
+            >
+              <option value="">
+                {availableRooms.length === 0
+                  ? "No fields available for this purpose"
+                  : "Select a field"}
+              </option>
+              {availableRooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {roomLabel(room)}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -1020,33 +1142,98 @@ export default function AdminBookingForm({ rooms, teams = [], umpires = [] }: Pr
                     </div>
                   ) : (
                     <div className="booking-room-bookings">
-                      {bookings.map((dailyBooking) => (
-                        <div key={dailyBooking.id} className="booking-room-booking-card">
+                      {bookings.map((dailyBooking) => {
+                        const isReservedOther =
+                          !dailyBooking.team && dailyBooking.title?.trim() === "Other";
+
+                        if (isReservedOther) {
+                          return (
+                            <div
+                              key={dailyBooking.id}
+                              className="booking-room-booking-card"
+                              style={{
+                                backgroundColor: "#ffffff",
+                                border: "1px solid #dbe3f0",
+                              }}
+                            >
+                              <div
+                                className="booking-wrap-text"
+                                style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
+                              >
+                                Reserved
+                              </div>
+                              <div
+                                className="booking-wrap-text"
+                                style={{
+                                  color: "#334155",
+                                  marginTop: "0.15rem",
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                Admin reserved field
+                              </div>
+                              <div
+                                style={{
+                                  color: "#64748b",
+                                  marginTop: "0.15rem",
+                                  fontSize: "0.92rem",
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
+                                {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        const calendarStyle = getCalendarStyleForBooking(dailyBooking);
+
+                        return (
                           <div
-                            className="booking-wrap-text"
-                            style={{ fontWeight: 700, color: "#0f172a", lineHeight: 1.35 }}
-                          >
-                            {getDailyBookingDisplayTitle(dailyBooking)}
-                          </div>
-                          <div
-                            className="booking-wrap-text"
-                            style={{ color: "#334155", marginTop: "0.15rem", lineHeight: 1.4 }}
-                          >
-                            {getDailyBookingTeamDisplay(dailyBooking)}
-                          </div>
-                          <div
+                            key={dailyBooking.id}
+                            className="booking-room-booking-card"
                             style={{
-                              color: "#64748b",
-                              marginTop: "0.15rem",
-                              fontSize: "0.92rem",
-                              lineHeight: 1.4,
+                              backgroundColor: calendarStyle.backgroundColor,
+                              border: `1px solid ${calendarStyle.borderColor}`,
                             }}
                           >
-                            {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
-                            {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+                            <div
+                              className="booking-wrap-text"
+                              style={{
+                                fontWeight: 600,
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              {calendarStyle.label}
+                            </div>
+
+                            <div
+                              className="booking-wrap-text"
+                              style={{
+                                color: "#334155",
+                                marginTop: "0.15rem",
+                                lineHeight: 1.4,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {getDailyBookingTeamDisplay(dailyBooking)}
+                            </div>
+
+                            <div
+                              style={{
+                                color: "#64748b",
+                                marginTop: "0.15rem",
+                                fontSize: "0.92rem",
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {formatMinutesLabel(dailyBooking.startTimeMinutes)} -{" "}
+                              {formatMinutesLabel(dailyBooking.endTimeMinutes)}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
