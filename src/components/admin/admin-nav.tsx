@@ -44,7 +44,7 @@ const navSections = [
     title: "Bookings",
     links: [
       {
-        label: "Book a Field w/ Umpire",
+        label: "Admin Field Booking",
         href: "/admin/book-with-umpire",
         bg: "#ecfeff",
         border: "#a5f3fc",

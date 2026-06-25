@@ -1,10 +1,10 @@
-
-
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+
+const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 async function loginAction(formData: FormData) {
   "use server";
@@ -34,17 +34,17 @@ async function loginAction(formData: FormData) {
   const cookieStore = await cookies();
 
   cookieStore.set("admin_access", "granted", {
-	httpOnly: true,
-	sameSite: "lax",
-	path: "/",
-	maxAge: 60 * 60 * 8,
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
   });
 
   cookieStore.set("admin_email", user.email, {
-	httpOnly: true,
-	sameSite: "lax",
-	path: "/",
-	maxAge: 60 * 60 * 8,
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
   });
 
   redirect(next);
@@ -103,7 +103,7 @@ export default async function AdminLoginPage({
         <form action={loginAction} style={{ display: "grid", gap: "1rem" }}>
           <div>
             <label style={{ fontWeight: 600 }}>Email</label>
-			<input type="hidden" name="next" value={next} />
+            <input type="hidden" name="next" value={next} />
             <input
               name="email"
               type="email"
