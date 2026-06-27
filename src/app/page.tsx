@@ -3,7 +3,6 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-
 function pad(value: number) {
   return String(value).padStart(2, "0");
 }
@@ -142,7 +141,25 @@ export default function HomePage() {
                 textAlign: "center",
               }}
             >
-              Team Field Reservations
+              Reservations by Team
+            </Link>
+
+            <Link
+              href="/field-reservations"
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "0.9rem 1.25rem",
+                backgroundColor: "#fff7ed",
+                color: "#9a3412",
+                borderRadius: "12px",
+                textDecoration: "none",
+                fontWeight: 700,
+                border: "1px solid #fdba74",
+                textAlign: "center",
+              }}
+            >
+              Reservations by Field
             </Link>
 
             <Link
