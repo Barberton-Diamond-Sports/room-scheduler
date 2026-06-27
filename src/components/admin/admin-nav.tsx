@@ -1,5 +1,3 @@
-
-
 import Link from "next/link";
 
 type AdminNavProps = {
@@ -58,11 +56,18 @@ const navSections = [
         color: "#1d4ed8",
       },
       {
-        label: "Team Schedule",
+        label: "Reservations by Team",
         href: "/team-schedule",
         bg: "#f0fdf4",
         border: "#86efac",
         color: "#166534",
+      },
+      {
+        label: "Reservations by Field",
+        href: "/field-reservations",
+        bg: "#fff7ed",
+        border: "#fdba74",
+        color: "#9a3412",
       },
     ],
   },
