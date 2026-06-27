@@ -690,56 +690,68 @@ export default async function BookingsPage({ searchParams }: PageProps) {
 
           <div className="title-row-bottom">
             <div className="top-links">
-              <Link
-                href="/"
-                className="nav-link"
-                style={{
-                  backgroundColor: "#eef2ff",
-                  border: "1px solid #c7d2fe",
-                  color: "#1e3a8a",
-                }}
-              >
-                Home
-              </Link>
+  <Link
+    href="/"
+    className="nav-link"
+    style={{
+      backgroundColor: "#eef2ff",
+      border: "1px solid #c7d2fe",
+      color: "#1e3a8a",
+    }}
+  >
+    Home
+  </Link>
 
-              <Link
-                href="/team-schedule"
-                className="nav-link"
-                style={{
-                  backgroundColor: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
-                  color: "#166534",
-                }}
-              >
-                Reservations by Team
-              </Link>
+  <Link
+    href="/team-schedule"
+    className="nav-link"
+    style={{
+      backgroundColor: "#f0fdf4",
+      border: "1px solid #bbf7d0",
+      color: "#166534",
+    }}
+  >
+    Reservations by Team
+  </Link>
 
-              <Link
-                href="/book"
-                className="nav-link"
-                style={{
-                  backgroundColor: "#ecfeff",
-                  border: "1px solid #a5f3fc",
-                  color: "#155e75",
-                }}
-              >
-                Book a Field
-              </Link>
+  <Link
+    href="/field-reservations"
+    className="nav-link"
+    style={{
+      backgroundColor: "#fff7ed",
+      border: "1px solid #fdba74",
+      color: "#9a3412",
+    }}
+  >
+    Reservations by Field
+  </Link>
 
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  className="nav-link"
-                  style={{
-                    backgroundColor: "#f8fafc",
-                    border: "1px solid #dbe3f0",
-                    color: "#475569",
-                  }}
-                >
-                  Admin
-                </Link>
-              )}
-            </div>
+  <Link
+    href="/book"
+    className="nav-link"
+    style={{
+      backgroundColor: "#ecfeff",
+      border: "1px solid #a5f3fc",
+      color: "#155e75",
+    }}
+  >
+    Book a Field
+  </Link>
+
+  {isAdmin && (
+    <Link
+      href="/admin"
+      className="nav-link"
+      style={{
+        backgroundColor: "#f8fafc",
+        border: "1px solid #dbe3f0",
+        color: "#475569",
+      }}
+    >
+      Admin
+    </Link>
+  )}
+</div>
 
             <div className="view-controls">
               <Link
