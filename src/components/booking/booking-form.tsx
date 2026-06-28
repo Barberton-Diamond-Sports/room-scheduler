@@ -57,9 +57,18 @@ type Props = {
   initialRoomId?: string;
 };
 
+type SavedBookingFormPreferences = {
+  teamId?: string;
+  roomId?: string;
+  startTime?: string;
+  duration?: string;
+  purpose?: string;
+};
+
 const START_HOUR = 9;
 const END_HOUR = 21;
 const DEFAULT_TIME = "18:00";
+const PUBLIC_BOOKING_FORM_STORAGE_KEY = "bds-public-booking-form-preferences-v1";
 
 const fieldLabelStyle = {
   display: "block",
@@ -387,22 +396,62 @@ function getCalendarStyleForBooking(booking: DailyBooking) {
   };
 }
 
-function getDailyBookingDisplayTitle(booking: DailyBooking) {
-  const bookingTitle = booking.title?.trim();
-
-  if (!booking.team && bookingTitle === "Other") {
-    return "Reserved";
-  }
-
-  return bookingTitle || "Booking";
-}
-
 function getDailyBookingTeamDisplay(booking: DailyBooking) {
   if (!booking.team && booking.title?.trim() === "Other") {
     return "Reserved";
   }
 
   return booking.team?.teamName || "—";
+}
+
+function readSavedBookingFormPreferences(): SavedBookingFormPreferences | null {
+  try {
+    const rawValue = window.localStorage.getItem(PUBLIC_BOOKING_FORM_STORAGE_KEY);
+
+    if (!rawValue) {
+      return null;
+    }
+
+    const parsedValue = JSON.parse(rawValue);
+
+    if (!parsedValue || typeof parsedValue !== "object") {
+      return null;
+    }
+
+    return parsedValue as SavedBookingFormPreferences;
+  } catch (error) {
+    console.error("Failed to read public booking form preferences:", error);
+    return null;
+  }
+}
+
+function saveBookingFormPreferences(preferences: SavedBookingFormPreferences) {
+  try {
+    window.localStorage.setItem(
+      PUBLIC_BOOKING_FORM_STORAGE_KEY,
+      JSON.stringify(preferences)
+    );
+  } catch (error) {
+    console.error("Failed to save public booking form preferences:", error);
+  }
+}
+
+function updateSavedBookingFormPreferences(
+  updates: Partial<SavedBookingFormPreferences>
+) {
+  try {
+    const existingPreferences = readSavedBookingFormPreferences() || {};
+
+    window.localStorage.setItem(
+      PUBLIC_BOOKING_FORM_STORAGE_KEY,
+      JSON.stringify({
+        ...existingPreferences,
+        ...updates,
+      })
+    );
+  } catch (error) {
+    console.error("Failed to update public booking form preferences:", error);
+  }
 }
 
 const timeOptions = buildTimeOptions();
@@ -420,7 +469,8 @@ export default function BookingForm({
     [teams]
   );
 
-  
+  const [hasLoadedSavedPreferences, setHasLoadedSavedPreferences] = useState(false);
+
   const [teamId, setTeamId] = useState("");
   const [roomId, setRoomId] = useState(initialRoomId || "");
   const [date, setDate] = useState(initialDate || getTodayString());
@@ -471,10 +521,82 @@ export default function BookingForm({
   }, [rooms, dailyBookings, blackoutByRoomId]);
 
   useEffect(() => {
-    if (activeTeams.length > 0 && !activeTeams.some((team) => team.id === teamId)) {
-      setTeamId("");
+    const savedPreferences = readSavedBookingFormPreferences();
+
+    if (!savedPreferences) {
+      setHasLoadedSavedPreferences(true);
+      return;
     }
-  }, [activeTeams, teamId]);
+
+    if (
+      savedPreferences.teamId &&
+      activeTeams.some((team) => team.id === savedPreferences.teamId)
+    ) {
+      setTeamId(savedPreferences.teamId);
+    }
+
+    if (
+      savedPreferences.startTime &&
+      timeOptions.includes(savedPreferences.startTime)
+    ) {
+      setStartTime(savedPreferences.startTime);
+    }
+
+    if (
+      savedPreferences.duration &&
+      durationOptions.some((option) => option.value === savedPreferences.duration)
+    ) {
+      setDuration(savedPreferences.duration);
+    }
+
+    if (
+      savedPreferences.purpose &&
+      purposeOptions.includes(savedPreferences.purpose)
+    ) {
+      setPurpose(savedPreferences.purpose);
+    }
+
+    if (
+      !initialRoomId &&
+      savedPreferences.roomId &&
+      rooms.some((room) => room.id === savedPreferences.roomId)
+    ) {
+      setRoomId(savedPreferences.roomId);
+    }
+
+    setHasLoadedSavedPreferences(true);
+  }, [activeTeams, initialRoomId, rooms]);
+
+  useEffect(() => {
+	  if (!hasLoadedSavedPreferences) {
+		return;
+	  }
+
+	  const existingPreferences = readSavedBookingFormPreferences() || {};
+
+	  saveBookingFormPreferences({
+		...existingPreferences,
+		roomId,
+		startTime,
+		duration,
+		purpose,
+	  });
+	}, [hasLoadedSavedPreferences, roomId, startTime, duration, purpose]);
+
+useEffect(() => {
+  if (!hasLoadedSavedPreferences) {
+    return;
+  }
+
+  if (
+    teamId &&
+    activeTeams.length > 0 &&
+    !activeTeams.some((team) => team.id === teamId)
+  ) {
+    setTeamId("");
+    updateSavedBookingFormPreferences({ teamId: "" });
+  }
+}, [hasLoadedSavedPreferences, activeTeams, teamId]);
 
   useEffect(() => {
     if (roomId && !availableRooms.some((room) => room.id === roomId)) {
@@ -747,7 +869,11 @@ export default function BookingForm({
             <select
               id="teamId"
               value={teamId}
-              onChange={(e) => setTeamId(e.target.value)}
+              onChange={(e) => {
+				const nextTeamId = e.target.value;
+				setTeamId(nextTeamId);
+				updateSavedBookingFormPreferences({ teamId: nextTeamId });
+			  }}
               style={fieldStyle}
               required
               disabled={activeTeams.length === 0}
@@ -774,7 +900,12 @@ export default function BookingForm({
             <select
               id="room"
               value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
+              onChange={(e) => {
+			   const nextRoomId = e.target.value;
+			   setRoomId(nextRoomId);
+			   updateSavedBookingFormPreferences({ roomId: nextRoomId });
+			  }}
+
               style={fieldStyle}
               required
               disabled={availableRooms.length === 0}
@@ -807,22 +938,26 @@ export default function BookingForm({
           </div>
 
           <div>
-            <label htmlFor="startTime" style={fieldLabelStyle}>
-              Start Time
-            </label>
-            <select
-              id="startTime"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              style={fieldStyle}
-            >
-              {timeOptions.map((time) => (
-                <option key={time} value={time}>
-                  {formatTimeLabel(time)}
-                </option>
-              ))}
-            </select>
-          </div>
+			<label htmlFor="startTime" style={fieldLabelStyle}>
+			  Start Time
+			</label>
+			<select
+			  id="startTime"
+			  value={startTime}
+			  onChange={(e) => {
+				const nextStartTime = e.target.value;
+				setStartTime(nextStartTime);
+				updateSavedBookingFormPreferences({ startTime: nextStartTime });
+			  }}
+			  style={fieldStyle}
+			>
+			  {timeOptions.map((time) => (
+			    <option key={time} value={time}>
+			  	  {formatTimeLabel(time)}
+				</option>
+			  ))}
+			</select>
+		  </div>
 
           <div>
             <label htmlFor="duration" style={fieldLabelStyle}>
@@ -831,7 +966,11 @@ export default function BookingForm({
             <select
               id="duration"
               value={duration}
-              onChange={(e) => setDuration(e.target.value)}
+              onChange={(e) => {
+				const nextDuration = e.target.value;
+				setDuration(nextDuration);
+				updateSavedBookingFormPreferences({ duration: nextDuration });
+			  }}
               style={fieldStyle}
             >
               {availableDurations.map((option) => (
@@ -843,22 +982,26 @@ export default function BookingForm({
           </div>
 
           <div>
-            <label htmlFor="purpose" style={fieldLabelStyle}>
-              Purpose
-            </label>
-            <select
-              id="purpose"
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-              style={fieldStyle}
-            >
-              {purposeOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
+			  <label htmlFor="purpose" style={fieldLabelStyle}>
+				Purpose
+			  </label>
+			  <select
+				id="purpose"
+				value={purpose}
+				onChange={(e) => {
+				  const nextPurpose = e.target.value;
+				  setPurpose(nextPurpose);
+				  updateSavedBookingFormPreferences({ purpose: nextPurpose });
+				}}
+				style={fieldStyle}
+			  >
+				{purposeOptions.map((option) => (
+				  <option key={option} value={option}>
+					{option}
+				  </option>
+				))}
+			  </select>
+			</div>
 
           {showOpponent && (
             <div>
@@ -1080,26 +1223,26 @@ export default function BookingForm({
                             }}
                           >
                             <div
-							  className="booking-wrap-text"
-							  style={{
-								fontWeight: 600,
-								lineHeight: 1.35,
-							  }}
-							>
-							  {calendarStyle.label}
-							</div>
+                              className="booking-wrap-text"
+                              style={{
+                                fontWeight: 600,
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              {calendarStyle.label}
+                            </div>
 
-							<div
-							  className="booking-wrap-text"
-							  style={{
-								color: "#334155",
-								marginTop: "0.15rem",
-								lineHeight: 1.4,
-								fontWeight: 700,
-							  }}
-							>
-							  {getDailyBookingTeamDisplay(dailyBooking)}
-							</div>
+                            <div
+                              className="booking-wrap-text"
+                              style={{
+                                color: "#334155",
+                                marginTop: "0.15rem",
+                                lineHeight: 1.4,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {getDailyBookingTeamDisplay(dailyBooking)}
+                            </div>
 
                             <div
                               style={{
